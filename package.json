@@ -13,7 +13,9 @@
     "scrape:dm:test": "TEST_SET=DM-06 tsx src/scraper/run-dm.ts",
     "verify": "tsx src/verify/phase3.ts",
     "api": "tsx src/api/server.ts",
-    "search": "tsx src/api/search-cli.ts"
+    "search": "tsx src/api/search-cli.ts",
+    "scrape:dmc": "tsx src/scraper/run-dmc.ts",
+    "scrape:dmc:test": "TEST_SET=DMC-09 tsx src/scraper/run-dmc.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
