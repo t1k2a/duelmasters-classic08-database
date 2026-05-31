@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Civilization {
+  id   Int    @id @db.SmallInt
+  name String @unique
+
+  cardCivilizations CardCivilization[]
+
+  @@map("civilizations")
+}
+
+model Race {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  cardRaces CardRace[]
+
+  @@map("races")
+}
+
+model Set {
+  id          Int       @id @default(autoincrement())
+  setCode     String    @unique @map("set_code")
+  name        String
+  line        String
+  productType String?   @map("product_type")
+  series      String?
+  releasedAt  DateTime? @map("released_at") @db.Date
+  releasedYm  String?   @map("released_ym") @db.Char(7)
+  source      String?
+
+  printings Printing[]
+
+  @@map("sets")
+}
+
+model Card {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  nameReading String? @map("name_reading")
+  cardType    String  @map("card_type")
+  cost        Int?    @db.SmallInt
+  power       Int?
+  text        String?
+  flavorText  String? @map("flavor_text")
+  illustrator String?
+
+  cardCivilizations CardCivilization[]
+  cardRaces         CardRace[]
+  printings         Printing[]
+  cardRestrictions  CardRestriction[]
+
+  @@map("cards")
+}
+
+model CardCivilization {
+  cardId         Int @map("card_id")
+  civilizationId Int @map("civilization_id") @db.SmallInt
+
+  card         Card         @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  civilization Civilization @relation(fields: [civilizationId], references: [id])
+
+  @@id([cardId, civilizationId])
+  @@map("card_civilizations")
+}
+
+model CardRace {
+  cardId Int @map("card_id")
+  raceId Int @map("race_id")
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  race Race @relation(fields: [raceId], references: [id])
+
+  @@id([cardId, raceId])
+  @@map("card_races")
+}
+
+model Printing {
+  id         Int     @id @default(autoincrement())
+  cardId     Int     @map("card_id")
+  setId      Int     @map("set_id")
+  cardNumber String? @map("card_number")
+  rarity     String?
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  set  Set  @relation(fields: [setId], references: [id])
+
+  @@unique([setId, cardNumber])
+  @@map("printings")
+}
+
+model Ruleset {
+  id   Int    @id @db.SmallInt
+  code String @unique
+  name String
+
+  cardRestrictions CardRestriction[]
+
+  @@map("rulesets")
+}
+
+model RestrictionType {
+  id        Int    @id @db.SmallInt
+  name      String @unique
+  maxCopies Int    @map("max_copies") @db.SmallInt
+  sortOrder Int    @default(0) @map("sort_order") @db.SmallInt
+
+  cardRestrictions CardRestriction[]
+
+  @@map("restriction_types")
+}
+
+model CardRestriction {
+  id                Int       @id @default(autoincrement())
+  cardId            Int       @map("card_id")
+  rulesetId         Int       @map("ruleset_id") @db.SmallInt
+  restrictionTypeId Int       @map("restriction_type_id") @db.SmallInt
+  effectiveFrom     DateTime? @map("effective_from") @db.Date
+
+  card            Card            @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  ruleset         Ruleset         @relation(fields: [rulesetId], references: [id])
+  restrictionType RestrictionType @relation(fields: [restrictionTypeId], references: [id])
+
+  @@unique([cardId, rulesetId, effectiveFrom])
+  @@map("card_restrictions")
+}

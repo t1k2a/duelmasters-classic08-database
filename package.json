@@ -1,0 +1,30 @@
+{
+  "name": "duelmasters-classic08-database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "migrate": "prisma migrate dev",
+    "seed": "prisma db seed",
+    "studio": "prisma studio",
+    "scrape:dm": "tsx src/scraper/run-dm.ts",
+    "scrape:dm:test": "TEST_SET=DM-06 tsx src/scraper/run-dm.ts",
+    "verify": "tsx src/verify/phase3.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "cheerio": "^1.0.0",
+    "playwright": "^1.48.0"
+  }
+}
