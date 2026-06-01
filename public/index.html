@@ -181,21 +181,30 @@ function renderList() {
   document.getElementById('resultCount').textContent = `${CARDS.length.toLocaleString()}件中 ${results.length.toLocaleString()}件`;
   const p = c => c.printings[0] || {};
   document.getElementById('cardList').innerHTML = results.map(c => `
-    <div class="card-row px-4 py-3 cursor-pointer ${selectedCard === c.id ? 'selected' : ''}"
+    <div class="card-row px-3 py-2 cursor-pointer ${selectedCard === c.id ? 'selected' : ''}"
          onclick="selectCard('${c.id}')">
-      <div class="flex items-start justify-between gap-2">
-        <div class="min-w-0">
-          <div class="font-semibold text-sm text-gray-900 truncate">${c.name}</div>
-          <div class="text-xs text-gray-500 mt-0.5">
-            ${c.cardType}・${civBadge(c.civilizations)}・${c.cost ?? '—'}コスト${c.power !== null ? ` / ${c.power.toLocaleString()}P` : ''}
+      <div class="flex items-center gap-3">
+        <img
+          src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${c.id}.jpg"
+          alt=""
+          loading="lazy"
+          onerror="this.parentNode.querySelector('.card-img-placeholder').style.display='flex';this.style.display='none'"
+          class="w-[52px] h-[72px] object-cover rounded shrink-0 bg-gray-100">
+        <div class="card-img-placeholder w-[52px] h-[72px] rounded shrink-0 bg-gray-100 hidden items-center justify-center text-gray-300 text-xl">🎴</div>
+        <div class="flex-1 flex items-start justify-between gap-2 min-w-0">
+          <div class="min-w-0">
+            <div class="font-semibold text-sm text-gray-900 truncate">${c.name}</div>
+            <div class="text-xs text-gray-500 mt-0.5">
+              ${c.cardType}・${civBadge(c.civilizations)}・${c.cost ?? '—'}コスト${c.power !== null ? ` / ${c.power.toLocaleString()}P` : ''}
+            </div>
+            ${c.races.length ? `<div class="text-xs text-gray-400">${c.races.join('/')}</div>` : ''}
           </div>
-          ${c.races.length ? `<div class="text-xs text-gray-400">${c.races.join('/')}</div>` : ''}
-        </div>
-        <div class="text-right shrink-0">
-          <div class="text-xs ${rarityClass(c.rarity)}">${c.rarity ?? ''}</div>
-          <div class="text-xs text-gray-500 mt-0.5">${p(c).setCode ?? ''}</div>
-          <div class="text-xs text-gray-400 leading-tight">${setShortName(p(c).setCode ?? '')}</div>
-          <div class="text-xs text-gray-300">${p(c).cardNumber ?? ''}</div>
+          <div class="text-right shrink-0">
+            <div class="text-xs ${rarityClass(c.rarity)}">${c.rarity ?? ''}</div>
+            <div class="text-xs text-gray-500 mt-0.5">${p(c).setCode ?? ''}</div>
+            <div class="text-xs text-gray-400 leading-tight">${setShortName(p(c).setCode ?? '')}</div>
+            <div class="text-xs text-gray-300">${p(c).cardNumber ?? ''}</div>
+          </div>
         </div>
       </div>
     </div>
