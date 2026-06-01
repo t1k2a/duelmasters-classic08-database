@@ -153,16 +153,16 @@
 
 <script>
 const CARDS = [
-  {id:2347,name:"ボルメテウス・ホワイト・ドラゴン",card_type:"クリーチャー",cost:7,power:7000,civilization:"火",race:"アーマード・ドラゴン",rarity:"SR",set_code:"DM-06",card_number:"S8/S10",text:"W(ダブル)・ブレイカー(シールドを攻撃したとき、このクリーチャーはシールドを２枚ブレイクする)\nこのクリーチャーがシールドをブレイクしたとき、相手はそのシールドを持ち主の墓地に置く。(その「S(シールド)・トリガー」は使えない)"},
-  {id:332,name:"アストラル・リーフ",card_type:"進化クリーチャー",cost:2,power:4000,civilization:"水",race:"サイバー・ウイルス",rarity:"VR",set_code:"DM-04",card_number:"2/55",text:"進化-自分のサイバー・ウイルス１体の上に置く。\nこのクリーチャーがバトルゾーンに出たとき、カードを３枚引いてもよい。"},
-  {id:118,name:"ボルシャック・ドラゴン",card_type:"クリーチャー",cost:6,power:6000,civilization:"火",race:"アーマード・ドラゴン",rarity:"VR",set_code:"DM-01",card_number:"8/110",text:"攻撃中、このクリーチャーのパワーは、自分の墓地にある火のカード１枚につき+1000される。\nW・ブレイカー(このクリーチャーはシールドを２枚ブレイクする。)"},
-  {id:724,name:"無双竜機ボルバルザーク",card_type:"クリーチャー",cost:7,power:6000,civilization:"火/自然",race:"アース・ドラゴン/アーマード・ドラゴン",rarity:"VR",set_code:"DM-10",card_number:"9/110",text:"マナゾーンに置く時、このカードはタップして置く。\nこのクリーチャーをバトルゾーンに出した時、他のパワー6000のクリーチャーをすべて破壊する。その後、このターンの後にもう一度自分のターンを行う。そのターンの終わりに、自分はゲームに負ける。\nスピードアタッカー\nW・ブレイカー"},
-  {id:1,name:"銀界の守護者ル・ギラ・レシール",card_type:"クリーチャー",cost:5,power:4000,civilization:"光",race:"ガーディアン",rarity:"VR",set_code:"DM-06",card_number:"1/110",text:"ブロッカー\nこのクリーチャーがバトルゾーンにある間、進化クリーチャーはタップされた状態でバトルゾーンに出る。\nこのクリーチャーは、相手プレイヤーを攻撃できない。"},
-  {id:137,name:"デーモン・ハンド",card_type:"呪文",cost:6,power:null,civilization:"闇",race:null,rarity:"R",set_code:"DM-01",card_number:"27/110",text:"S・トリガー\n相手のクリーチャーを１体破壊する。"},
-  {id:125,name:"ホーリー・スパーク",card_type:"呪文",cost:6,power:null,civilization:"光",race:null,rarity:"R",set_code:"DM-01",card_number:"15/110",text:"S・トリガー\nバトルゾーンにある相手のクリーチャーすべてをタップする。"},
-  {id:86,name:"スパイラル・ゲート",card_type:"呪文",cost:2,power:null,civilization:"水",race:null,rarity:"C",set_code:"DM-01",card_number:"85/110",text:"S・トリガー\nバトルゾーンにあるクリーチャーを１体選び、持ち主の手札に戻す。"},
-  {id:132,name:"クリスタル・メモリー",card_type:"呪文",cost:4,power:null,civilization:"水",race:null,rarity:"R",set_code:"DM-01",card_number:"22/110",text:"S・トリガー\n自分の山札からカードを１枚選び、自分の手札に加える。"},
-  {id:2172,name:"無敵城 シルヴァー・グローリー",card_type:"城",cost:6,power:null,civilization:"光",race:null,rarity:"VR",set_code:"DM-30",card_number:"1/55",text:"城-自分のシールドをひとつ選び、このカードを付けて要塞化する。\n自分のクリーチャーはすべてのバトルに勝つ。"},
+  {id:2347,name:"ボルメテウス・ホワイト・ドラゴン",card_type:"クリーチャー",cost:7,power:7000,civilization:"火",race:"アーマード・ドラゴン",rarity:"SR",set_code:"DM-06",card_number:"S8/S10",card_id:"dm06-s08",text:"W(ダブル)・ブレイカー(シールドを攻撃したとき、このクリーチャーはシールドを２枚ブレイクする)\nこのクリーチャーがシールドをブレイクしたとき、相手はそのシールドを持ち主の墓地に置く。(その「S(シールド)・トリガー」は使えない)"},
+  {id:332,name:"アストラル・リーフ",card_type:"進化クリーチャー",cost:2,power:4000,civilization:"水",race:"サイバー・ウイルス",rarity:"VR",set_code:"DM-04",card_number:"2/55",card_id:"dm04-002",text:"進化-自分のサイバー・ウイルス１体の上に置く。\nこのクリーチャーがバトルゾーンに出たとき、カードを３枚引いてもよい。"},
+  {id:118,name:"ボルシャック・ドラゴン",card_type:"クリーチャー",cost:6,power:6000,civilization:"火",race:"アーマード・ドラゴン",rarity:"VR",set_code:"DM-01",card_number:"8/110",card_id:"dm01-008",text:"攻撃中、このクリーチャーのパワーは、自分の墓地にある火のカード１枚につき+1000される。\nW・ブレイカー(このクリーチャーはシールドを２枚ブレイクする。)"},
+  {id:724,name:"無双竜機ボルバルザーク",card_type:"クリーチャー",cost:7,power:6000,civilization:"火/自然",race:"アース・ドラゴン/アーマード・ドラゴン",rarity:"VR",set_code:"DM-10",card_number:"9/110",card_id:"dm10-009",text:"マナゾーンに置く時、このカードはタップして置く。\nこのクリーチャーをバトルゾーンに出した時、他のパワー6000のクリーチャーをすべて破壊する。その後、このターンの後にもう一度自分のターンを行う。そのターンの終わりに、自分はゲームに負ける。\nスピードアタッカー\nW・ブレイカー"},
+  {id:1,name:"銀界の守護者ル・ギラ・レシール",card_type:"クリーチャー",cost:5,power:4000,civilization:"光",race:"ガーディアン",rarity:"VR",set_code:"DM-06",card_number:"1/110",card_id:"dm06-001",text:"ブロッカー\nこのクリーチャーがバトルゾーンにある間、進化クリーチャーはタップされた状態でバトルゾーンに出る。\nこのクリーチャーは、相手プレイヤーを攻撃できない。"},
+  {id:137,name:"デーモン・ハンド",card_type:"呪文",cost:6,power:null,civilization:"闇",race:null,rarity:"R",set_code:"DM-01",card_number:"27/110",card_id:"dm01-027",text:"S・トリガー\n相手のクリーチャーを１体破壊する。"},
+  {id:125,name:"ホーリー・スパーク",card_type:"呪文",cost:6,power:null,civilization:"光",race:null,rarity:"R",set_code:"DM-01",card_number:"15/110",card_id:"dm01-015",text:"S・トリガー\nバトルゾーンにある相手のクリーチャーすべてをタップする。"},
+  {id:86,name:"スパイラル・ゲート",card_type:"呪文",cost:2,power:null,civilization:"水",race:null,rarity:"C",set_code:"DM-01",card_number:"85/110",card_id:"dm01-085",text:"S・トリガー\nバトルゾーンにあるクリーチャーを１体選び、持ち主の手札に戻す。"},
+  {id:132,name:"クリスタル・メモリー",card_type:"呪文",cost:4,power:null,civilization:"水",race:null,rarity:"R",set_code:"DM-01",card_number:"22/110",card_id:"dm01-022",text:"S・トリガー\n自分の山札からカードを１枚選び、自分の手札に加える。"},
+  {id:2172,name:"無敵城 シルヴァー・グローリー",card_type:"城",cost:6,power:null,civilization:"光",race:null,rarity:"VR",set_code:"DM-30",card_number:"1/55",card_id:"dm30-001",text:"城-自分のシールドをひとつ選び、このカードを付けて要塞化する。\n自分のクリーチャーはすべてのバトルに勝つ。"},
 ];
 
 const CIV_COLORS = {光:'civ-光',水:'civ-水',闇:'civ-闇',火:'civ-火',自然:'civ-自然'};
