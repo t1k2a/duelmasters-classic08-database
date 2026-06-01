@@ -40,6 +40,16 @@
 https://dm.takaratomy.co.jp/wp-content/card/cardimage/{cardId}.jpg
 ```
 
+> スクレイプ済み HTML の `og:image` メタタグで確認済み。`<img src>` にはこの直接 JPG URL を使用する。
+
+### 公式詳細ページ URL
+
+```
+https://dm.takaratomy.co.jp/card/detail/?id={cardId}
+```
+
+カード詳細パネルの下部に「公式サイトで見る →」リンクとして追加する。
+
 ### cardId の構築ルール
 
 モックデータの `set_code` + `card_number` から構築する。
