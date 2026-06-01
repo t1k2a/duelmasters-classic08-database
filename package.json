@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsx scripts/build-json.ts",
+    "serve": "npx serve public",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "migrate": "prisma migrate dev",
