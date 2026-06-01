@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>デュエマ クラシック08 カード検索 — デザインプレビュー</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .civ-光  { background:#fef9c3; border-color:#ca8a04; color:#713f12; }
+    .civ-水  { background:#dbeafe; border-color:#3b82f6; color:#1e3a8a; }
+    .civ-闇  { background:#f3e8ff; border-color:#9333ea; color:#581c87; }
+    .civ-火  { background:#fee2e2; border-color:#ef4444; color:#7f1d1d; }
+    .civ-自然 { background:#dcfce7; border-color:#22c55e; color:#14532d; }
+    .rarity-SR { color:#b45309; font-weight:700; }
+    .rarity-VR { color:#7c3aed; font-weight:700; }
+    .rarity-R  { color:#1d4ed8; font-weight:600; }
+    .rarity-U  { color:#047857; font-weight:600; }
+    .rarity-C  { color:#374151; }
+    .card-row:hover { background:#f9fafb; }
+    .card-row.selected { background:#eff6ff; border-left:3px solid #3b82f6; }
+    details summary::-webkit-details-marker { display:none; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- ヘッダー -->
+<header class="bg-indigo-700 text-white px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-20">
+  <span class="text-lg font-bold tracking-wide">🎴 デュエマ クラシック08 カード検索</span>
+  <span class="ml-auto text-indigo-200 text-sm hidden md:block">デザインプレビュー</span>
+</header>
+
+<div class="flex h-[calc(100vh-52px)]">
+
+  <!-- ========== PC サイドバー ========== -->
+  <aside class="hidden md:flex flex-col w-56 bg-white border-r border-gray-200 overflow-y-auto shrink-0">
+    <div class="p-4 space-y-5 text-sm">
+
+      <!-- 文明 -->
+      <div>
+        <p class="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">文明</p>
+        <div class="space-y-1">
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="civ-cb accent-indigo-600" value="光" checked> <span class="civ-光 border rounded-full px-2 py-0.5 text-xs">光</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="civ-cb accent-indigo-600" value="水" checked> <span class="civ-水 border rounded-full px-2 py-0.5 text-xs">水</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="civ-cb accent-indigo-600" value="闇" checked> <span class="civ-闇 border rounded-full px-2 py-0.5 text-xs">闇</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="civ-cb accent-indigo-600" value="火" checked> <span class="civ-火 border rounded-full px-2 py-0.5 text-xs">火</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="civ-cb accent-indigo-600" value="自然" checked> <span class="civ-自然 border rounded-full px-2 py-0.5 text-xs">自然</span></label>
+        </div>
+      </div>
+
+      <!-- コスト -->
+      <div>
+        <p class="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">コスト</p>
+        <div class="flex items-center gap-2">
+          <input id="costMin" type="number" min="1" max="15" placeholder="1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+          <span class="text-gray-400">〜</span>
+          <input id="costMax" type="number" min="1" max="15" placeholder="15" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+        </div>
+      </div>
+
+      <!-- パワー -->
+      <div>
+        <p class="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">パワー</p>
+        <div class="flex items-center gap-2">
+          <input id="powerMin" type="number" step="1000" placeholder="—" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+          <span class="text-gray-400">〜</span>
+          <input id="powerMax" type="number" step="1000" placeholder="—" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+        </div>
+      </div>
+
+      <!-- カードの種類 -->
+      <div>
+        <p class="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">カードの種類</p>
+        <select id="cardType" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+          <option value="">すべて</option>
+          <option>クリーチャー</option>
+          <option>進化クリーチャー</option>
+          <option>呪文</option>
+          <option>クロスギア</option>
+          <option>城</option>
+        </select>
+      </div>
+
+      <!-- 種族 -->
+      <div>
+        <p class="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">種族</p>
+        <input id="race" type="text" placeholder="ドラゴン など" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== メインエリア ========== -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- テキスト検索バー -->
+    <div class="bg-white border-b border-gray-200 px-4 py-3">
+      <input id="textSearch" type="text" placeholder="カード名・テキストで検索..."
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+
+      <!-- スマホ用インラインフィルター -->
+      <div class="mt-3 md:hidden space-y-2">
+        <div class="flex gap-2 flex-wrap" id="mobileCivTags">
+          <button onclick="toggleMobileCiv(this,'光')"  data-civ="光"  data-on="1" class="civ-光  border rounded-full px-3 py-0.5 text-xs font-medium">光</button>
+          <button onclick="toggleMobileCiv(this,'水')"  data-civ="水"  data-on="1" class="civ-水  border rounded-full px-3 py-0.5 text-xs font-medium">水</button>
+          <button onclick="toggleMobileCiv(this,'闇')"  data-civ="闇"  data-on="1" class="civ-闇  border rounded-full px-3 py-0.5 text-xs font-medium">闇</button>
+          <button onclick="toggleMobileCiv(this,'火')"  data-civ="火"  data-on="1" class="civ-火  border rounded-full px-3 py-0.5 text-xs font-medium">火</button>
+          <button onclick="toggleMobileCiv(this,'自然')" data-civ="自然" data-on="1" class="civ-自然 border rounded-full px-3 py-0.5 text-xs font-medium">自然</button>
+        </div>
+        <div class="flex gap-2">
+          <select id="mobileCardType" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+            <option value="">種類: すべて</option>
+            <option>クリーチャー</option>
+            <option>進化クリーチャー</option>
+            <option>呪文</option>
+            <option>クロスギア</option>
+            <option>城</option>
+          </select>
+          <select id="mobileCostMax" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+            <option value="">コスト: すべて</option>
+            <option value="2">〜2</option>
+            <option value="4">〜4</option>
+            <option value="6">〜6</option>
+            <option value="8">〜8</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+      <!-- 結果リスト -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-100" id="resultCount">10件表示</div>
+        <div id="cardList" class="divide-y divide-gray-100"></div>
+      </div>
+
+      <!-- カード詳細パネル（PC: 右サイドパネル） -->
+      <div id="detailPanel" class="hidden md:flex flex-col w-80 bg-white border-l border-gray-200 overflow-y-auto shrink-0">
+        <div class="p-5 text-sm text-gray-400 text-center mt-8">カードをクリックすると<br>詳細が表示されます</div>
+      </div>
+    </div>
+
+    <!-- スマホ詳細 モーダル -->
+    <div id="mobileDetail" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden" onclick="closeMobileDetail(event)">
+      <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[80vh] overflow-y-auto p-5" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center mb-4">
+          <h2 id="mobileDetailName" class="font-bold text-base"></h2>
+          <button onclick="closeMobileDetail()" class="text-gray-400 text-xl leading-none">&times;</button>
+        </div>
+        <div id="mobileDetailBody"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const CARDS = [
+  {id:2347,name:"ボルメテウス・ホワイト・ドラゴン",card_type:"クリーチャー",cost:7,power:7000,civilization:"火",race:"アーマード・ドラゴン",rarity:"SR",set_code:"DM-06",card_number:"S8/S10",text:"W(ダブル)・ブレイカー(シールドを攻撃したとき、このクリーチャーはシールドを２枚ブレイクする)\nこのクリーチャーがシールドをブレイクしたとき、相手はそのシールドを持ち主の墓地に置く。(その「S(シールド)・トリガー」は使えない)"},
+  {id:332,name:"アストラル・リーフ",card_type:"進化クリーチャー",cost:2,power:4000,civilization:"水",race:"サイバー・ウイルス",rarity:"VR",set_code:"DM-04",card_number:"2/55",text:"進化-自分のサイバー・ウイルス１体の上に置く。\nこのクリーチャーがバトルゾーンに出たとき、カードを３枚引いてもよい。"},
+  {id:118,name:"ボルシャック・ドラゴン",card_type:"クリーチャー",cost:6,power:6000,civilization:"火",race:"アーマード・ドラゴン",rarity:"VR",set_code:"DM-01",card_number:"8/110",text:"攻撃中、このクリーチャーのパワーは、自分の墓地にある火のカード１枚につき+1000される。\nW・ブレイカー(このクリーチャーはシールドを２枚ブレイクする。)"},
+  {id:724,name:"無双竜機ボルバルザーク",card_type:"クリーチャー",cost:7,power:6000,civilization:"火/自然",race:"アース・ドラゴン/アーマード・ドラゴン",rarity:"VR",set_code:"DM-10",card_number:"9/110",text:"マナゾーンに置く時、このカードはタップして置く。\nこのクリーチャーをバトルゾーンに出した時、他のパワー6000のクリーチャーをすべて破壊する。その後、このターンの後にもう一度自分のターンを行う。そのターンの終わりに、自分はゲームに負ける。\nスピードアタッカー\nW・ブレイカー"},
+  {id:1,name:"銀界の守護者ル・ギラ・レシール",card_type:"クリーチャー",cost:5,power:4000,civilization:"光",race:"ガーディアン",rarity:"VR",set_code:"DM-06",card_number:"1/110",text:"ブロッカー\nこのクリーチャーがバトルゾーンにある間、進化クリーチャーはタップされた状態でバトルゾーンに出る。\nこのクリーチャーは、相手プレイヤーを攻撃できない。"},
+  {id:137,name:"デーモン・ハンド",card_type:"呪文",cost:6,power:null,civilization:"闇",race:null,rarity:"R",set_code:"DM-01",card_number:"27/110",text:"S・トリガー\n相手のクリーチャーを１体破壊する。"},
+  {id:125,name:"ホーリー・スパーク",card_type:"呪文",cost:6,power:null,civilization:"光",race:null,rarity:"R",set_code:"DM-01",card_number:"15/110",text:"S・トリガー\nバトルゾーンにある相手のクリーチャーすべてをタップする。"},
+  {id:86,name:"スパイラル・ゲート",card_type:"呪文",cost:2,power:null,civilization:"水",race:null,rarity:"C",set_code:"DM-01",card_number:"85/110",text:"S・トリガー\nバトルゾーンにあるクリーチャーを１体選び、持ち主の手札に戻す。"},
+  {id:132,name:"クリスタル・メモリー",card_type:"呪文",cost:4,power:null,civilization:"水",race:null,rarity:"R",set_code:"DM-01",card_number:"22/110",text:"S・トリガー\n自分の山札からカードを１枚選び、自分の手札に加える。"},
+  {id:2172,name:"無敵城 シルヴァー・グローリー",card_type:"城",cost:6,power:null,civilization:"光",race:null,rarity:"VR",set_code:"DM-30",card_number:"1/55",text:"城-自分のシールドをひとつ選び、このカードを付けて要塞化する。\n自分のクリーチャーはすべてのバトルに勝つ。"},
+];
+
+const CIV_COLORS = {光:'civ-光',水:'civ-水',闇:'civ-闇',火:'civ-火',自然:'civ-自然'};
+let selectedCard = null;
+let mobileCivFilter = new Set(['光','水','闇','火','自然']);
+let debounceTimer = null;
+
+function civBadge(civ) {
+  return civ.split('/').map(c =>
+    `<span class="${CIV_COLORS[c]||''} border rounded-full px-2 py-0.5 text-xs">${c}</span>`
+  ).join(' ');
+}
+
+function rarityClass(r) { return `rarity-${r}`; }
+
+function getFilters() {
+  const text = document.getElementById('textSearch').value.trim().toLowerCase();
+  const pcCivs = [...document.querySelectorAll('.civ-cb:checked')].map(e=>e.value);
+  const isMobile = window.innerWidth < 768;
+  const civs = isMobile ? [...mobileCivFilter] : pcCivs;
+  const costMin = parseInt(document.getElementById('costMin')?.value||'') || 0;
+  const costMax = parseInt(document.getElementById('costMax')?.value||'') || 99;
+  const powerMin = parseInt(document.getElementById('powerMin')?.value||'') || 0;
+  const powerMax = parseInt(document.getElementById('powerMax')?.value||'') || 999999;
+  const type = (isMobile ? document.getElementById('mobileCardType') : document.getElementById('cardType'))?.value || '';
+  const race = document.getElementById('race')?.value.trim().toLowerCase() || '';
+  const mCostMax = parseInt(document.getElementById('mobileCostMax')?.value||'') || 99;
+  return {text, civs, costMin, costMax: isMobile ? mCostMax : costMax, powerMin, powerMax, type, race};
+}
+
+function filterCards() {
+  const {text, civs, costMin, costMax, powerMin, powerMax, type, race} = getFilters();
+  return CARDS.filter(c => {
+    if (text && !c.name.toLowerCase().includes(text) && !(c.text||'').toLowerCase().includes(text)) return false;
+    const cardCivs = c.civilization.split('/');
+    if (civs.length && !cardCivs.some(cv => civs.includes(cv))) return false;
+    if (c.cost < costMin || c.cost > costMax) return false;
+    if (c.power !== null && (c.power < powerMin || c.power > powerMax)) return false;
+    if (type && c.card_type !== type) return false;
+    if (race && !(c.race||'').toLowerCase().includes(race)) return false;
+    return true;
+  });
+}
+
+function renderList() {
+  const results = filterCards();
+  document.getElementById('resultCount').textContent = `${CARDS.length}件中 ${results.length}件`;
+  const list = document.getElementById('cardList');
+  list.innerHTML = results.map(c => `
+    <div class="card-row px-4 py-3 cursor-pointer ${selectedCard===c.id?'selected':''}"
+         onclick="selectCard(${c.id})">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <div class="font-semibold text-sm text-gray-900 truncate">${c.name}</div>
+          <div class="text-xs text-gray-500 mt-0.5">
+            ${c.card_type}・${civBadge(c.civilization)}・${c.cost}コスト${c.power!==null?` / ${c.power.toLocaleString()}P`:''}
+          </div>
+          ${c.race?`<div class="text-xs text-gray-400">${c.race}</div>`:''}
+        </div>
+        <div class="text-right shrink-0">
+          <div class="text-xs ${rarityClass(c.rarity)}">${c.rarity}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${c.set_code}</div>
+          <div class="text-xs text-gray-300">${c.card_number}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function detailHTML(c) {
+  return `
+    <div class="space-y-3">
+      <div class="flex flex-wrap gap-1">${civBadge(c.civilization)}</div>
+      <table class="text-sm w-full">
+        <tr><td class="text-gray-500 pr-3 py-0.5 w-24">カードの種類</td><td class="font-medium">${c.card_type}</td></tr>
+        <tr><td class="text-gray-500 pr-3 py-0.5">コスト</td><td class="font-medium">${c.cost}</td></tr>
+        ${c.power!==null?`<tr><td class="text-gray-500 pr-3 py-0.5">パワー</td><td class="font-medium">${c.power.toLocaleString()}</td></tr>`:''}
+        ${c.race?`<tr><td class="text-gray-500 pr-3 py-0.5">種族</td><td class="font-medium">${c.race}</td></tr>`:''}
+      </table>
+      ${c.text?`
+        <div>
+          <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">能力テキスト</div>
+          <div class="text-sm bg-gray-50 rounded p-2 whitespace-pre-wrap leading-relaxed">${c.text}</div>
+        </div>`:''}
+      <div>
+        <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">収録</div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium">${c.set_code}</span>
+          <span class="text-sm text-gray-500">${c.card_number}</span>
+          <span class="text-sm ${rarityClass(c.rarity)}">${c.rarity}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function selectCard(id) {
+  const c = CARDS.find(x=>x.id===id);
+  if (!c) return;
+  selectedCard = id;
+  renderList();
+
+  if (window.innerWidth >= 768) {
+    // PC: 右パネル
+    const panel = document.getElementById('detailPanel');
+    panel.innerHTML = `
+      <div class="p-4 border-b border-gray-100">
+        <div class="text-xs text-gray-400 mb-1">カード詳細</div>
+        <h2 class="font-bold text-sm">${c.name}</h2>
+      </div>
+      <div class="p-4">${detailHTML(c)}</div>
+    `;
+  } else {
+    // スマホ: ボトムシート
+    document.getElementById('mobileDetailName').textContent = c.name;
+    document.getElementById('mobileDetailBody').innerHTML = detailHTML(c);
+    document.getElementById('mobileDetail').classList.remove('hidden');
+  }
+}
+
+function closeMobileDetail(e) {
+  if (!e || e.target === document.getElementById('mobileDetail')) {
+    document.getElementById('mobileDetail').classList.add('hidden');
+  }
+}
+
+function toggleMobileCiv(btn, civ) {
+  if (mobileCivFilter.has(civ)) {
+    mobileCivFilter.delete(civ);
+    btn.classList.add('opacity-30');
+  } else {
+    mobileCivFilter.add(civ);
+    btn.classList.remove('opacity-30');
+  }
+  scheduleUpdate();
+}
+
+function scheduleUpdate() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(renderList, 200);
+}
+
+// イベント登録
+['textSearch','costMin','costMax','powerMin','powerMax','cardType','race','mobileCardType','mobileCostMax']
+  .forEach(id => document.getElementById(id)?.addEventListener('input', scheduleUpdate));
+document.querySelectorAll('.civ-cb').forEach(cb => cb.addEventListener('change', scheduleUpdate));
+
+renderList();
+</script>
+</body>
+</html>
