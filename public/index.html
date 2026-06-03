@@ -38,6 +38,8 @@
         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
 
       <div class="mt-3 space-y-2">
+        <!-- 絞り込み セクション -->
+        <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">絞り込み</p>
         <!-- 文明タグ -->
         <div class="flex gap-2 flex-wrap" id="mobileCivTags">
           <button onclick="toggleMobileCiv(this,'光')"  data-civ="光"  data-on="1" class="civ-光  border rounded-full px-3 py-0.5 text-xs font-medium">光</button>
@@ -50,24 +52,50 @@
         <div class="flex gap-2">
           <select id="mobileCardType" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
             <option value="">種類: すべて</option>
-            <option>クリーチャー</option>
-            <option>進化クリーチャー</option>
-            <option>呪文</option>
-            <option>クロスギア</option>
-            <option>城</option>
+            <option value="クリーチャー">クリーチャー</option>
+            <option value="進化クリーチャー">進化クリーチャー</option>
+            <option value="進化クリーチャー(進化V)">進化ボルテックス</option>
+            <option value="進化クリーチャー(進化GV)">進化GV</option>
+            <option value="進化クリーチャー(マナ進化)">マナ進化</option>
+            <option value="呪文">呪文</option>
+            <option value="クロスギア">クロスギア</option>
+            <option value="進化クロスギア">進化クロスギア</option>
+            <option value="城">城</option>
           </select>
           <select id="mobileCostMax" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
             <option value="">コスト: すべて</option>
-            <option value="2">〜2</option>
-            <option value="4">〜4</option>
-            <option value="6">〜6</option>
-            <option value="8">〜8</option>
+            <option value="max:2">〜2</option>
+            <option value="range:3:5">3〜5</option>
+            <option value="range:6:8">6〜8</option>
+            <option value="min:9">9以上</option>
           </select>
         </div>
-        <!-- パック -->
+        <!-- 種族 + パック -->
+        <select id="mobileRaceFilter" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+          <option value="">種族: すべて</option>
+        </select>
         <select id="mobileSetFilter" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
           <option value="">パック: すべて</option>
         </select>
+
+        <!-- 区切り -->
+        <hr class="border-gray-200">
+
+        <!-- ソート セクション -->
+        <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">ソート</p>
+        <div class="flex gap-2">
+          <select id="sortKey" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+            <option value="">デフォルト</option>
+            <option value="name">名前順</option>
+            <option value="cost">マナ順</option>
+            <option value="power">攻撃力順</option>
+            <option value="rarity">レアリティ順</option>
+          </select>
+          <select id="sortDir" class="w-20 border border-gray-300 rounded px-2 py-1 text-xs">
+            <option value="asc">昇順 ↑</option>
+            <option value="desc">降順 ↓</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -88,9 +116,9 @@
 <div id="mobileDetail" class="fixed inset-0 bg-black/50 z-30 hidden" onclick="closeDetail(event)">
   <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
     <div class="w-full max-w-[430px] bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
-      <div class="flex justify-between items-center mb-4">
-        <h2 id="detailName" class="font-bold text-base"></h2>
-        <button onclick="closeDetail()" class="text-gray-400 text-xl leading-none">&times;</button>
+      <div class="flex justify-between items-start gap-3 mb-4">
+        <h2 id="detailName" class="font-bold text-base leading-snug min-w-0 break-words"></h2>
+        <button onclick="closeDetail()" class="text-gray-400 text-xl leading-none shrink-0">&times;</button>
       </div>
       <div id="detailBody"></div>
     </div>
@@ -133,12 +161,25 @@ function populateSetSelects() {
   document.getElementById('mobileSetFilter').insertAdjacentHTML('beforeend', opts);
 }
 
+function populateRaceSelect() {
+  const races = new Set();
+  for (const card of CARDS) {
+    for (const r of card.races) races.add(r);
+  }
+  const opts = Array.from(races)
+    .sort((a, b) => a.localeCompare(b, 'ja'))
+    .map(r => `<option value="${r}">${r}</option>`)
+    .join('');
+  document.getElementById('mobileRaceFilter').insertAdjacentHTML('beforeend', opts);
+}
+
 fetch('cards.json')
   .then(r => r.json())
   .then(data => {
     CARDS = data;
     DM_SET_MAP = buildSetMap(CARDS);
     populateSetSelects();
+    populateRaceSelect();
     document.getElementById('loadingMsg')?.remove();
     document.getElementById('cardCountBadge').textContent = `${CARDS.length.toLocaleString()} 枚収録`;
     renderList();
@@ -158,26 +199,52 @@ function rarityClass(r) { return `rarity-${r}`; }
 function getFilters() {
   const text = document.getElementById('textSearch').value.trim().toLowerCase();
   const civs = [...mobileCivFilter];
-  const costMax = parseInt(document.getElementById('mobileCostMax').value || '') || 99;
+  const costVal = document.getElementById('mobileCostMax').value || '';
+  const costParts = costVal ? costVal.split(':') : [];
+  const costFilter = costVal ? { mode: costParts[0], n: parseInt(costParts[1]), n2: parseInt(costParts[2]) } : null;
   const type = document.getElementById('mobileCardType').value || '';
   const setCode = document.getElementById('mobileSetFilter').value || '';
-  return { text, civs, costMax, type, setCode };
+  const race = document.getElementById('mobileRaceFilter').value || '';
+  return { text, civs, costFilter, type, setCode, race };
 }
 
 function filterCards() {
-  const { text, civs, costMax, type, setCode } = getFilters();
+  const { text, civs, costFilter, type, setCode, race } = getFilters();
   return CARDS.filter(c => {
     if (text && !c.name.toLowerCase().includes(text) && !(c.text || '').toLowerCase().includes(text)) return false;
     if (civs.length && !c.civilizations.some(cv => civs.includes(cv))) return false;
-    if (c.cost !== null && c.cost > costMax) return false;
+    if (costFilter) {
+      if (costFilter.mode === 'max' && c.cost !== null && c.cost > costFilter.n) return false;
+      if (costFilter.mode === 'min' && (c.cost === null || c.cost < costFilter.n)) return false;
+      if (costFilter.mode === 'range' && (c.cost === null || c.cost < costFilter.n || c.cost > costFilter.n2)) return false;
+    }
     if (type && c.cardType !== type) return false;
     if (setCode && !c.printings.some(p => p.setCode === setCode)) return false;
+    if (race && !c.races.includes(race)) return false;
     return true;
   });
 }
 
+const RARITY_ORDER = { SR: 0, VR: 1, R: 2, U: 3, C: 4 };
+
+function sortCards(cards) {
+  const key = document.getElementById('sortKey').value;
+  const desc = document.getElementById('sortDir').value === 'desc';
+  if (!key) return cards;
+  return [...cards].sort((a, b) => {
+    let av, bv;
+    if (key === 'name')   { av = a.name; bv = b.name; }
+    if (key === 'cost')   { av = a.cost ?? 99; bv = b.cost ?? 99; }
+    if (key === 'power')  { av = a.power ?? -1; bv = b.power ?? -1; }
+    if (key === 'rarity') { av = RARITY_ORDER[a.rarity] ?? 9; bv = RARITY_ORDER[b.rarity] ?? 9; }
+    if (av < bv) return desc ? 1 : -1;
+    if (av > bv) return desc ? -1 : 1;
+    return 0;
+  });
+}
+
 function renderList() {
-  const results = filterCards();
+  const results = sortCards(filterCards());
   document.getElementById('resultCount').textContent = `${CARDS.length.toLocaleString()}件中 ${results.length.toLocaleString()}件`;
   const p = c => c.printings[0] || {};
   document.getElementById('cardList').innerHTML = results.map(c => `
@@ -192,17 +259,15 @@ function renderList() {
           class="w-[52px] h-[72px] object-cover rounded shrink-0 bg-gray-100">
         <div class="card-img-placeholder w-[52px] h-[72px] rounded shrink-0 bg-gray-100 hidden items-center justify-center text-gray-300 text-xl">🎴</div>
         <div class="flex-1 flex items-start justify-between gap-2 min-w-0">
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <div class="font-semibold text-sm text-gray-900 truncate">${c.name}</div>
-            <div class="text-xs text-gray-500 mt-0.5">
-              ${c.cardType}・${civBadge(c.civilizations)}・${c.cost ?? '—'}コスト${c.power !== null ? ` / ${c.power.toLocaleString()}P` : ''}
-            </div>
-            ${c.races.length ? `<div class="text-xs text-gray-400">${c.races.join('/')}</div>` : ''}
+            <div class="text-xs text-gray-500 mt-0.5 truncate">${c.cardType}・${civBadge(c.civilizations)}・${c.cost ?? '—'}コスト${c.power !== null ? ` / ${c.power.toLocaleString()}P` : ''}</div>
+            ${c.races.length ? `<div class="text-xs text-gray-400 truncate">${c.races.join('/')}</div>` : ''}
           </div>
-          <div class="text-right shrink-0">
+          <div class="text-right shrink-0 min-w-0 max-w-[88px]">
             <div class="text-xs ${rarityClass(c.rarity)}">${c.rarity ?? ''}</div>
             <div class="text-xs text-gray-500 mt-0.5">${p(c).setCode ?? ''}</div>
-            <div class="text-xs text-gray-400 leading-tight">${setShortName(p(c).setCode ?? '')}</div>
+            <div class="text-xs text-gray-400 leading-tight truncate">${setShortName(p(c).setCode ?? '')}</div>
             <div class="text-xs text-gray-300">${p(c).cardNumber ?? ''}</div>
           </div>
         </div>
@@ -296,7 +361,7 @@ function scheduleUpdate() {
   debounceTimer = setTimeout(renderList, 200);
 }
 
-['textSearch','mobileCardType','mobileCostMax','mobileSetFilter']
+['textSearch','mobileCardType','mobileCostMax','mobileSetFilter','mobileRaceFilter','sortKey','sortDir']
   .forEach(id => document.getElementById(id)?.addEventListener('input', scheduleUpdate));
 </script>
 </body>
