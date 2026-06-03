@@ -77,6 +77,23 @@
         <select id="mobileSetFilter" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
           <option value="">パック: すべて</option>
         </select>
+        <!-- パワー範囲 + レアリティ -->
+        <div class="flex gap-2">
+          <select id="powerFilter" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+            <option value="">パワー: すべて</option>
+            <option value="max:4999">〜4999</option>
+            <option value="range:5000:9999">5000〜9999</option>
+            <option value="min:10000">10000以上</option>
+          </select>
+          <select id="rarityFilter" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+            <option value="">レアリティ: すべて</option>
+            <option value="SR">SR</option>
+            <option value="VR">VR</option>
+            <option value="R">R</option>
+            <option value="U">U</option>
+            <option value="C">C</option>
+          </select>
+        </div>
 
         <!-- 区切り -->
         <hr class="border-gray-200">
@@ -111,6 +128,34 @@
 
   </div>
 </div>
+
+<!-- デッキ フローティングボタン -->
+<button id="deckFab" onclick="openDeckPanel()"
+  class="hidden fixed bottom-5 right-5 z-30 bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl">
+  🃏
+  <span id="deckCountBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">0</span>
+</button>
+
+<!-- デッキパネル ボトムシート（全幅） -->
+<div id="deckPanel" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeDeckPanel(event)">
+  <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
+    <div class="w-full max-w-[430px] bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
+      <div class="flex justify-between items-center gap-3 mb-3">
+        <h2 class="font-bold text-base">マイデッキ <span id="deckTotal" class="text-sm font-normal text-gray-500">0 / 40</span></h2>
+        <button onclick="closeDeckPanel()" class="text-gray-400 text-xl leading-none shrink-0">&times;</button>
+      </div>
+      <div id="deckCivBars" class="space-y-1 mb-3"></div>
+      <div id="deckCardList" class="divide-y divide-gray-100 mb-4"></div>
+      <div class="flex gap-2">
+        <button onclick="shareDeck()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg py-2 font-medium">デッキを共有</button>
+        <button onclick="clearDeck()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm rounded-lg py-2 px-4">クリア</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
 
 <!-- カード詳細 ボトムシート（全幅） -->
 <div id="mobileDetail" class="fixed inset-0 bg-black/50 z-30 hidden" onclick="closeDetail(event)">
@@ -182,11 +227,19 @@ fetch('cards.json')
     populateRaceSelect();
     document.getElementById('loadingMsg')?.remove();
     document.getElementById('cardCountBadge').textContent = `${CARDS.length.toLocaleString()} 枚収録`;
+    applyURLParams();
     renderList();
+    restoreDeckFromURL();
   })
   .catch(() => {
     document.getElementById('loadingMsg').textContent = '読み込みに失敗しました。';
   });
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
 
 function civBadge(civs) {
   return civs.map(c =>
@@ -205,11 +258,15 @@ function getFilters() {
   const type = document.getElementById('mobileCardType').value || '';
   const setCode = document.getElementById('mobileSetFilter').value || '';
   const race = document.getElementById('mobileRaceFilter').value || '';
-  return { text, civs, costFilter, type, setCode, race };
+  const powerVal = document.getElementById('powerFilter').value || '';
+  const powerParts = powerVal ? powerVal.split(':') : [];
+  const powerFilter = powerVal ? { mode: powerParts[0], n: parseInt(powerParts[1]), n2: parseInt(powerParts[2]) } : null;
+  const rarity = document.getElementById('rarityFilter').value || '';
+  return { text, civs, costFilter, type, setCode, race, powerFilter, rarity };
 }
 
 function filterCards() {
-  const { text, civs, costFilter, type, setCode, race } = getFilters();
+  const { text, civs, costFilter, type, setCode, race, powerFilter, rarity } = getFilters();
   return CARDS.filter(c => {
     if (text && !c.name.toLowerCase().includes(text) && !(c.text || '').toLowerCase().includes(text)) return false;
     if (civs.length && !c.civilizations.some(cv => civs.includes(cv))) return false;
@@ -221,6 +278,13 @@ function filterCards() {
     if (type && c.cardType !== type) return false;
     if (setCode && !c.printings.some(p => p.setCode === setCode)) return false;
     if (race && !c.races.includes(race)) return false;
+    if (powerFilter) {
+      if (c.power === null) return false;
+      if (powerFilter.mode === 'max' && c.power > powerFilter.n) return false;
+      if (powerFilter.mode === 'min' && c.power < powerFilter.n) return false;
+      if (powerFilter.mode === 'range' && (c.power < powerFilter.n || c.power > powerFilter.n2)) return false;
+    }
+    if (rarity && c.rarity !== rarity) return false;
     return true;
   });
 }
@@ -260,9 +324,9 @@ function renderList() {
         <div class="card-img-placeholder w-[52px] h-[72px] rounded shrink-0 bg-gray-100 hidden items-center justify-center text-gray-300 text-xl">🎴</div>
         <div class="flex-1 flex items-start justify-between gap-2 min-w-0">
           <div class="min-w-0 flex-1">
-            <div class="font-semibold text-sm text-gray-900 truncate">${c.name}</div>
-            <div class="text-xs text-gray-500 mt-0.5 truncate">${c.cardType}・${civBadge(c.civilizations)}・${c.cost ?? '—'}コスト${c.power !== null ? ` / ${c.power.toLocaleString()}P` : ''}</div>
-            ${c.races.length ? `<div class="text-xs text-gray-400 truncate">${c.races.join('/')}</div>` : ''}
+            <div class="font-semibold text-sm text-gray-900 truncate">${escapeHtml(c.name)}</div>
+            <div class="text-xs text-gray-500 mt-0.5 truncate">${escapeHtml(c.cardType)}・${civBadge(c.civilizations)}・${c.cost ?? '—'}コスト${c.power !== null ? ` / ${c.power.toLocaleString()}P` : ''}</div>
+            ${c.races.length ? `<div class="text-xs text-gray-400 truncate">${escapeHtml(c.races.join('/'))}</div>` : ''}
           </div>
           <div class="text-right shrink-0 min-w-0 max-w-[88px]">
             <div class="text-xs ${rarityClass(c.rarity)}">${c.rarity ?? ''}</div>
@@ -293,21 +357,25 @@ function detailHTML(c) {
       <div class="flex justify-center">
         <img
           src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${c.id}.jpg"
-          alt="${c.name.replace(/"/g, '&quot;')}"
+          alt="${escapeHtml(c.name)}"
           onerror="this.style.display='none'"
           class="rounded-lg shadow-md max-w-[200px] w-full">
       </div>
       <div class="flex flex-wrap gap-1">${civBadge(c.civilizations)}</div>
+      <button onclick="addToDeck('${c.id}')"
+        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg py-2 font-medium">
+        ＋ デッキに追加
+      </button>
       <table class="text-sm w-full">
-        <tr><td class="text-gray-500 pr-3 py-0.5 w-24">カードの種類</td><td class="font-medium">${c.cardType}</td></tr>
+        <tr><td class="text-gray-500 pr-3 py-0.5 w-24">カードの種類</td><td class="font-medium">${escapeHtml(c.cardType)}</td></tr>
         <tr><td class="text-gray-500 pr-3 py-0.5">コスト</td><td class="font-medium">${c.cost ?? '—'}</td></tr>
         ${c.power !== null ? `<tr><td class="text-gray-500 pr-3 py-0.5">パワー</td><td class="font-medium">${c.power.toLocaleString()}</td></tr>` : ''}
-        ${c.races.length ? `<tr><td class="text-gray-500 pr-3 py-0.5">種族</td><td class="font-medium">${c.races.join(' / ')}</td></tr>` : ''}
+        ${c.races.length ? `<tr><td class="text-gray-500 pr-3 py-0.5">種族</td><td class="font-medium">${escapeHtml(c.races.join(' / '))}</td></tr>` : ''}
       </table>
       ${c.text ? `
         <div>
           <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">能力テキスト</div>
-          <div class="text-sm bg-gray-50 rounded p-2 whitespace-pre-wrap leading-relaxed">${c.text}</div>
+          <div class="text-sm bg-gray-50 rounded p-2 whitespace-pre-wrap leading-relaxed">${escapeHtml(c.text)}</div>
         </div>` : ''}
       <div>
         <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">DM収録</div>
@@ -358,11 +426,214 @@ function toggleMobileCiv(btn, civ) {
 
 function scheduleUpdate() {
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(renderList, 200);
+  debounceTimer = setTimeout(() => { renderList(); syncURL(); }, 200);
 }
 
-['textSearch','mobileCardType','mobileCostMax','mobileSetFilter','mobileRaceFilter','sortKey','sortDir']
+function syncURL() {
+  const params = new URLSearchParams(location.search);
+  const set = (k, v) => { if (v) params.set(k, v); else params.delete(k); };
+  const text = document.getElementById('textSearch').value.trim();
+  const civs = [...mobileCivFilter];
+  // 全文明ON（デフォルト）のときは civs を省略
+  const civsParam = civs.length === 5 ? '' : civs.join(',');
+  set('q', text);
+  set('civs', civsParam);
+  set('type', document.getElementById('mobileCardType').value);
+  set('cost', document.getElementById('mobileCostMax').value);
+  set('race', document.getElementById('mobileRaceFilter').value);
+  set('set', document.getElementById('mobileSetFilter').value);
+  set('power', document.getElementById('powerFilter').value);
+  set('rarity', document.getElementById('rarityFilter').value);
+  set('sortKey', document.getElementById('sortKey').value);
+  set('sortDir', document.getElementById('sortDir').value === 'asc' ? '' : 'desc');
+  const qs = params.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+}
+
+function applyURLParams() {
+  const params = new URLSearchParams(location.search);
+  if (params.has('q')) document.getElementById('textSearch').value = params.get('q');
+  if (params.has('type')) document.getElementById('mobileCardType').value = params.get('type');
+  if (params.has('cost')) document.getElementById('mobileCostMax').value = params.get('cost');
+  if (params.has('race')) document.getElementById('mobileRaceFilter').value = params.get('race');
+  if (params.has('set')) document.getElementById('mobileSetFilter').value = params.get('set');
+  if (params.has('power')) document.getElementById('powerFilter').value = params.get('power');
+  if (params.has('rarity')) document.getElementById('rarityFilter').value = params.get('rarity');
+  if (params.has('sortKey')) document.getElementById('sortKey').value = params.get('sortKey');
+  if (params.has('sortDir')) document.getElementById('sortDir').value = params.get('sortDir') === 'desc' ? 'desc' : 'asc';
+  if (params.has('civs')) {
+    const wanted = new Set(params.get('civs').split(',').filter(Boolean));
+    document.querySelectorAll('#mobileCivTags button[data-civ]').forEach(btn => {
+      const civ = btn.dataset.civ;
+      const shouldBeOn = wanted.has(civ);
+      const isOn = mobileCivFilter.has(civ);
+      if (shouldBeOn !== isOn) toggleMobileCiv(btn, civ);
+    });
+  }
+}
+
+['textSearch','mobileCardType','mobileCostMax','mobileSetFilter','mobileRaceFilter','powerFilter','rarityFilter','sortKey','sortDir']
   .forEach(id => document.getElementById(id)?.addEventListener('input', scheduleUpdate));
+
+// ---- デッキビルダー ----
+const DECK_KEY = 'dm_deck';
+const DECK_MAX = 40;
+const CARD_MAX = 4;
+let deck = [];
+
+function loadDeck() {
+  try {
+    const raw = localStorage.getItem(DECK_KEY);
+    deck = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(deck)) deck = [];
+  } catch { deck = []; }
+}
+
+function saveDeck() {
+  localStorage.setItem(DECK_KEY, JSON.stringify(deck));
+}
+
+function deckTotalCount() {
+  return deck.reduce((s, e) => s + e.count, 0);
+}
+
+function addToDeck(id) {
+  const card = CARDS.find(c => c.id === id);
+  if (!card) return;
+  if (deckTotalCount() >= DECK_MAX) { showToast('デッキは40枚までです'); return; }
+  const entry = deck.find(e => e.id === id);
+  if (entry) {
+    if (entry.count >= CARD_MAX) { showToast('同じカードは4枚までです'); return; }
+    entry.count++;
+  } else {
+    deck.push({ id, name: card.name, count: 1 });
+  }
+  saveDeck();
+  renderDeckBadge();
+  if (!document.getElementById('deckPanel').classList.contains('hidden')) renderDeckPanel();
+  showToast(`${card.name} を追加`);
+}
+
+function removeFromDeck(id) {
+  const entry = deck.find(e => e.id === id);
+  if (!entry) return;
+  entry.count--;
+  if (entry.count <= 0) deck = deck.filter(e => e.id !== id);
+  saveDeck();
+  renderDeckBadge();
+  renderDeckPanel();
+}
+
+function clearDeck() {
+  deck = [];
+  saveDeck();
+  renderDeckBadge();
+  renderDeckPanel();
+}
+
+function renderDeckBadge() {
+  const total = deckTotalCount();
+  const fab = document.getElementById('deckFab');
+  document.getElementById('deckCountBadge').textContent = total;
+  fab.classList.toggle('hidden', total === 0);
+}
+
+function civCounts() {
+  const counts = { 光: 0, 水: 0, 闇: 0, 火: 0, 自然: 0 };
+  for (const e of deck) {
+    const card = CARDS.find(c => c.id === e.id);
+    if (!card) continue;
+    for (const civ of card.civilizations) {
+      if (counts[civ] !== undefined) counts[civ] += e.count;
+    }
+  }
+  return counts;
+}
+
+function renderDeckPanel() {
+  const total = deckTotalCount();
+  document.getElementById('deckTotal').textContent = `${total} / ${DECK_MAX}`;
+
+  const counts = civCounts();
+  const maxCiv = Math.max(1, ...Object.values(counts));
+  document.getElementById('deckCivBars').innerHTML = Object.entries(counts).map(([civ, n]) => `
+    <div class="flex items-center gap-2 text-xs">
+      <span class="${CIV_COLORS[civ]} border rounded px-1.5 w-7 text-center">${civ}</span>
+      <div class="flex-1 bg-gray-100 rounded h-3 overflow-hidden">
+        <div class="${CIV_COLORS[civ]} h-3" style="width:${(n / maxCiv) * 100}%"></div>
+      </div>
+      <span class="w-6 text-right text-gray-500">${n}</span>
+    </div>
+  `).join('');
+
+  const listEl = document.getElementById('deckCardList');
+  if (!deck.length) {
+    listEl.innerHTML = '<div class="py-6 text-center text-gray-400 text-sm">デッキは空です</div>';
+    return;
+  }
+  listEl.innerHTML = deck.map(e => `
+    <div class="flex items-center gap-2 py-2 text-sm">
+      <span class="flex-1 truncate cursor-pointer hover:text-indigo-600" onclick="selectCard('${e.id}')">${escapeHtml(e.name)}</span>
+      <span class="text-gray-500 shrink-0">×${e.count}</span>
+      <button onclick="removeFromDeck('${e.id}')" class="text-red-400 hover:text-red-600 text-lg leading-none shrink-0 w-6">−</button>
+    </div>
+  `).join('');
+}
+
+function openDeckPanel() {
+  renderDeckPanel();
+  document.getElementById('deckPanel').classList.remove('hidden');
+}
+
+function closeDeckPanel(e) {
+  if (!e || e.target === document.getElementById('deckPanel')) {
+    document.getElementById('deckPanel').classList.add('hidden');
+  }
+}
+
+function shareDeck() {
+  if (!deck.length) { showToast('デッキが空です'); return; }
+  const payload = deck.map(e => ({ id: e.id, count: e.count }));
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const params = new URLSearchParams(location.search);
+  params.set('deck', encoded);
+  const url = `${location.origin}${location.pathname}?${params.toString()}`;
+  navigator.clipboard.writeText(url)
+    .then(() => showToast('共有URLをコピーしました'))
+    .catch(() => showToast('コピーに失敗しました'));
+}
+
+function restoreDeckFromURL() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has('deck')) return;
+  try {
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(params.get('deck')))));
+    if (!Array.isArray(decoded)) return;
+    const restored = decoded
+      .filter(e => e && e.id && CARDS.find(c => c.id === e.id))
+      .map(e => {
+        const card = CARDS.find(c => c.id === e.id);
+        return { id: e.id, name: card.name, count: Math.min(CARD_MAX, Math.max(1, e.count | 0)) };
+      });
+    if (deck.length && !confirm('共有されたデッキを読み込みます。現在のデッキは上書きされます。よろしいですか？')) return;
+    deck = restored;
+    saveDeck();
+    renderDeckBadge();
+    openDeckPanel();
+  } catch { /* 不正な deck param は無視 */ }
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2000);
+}
+
+loadDeck();
+renderDeckBadge();
 </script>
 </body>
 </html>
