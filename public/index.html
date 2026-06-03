@@ -18,6 +18,7 @@
     .rarity-C  { color:#374151; }
     .card-row:hover { background:#f9fafb; }
     .card-row.selected { background:#eff6ff; border-left:3px solid #3b82f6; }
+    .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   </style>
 </head>
 <body class="bg-gray-300 min-h-screen">
@@ -25,12 +26,25 @@
 <!-- ヘッダー（全幅） -->
 <header class="bg-indigo-700 text-white px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-20">
   <span class="text-lg font-bold tracking-wide">🎴 デュエマ クラシック08 カード検索</span>
-  <span id="cardCountBadge" class="ml-auto text-indigo-200 text-sm"></span>
+  <a href="meta.html" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">メタデッキ</a>
+  <span id="cardCountBadge" class="text-indigo-200 text-sm"></span>
 </header>
 
 <!-- LP ラッパー: SP幅を中央に配置 -->
 <div class="flex justify-center min-h-[calc(100vh-52px)]">
   <div class="w-full max-w-[430px] bg-gray-50 flex flex-col shadow-2xl" style="height:calc(100vh - 52px); overflow:hidden;">
+
+    <!-- 今日の1枚バナー -->
+    <div id="todayPick" class="hidden flex-shrink-0 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-100 px-4 py-2">
+      <div class="flex items-center gap-3">
+        <span class="text-[10px] font-semibold text-indigo-400 uppercase tracking-wide shrink-0">今日の1枚</span>
+        <div id="todayPickBody" class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"></div>
+        <button onclick="toggleTodayPick()" id="todayPickToggle" title="折りたたみ"
+          class="text-indigo-300 hover:text-indigo-500 text-sm leading-none shrink-0 w-5">▲</button>
+        <button onclick="hideTodayPick()" title="非表示"
+          class="text-indigo-300 hover:text-indigo-500 text-lg leading-none shrink-0 w-5">&times;</button>
+      </div>
+    </div>
 
     <!-- 検索バー + フィルター -->
     <div class="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
@@ -94,6 +108,15 @@
             <option value="C">C</option>
           </select>
         </div>
+        <!-- 特殊能力 -->
+        <select id="abilityFilter" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+          <option value="">特殊能力: すべて</option>
+          <option value="ブロッカー">ブロッカー</option>
+          <option value="スピードアタッカー">スピードアタッカー</option>
+          <option value="W・ブレイカー">W・ブレイカー</option>
+          <option value="T・ブレイカー">T・ブレイカー</option>
+          <option value="シールド・セイバー">シールド・セイバー</option>
+        </select>
 
         <!-- 区切り -->
         <hr class="border-gray-200">
@@ -118,20 +141,43 @@
 
     <!-- カードリスト -->
     <div class="flex-1 overflow-y-auto">
-      <div class="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-100" id="resultCount">読み込み中...</div>
+      <div class="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2">
+        <span class="text-xs text-gray-500" id="resultCount">読み込み中...</span>
+        <div class="flex items-center gap-1">
+          <button id="viewListBtn" onclick="setViewMode('list')" title="リスト表示"
+            class="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:bg-gray-200">
+            <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M3 4h14v2H3V4zm0 5h14v2H3V9zm0 5h14v2H3v-2z"/></svg>
+          </button>
+          <button id="viewGridBtn" onclick="setViewMode('grid')" title="グリッド表示"
+            class="w-7 h-7 rounded flex items-center justify-center text-gray-500 hover:bg-gray-200">
+            <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/></svg>
+          </button>
+        </div>
+      </div>
       <div id="cardList" class="divide-y divide-gray-100">
         <div id="loadingMsg" class="px-4 py-8 text-center text-gray-400 text-sm">
           カードデータを読み込み中...
         </div>
+      </div>
+      <div id="showMoreWrap" class="hidden px-4 py-3">
+        <button onclick="showMore()" class="w-full text-sm text-indigo-600 border border-indigo-300 rounded-lg py-2 hover:bg-indigo-50">
+          もっと見る（<span id="showMoreCount"></span>件）
+        </button>
       </div>
     </div>
 
   </div>
 </div>
 
+<!-- デッキ FAB 吹き出し -->
+<div id="deckTooltip" class="hidden fixed bottom-24 right-4 z-30 bg-gray-800 text-white text-xs rounded-xl px-3 py-2 shadow-lg max-w-[160px] text-center leading-snug">
+  これを押すとデッキを確認できるよ
+  <div class="absolute bottom-[-6px] right-6 w-3 h-3 bg-gray-800 rotate-45"></div>
+</div>
+
 <!-- デッキ フローティングボタン -->
 <button id="deckFab" onclick="openDeckPanel()"
-  class="hidden fixed bottom-5 right-5 z-30 bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl">
+  class="fixed bottom-5 right-5 z-30 bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl">
   🃏
   <span id="deckCountBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">0</span>
 </button>
@@ -163,7 +209,10 @@
     <div class="w-full max-w-[430px] bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
       <div class="flex justify-between items-start gap-3 mb-4">
         <h2 id="detailName" class="font-bold text-base leading-snug min-w-0 break-words"></h2>
-        <button onclick="closeDetail()" class="text-gray-400 text-xl leading-none shrink-0">&times;</button>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="backToDeckBtn" onclick="backToDeck()" class="hidden text-xs text-indigo-600 border border-indigo-300 rounded-full px-3 py-1 hover:bg-indigo-50">← デッキ</button>
+          <button onclick="closeDetail()" class="text-gray-400 text-xl leading-none">&times;</button>
+        </div>
       </div>
       <div id="detailBody"></div>
     </div>
@@ -171,12 +220,19 @@
 </div>
 
 <script>
+const RENDER_PAGE = 100;
+let renderOffset = 0;
+let lastResults = [];
 let CARDS = [];
 let DM_SET_MAP = new Map();
+let HOF_MAP = new Map();
 const CIV_COLORS = {光:'civ-光',水:'civ-水',闇:'civ-闇',火:'civ-火',自然:'civ-自然'};
 let selectedCard = null;
 let mobileCivFilter = new Set(['光','水','闇','火','自然']);
 let debounceTimer = null;
+let urlTimer = null;
+const VIEW_KEY = 'dm_view_mode';
+let viewMode = localStorage.getItem(VIEW_KEY) === 'grid' ? 'grid' : 'list';
 
 function buildSetMap(cards) {
   const map = new Map();
@@ -228,6 +284,8 @@ fetch('cards.json')
     document.getElementById('loadingMsg')?.remove();
     document.getElementById('cardCountBadge').textContent = `${CARDS.length.toLocaleString()} 枚収録`;
     applyURLParams();
+    updateViewButtons();
+    renderTodayPick();
     renderList();
     restoreDeckFromURL();
   })
@@ -235,10 +293,52 @@ fetch('cards.json')
     document.getElementById('loadingMsg').textContent = '読み込みに失敗しました。';
   });
 
+fetch('data/hall-of-fame.json')
+  .then(r => r.json())
+  .then(list => {
+    HOF_MAP = new Map(list.map(e => [e.name, e.status]));
+    if (CARDS.length) {
+      renderList();
+      if (selectedCard) {
+        const c = CARDS.find(x => x.id === selectedCard);
+        if (c && !document.getElementById('mobileDetail').classList.contains('hidden')) {
+          document.getElementById('detailName').innerHTML = detailNameHTML(c);
+        }
+      }
+    }
+  })
+  .catch(() => { /* 殿堂データが無くてもカード検索は動作する */ });
+
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[ch]));
+}
+
+function currentSearchTerm() {
+  return document.getElementById('textSearch').value.trim();
+}
+
+// escapeHtml 済みの文字列に対して検索語をハイライト。term は生文字列。
+function highlight(escapedHtml, term) {
+  if (!term) return escapedHtml;
+  const escTerm = escapeHtml(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!escTerm) return escapedHtml;
+  return escapedHtml.replace(new RegExp(escTerm, 'gi'),
+    m => `<mark class="bg-yellow-200 rounded">${m}</mark>`);
+}
+
+function hofBadge(name) {
+  const status = HOF_MAP.get(name);
+  if (!status) return '';
+  if (status === '殿堂') return `<span title="殿堂入り（1枚制限）">🏅</span>`;
+  if (status === 'プレ殿') return `<span title="プレミアム殿堂（使用禁止）">🚫</span>`;
+  return '';
+}
+
+function detailNameHTML(c) {
+  const badge = hofBadge(c.name);
+  return `${highlight(escapeHtml(c.name), currentSearchTerm())}${badge ? ` ${badge}` : ''}`;
 }
 
 function civBadge(civs) {
@@ -262,11 +362,12 @@ function getFilters() {
   const powerParts = powerVal ? powerVal.split(':') : [];
   const powerFilter = powerVal ? { mode: powerParts[0], n: parseInt(powerParts[1]), n2: parseInt(powerParts[2]) } : null;
   const rarity = document.getElementById('rarityFilter').value || '';
-  return { text, civs, costFilter, type, setCode, race, powerFilter, rarity };
+  const ability = document.getElementById('abilityFilter').value || '';
+  return { text, civs, costFilter, type, setCode, race, powerFilter, rarity, ability };
 }
 
 function filterCards() {
-  const { text, civs, costFilter, type, setCode, race, powerFilter, rarity } = getFilters();
+  const { text, civs, costFilter, type, setCode, race, powerFilter, rarity, ability } = getFilters();
   return CARDS.filter(c => {
     if (text && !c.name.toLowerCase().includes(text) && !(c.text || '').toLowerCase().includes(text)) return false;
     if (civs.length && !c.civilizations.some(cv => civs.includes(cv))) return false;
@@ -285,6 +386,7 @@ function filterCards() {
       if (powerFilter.mode === 'range' && (c.power < powerFilter.n || c.power > powerFilter.n2)) return false;
     }
     if (rarity && c.rarity !== rarity) return false;
+    if (ability && !(c.text || '').includes(ability)) return false;
     return true;
   });
 }
@@ -307,11 +409,10 @@ function sortCards(cards) {
   });
 }
 
-function renderList() {
-  const results = sortCards(filterCards());
-  document.getElementById('resultCount').textContent = `${CARDS.length.toLocaleString()}件中 ${results.length.toLocaleString()}件`;
-  const p = c => c.printings[0] || {};
-  document.getElementById('cardList').innerHTML = results.map(c => `
+function cardRowHTML(c) {
+  const p = c.printings[0] || {};
+  const term = currentSearchTerm();
+  return `
     <div class="card-row px-3 py-2 cursor-pointer ${selectedCard === c.id ? 'selected' : ''}"
          onclick="selectCard('${c.id}')">
       <div class="flex items-center gap-3">
@@ -324,20 +425,110 @@ function renderList() {
         <div class="card-img-placeholder w-[52px] h-[72px] rounded shrink-0 bg-gray-100 hidden items-center justify-center text-gray-300 text-xl">🎴</div>
         <div class="flex-1 flex items-start justify-between gap-2 min-w-0">
           <div class="min-w-0 flex-1">
-            <div class="font-semibold text-sm text-gray-900 truncate">${escapeHtml(c.name)}</div>
-            <div class="text-xs text-gray-500 mt-0.5 truncate">${escapeHtml(c.cardType)}・${civBadge(c.civilizations)}・${c.cost ?? '—'}コスト${c.power !== null ? ` / ${c.power.toLocaleString()}P` : ''}</div>
-            ${c.races.length ? `<div class="text-xs text-gray-400 truncate">${escapeHtml(c.races.join('/'))}</div>` : ''}
+            <div class="font-semibold text-sm text-gray-900 truncate">${highlight(escapeHtml(c.name), term)}${hofBadge(c.name) ? ` ${hofBadge(c.name)}` : ''}</div>
+            <div class="text-xs text-gray-500 mt-0.5 truncate">${highlight(escapeHtml(c.cardType), term)}・${civBadge(c.civilizations)}・${c.cost ?? '—'}コスト${c.power !== null ? ` / ${c.power.toLocaleString()}P` : ''}</div>
+            ${c.races.length ? `<div class="text-xs text-gray-400 truncate">${highlight(escapeHtml(c.races.join('/')), term)}</div>` : ''}
           </div>
           <div class="text-right shrink-0 min-w-0 max-w-[88px]">
             <div class="text-xs ${rarityClass(c.rarity)}">${c.rarity ?? ''}</div>
-            <div class="text-xs text-gray-500 mt-0.5">${p(c).setCode ?? ''}</div>
-            <div class="text-xs text-gray-400 leading-tight truncate">${setShortName(p(c).setCode ?? '')}</div>
-            <div class="text-xs text-gray-300">${p(c).cardNumber ?? ''}</div>
+            <div class="text-xs text-gray-500 mt-0.5">${p.setCode ?? ''}</div>
+            <div class="text-xs text-gray-400 leading-tight truncate">${setShortName(p.setCode ?? '')}</div>
+            <div class="text-xs text-gray-300">${p.cardNumber ?? ''}</div>
           </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+}
+
+function cardCellHTML(c) {
+  const term = currentSearchTerm();
+  return `
+    <div class="card-cell border border-gray-100 rounded-lg p-2 cursor-pointer hover:bg-gray-50 ${selectedCard === c.id ? 'ring-2 ring-indigo-400' : ''}"
+         onclick="selectCard('${c.id}')">
+      <img
+        src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${c.id}.jpg"
+        alt="" loading="lazy"
+        onerror="this.parentNode.querySelector('.card-img-placeholder').style.display='flex';this.style.display='none'"
+        class="w-full aspect-[5/7] object-cover rounded bg-gray-100">
+      <div class="card-img-placeholder w-full aspect-[5/7] rounded bg-gray-100 hidden items-center justify-center text-gray-300 text-3xl">🎴</div>
+      <div class="font-semibold text-xs text-gray-900 mt-1 leading-snug line-clamp-2">${highlight(escapeHtml(c.name), term)}${hofBadge(c.name) ? ` ${hofBadge(c.name)}` : ''}</div>
+    </div>`;
+}
+
+function cardItemHTML(c) {
+  return viewMode === 'grid' ? cardCellHTML(c) : cardRowHTML(c);
+}
+
+function applyListContainerClass() {
+  const el = document.getElementById('cardList');
+  if (viewMode === 'grid') {
+    el.className = 'grid grid-cols-2 gap-2 p-2';
+  } else {
+    el.className = 'divide-y divide-gray-100';
+  }
+}
+
+function updateViewButtons() {
+  document.getElementById('viewListBtn').classList.toggle('bg-indigo-100', viewMode === 'list');
+  document.getElementById('viewListBtn').classList.toggle('text-indigo-700', viewMode === 'list');
+  document.getElementById('viewGridBtn').classList.toggle('bg-indigo-100', viewMode === 'grid');
+  document.getElementById('viewGridBtn').classList.toggle('text-indigo-700', viewMode === 'grid');
+}
+
+function setViewMode(mode) {
+  viewMode = mode === 'grid' ? 'grid' : 'list';
+  localStorage.setItem(VIEW_KEY, viewMode);
+  updateViewButtons();
+  renderList();
+}
+
+function renderList() {
+  lastResults = sortCards(filterCards());
+  renderOffset = 0;
+  applyListContainerClass();
+  document.getElementById('resultCount').textContent = `${CARDS.length.toLocaleString()}件中 ${lastResults.length.toLocaleString()}件`;
+  const slice = lastResults.slice(0, RENDER_PAGE);
+  document.getElementById('cardList').innerHTML = slice.map(cardItemHTML).join('');
+  renderOffset = slice.length;
+  updateShowMore();
+}
+
+function showMore() {
+  const slice = lastResults.slice(renderOffset, renderOffset + RENDER_PAGE);
+  document.getElementById('cardList').insertAdjacentHTML('beforeend', slice.map(cardItemHTML).join(''));
+  renderOffset += slice.length;
+  updateShowMore();
+}
+
+function updateShowMore() {
+  const wrap = document.getElementById('showMoreWrap');
+  const remaining = lastResults.length - renderOffset;
+  if (remaining > 0) {
+    document.getElementById('showMoreCount').textContent = remaining.toLocaleString();
+    wrap.classList.remove('hidden');
+  } else {
+    wrap.classList.add('hidden');
+  }
+}
+
+function relatedCardsHTML(c) {
+  if (!c.races || !c.races.length) return '';
+  const related = CARDS.filter(x =>
+    x.id !== c.id && x.races && x.races.some(r => c.races.includes(r))
+  ).slice(0, 6);
+  if (!related.length) return '';
+  const cells = related.map(r => `
+    <div class="cursor-pointer" onclick="selectCard('${r.id}')">
+      <img src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${r.id}.jpg"
+        alt="" loading="lazy" onerror="this.style.display='none'"
+        class="w-full aspect-[5/7] object-cover rounded bg-gray-100">
+      <div class="text-[10px] text-gray-600 mt-0.5 leading-tight line-clamp-2">${escapeHtml(r.name)}</div>
+    </div>`).join('');
+  return `
+    <div>
+      <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">関連カード</div>
+      <div class="grid grid-cols-3 gap-2">${cells}</div>
+    </div>`;
 }
 
 function detailHTML(c) {
@@ -375,7 +566,7 @@ function detailHTML(c) {
       ${c.text ? `
         <div>
           <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">能力テキスト</div>
-          <div class="text-sm bg-gray-50 rounded p-2 whitespace-pre-wrap leading-relaxed">${escapeHtml(c.text)}</div>
+          <div class="text-sm bg-gray-50 rounded p-2 whitespace-pre-wrap leading-relaxed">${highlight(escapeHtml(c.text), currentSearchTerm())}</div>
         </div>` : ''}
       <div>
         <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">DM収録</div>
@@ -393,18 +584,26 @@ function detailHTML(c) {
           公式サイトで見る →
         </a>
       </div>
+      ${relatedCardsHTML(c)}
     </div>
   `;
 }
 
-function selectCard(id) {
+function selectCard(id, fromDeck = false) {
   const c = CARDS.find(x => x.id === id);
   if (!c) return;
   selectedCard = id;
   renderList();
-  document.getElementById('detailName').textContent = c.name;
+  document.getElementById('deckPanel').classList.add('hidden');
+  document.getElementById('detailName').innerHTML = detailNameHTML(c);
   document.getElementById('detailBody').innerHTML = detailHTML(c);
+  document.getElementById('backToDeckBtn').classList.toggle('hidden', !fromDeck);
   document.getElementById('mobileDetail').classList.remove('hidden');
+}
+
+function backToDeck() {
+  document.getElementById('mobileDetail').classList.add('hidden');
+  document.getElementById('deckPanel').classList.remove('hidden');
 }
 
 function closeDetail(e) {
@@ -426,7 +625,9 @@ function toggleMobileCiv(btn, civ) {
 
 function scheduleUpdate() {
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => { renderList(); syncURL(); }, 200);
+  debounceTimer = setTimeout(renderList, 200);
+  clearTimeout(urlTimer);
+  urlTimer = setTimeout(syncURL, 600);
 }
 
 function syncURL() {
@@ -444,6 +645,7 @@ function syncURL() {
   set('set', document.getElementById('mobileSetFilter').value);
   set('power', document.getElementById('powerFilter').value);
   set('rarity', document.getElementById('rarityFilter').value);
+  set('ability', document.getElementById('abilityFilter').value);
   set('sortKey', document.getElementById('sortKey').value);
   set('sortDir', document.getElementById('sortDir').value === 'asc' ? '' : 'desc');
   const qs = params.toString();
@@ -459,6 +661,7 @@ function applyURLParams() {
   if (params.has('set')) document.getElementById('mobileSetFilter').value = params.get('set');
   if (params.has('power')) document.getElementById('powerFilter').value = params.get('power');
   if (params.has('rarity')) document.getElementById('rarityFilter').value = params.get('rarity');
+  if (params.has('ability')) document.getElementById('abilityFilter').value = params.get('ability');
   if (params.has('sortKey')) document.getElementById('sortKey').value = params.get('sortKey');
   if (params.has('sortDir')) document.getElementById('sortDir').value = params.get('sortDir') === 'desc' ? 'desc' : 'asc';
   if (params.has('civs')) {
@@ -472,8 +675,49 @@ function applyURLParams() {
   }
 }
 
-['textSearch','mobileCardType','mobileCostMax','mobileSetFilter','mobileRaceFilter','powerFilter','rarityFilter','sortKey','sortDir']
+['textSearch','mobileCardType','mobileCostMax','mobileSetFilter','mobileRaceFilter','powerFilter','rarityFilter','abilityFilter','sortKey','sortDir']
   .forEach(id => document.getElementById(id)?.addEventListener('input', scheduleUpdate));
+
+// ---- 今日の1枚 ----
+const TODAY_HIDE_KEY = 'dm_today_hidden';
+const TODAY_COLLAPSE_KEY = 'dm_today_collapsed';
+
+function todaySeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+function renderTodayPick() {
+  if (!CARDS.length) return;
+  const banner = document.getElementById('todayPick');
+  if (localStorage.getItem(TODAY_HIDE_KEY) === '1') { banner.classList.add('hidden'); return; }
+  const card = CARDS[todaySeed() % CARDS.length];
+  document.getElementById('todayPickBody').innerHTML = `
+    <img src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${card.id}.jpg"
+      alt="" loading="lazy" onerror="this.style.display='none'"
+      class="w-8 h-11 object-cover rounded shrink-0 bg-gray-100">
+    <span class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(card.name)}</span>`;
+  document.getElementById('todayPickBody').onclick = () => selectCard(card.id);
+  banner.classList.remove('hidden');
+  applyTodayCollapsed();
+}
+
+function applyTodayCollapsed() {
+  const collapsed = localStorage.getItem(TODAY_COLLAPSE_KEY) === '1';
+  document.getElementById('todayPickBody').classList.toggle('hidden', collapsed);
+  document.getElementById('todayPickToggle').textContent = collapsed ? '▼' : '▲';
+}
+
+function toggleTodayPick() {
+  const collapsed = localStorage.getItem(TODAY_COLLAPSE_KEY) === '1';
+  localStorage.setItem(TODAY_COLLAPSE_KEY, collapsed ? '0' : '1');
+  applyTodayCollapsed();
+}
+
+function hideTodayPick() {
+  localStorage.setItem(TODAY_HIDE_KEY, '1');
+  document.getElementById('todayPick').classList.add('hidden');
+}
 
 // ---- デッキビルダー ----
 const DECK_KEY = 'dm_deck';
@@ -535,7 +779,7 @@ function renderDeckBadge() {
   const total = deckTotalCount();
   const fab = document.getElementById('deckFab');
   document.getElementById('deckCountBadge').textContent = total;
-  fab.classList.toggle('hidden', total === 0);
+  fab.classList.remove('hidden');
 }
 
 function civCounts() {
@@ -568,12 +812,23 @@ function renderDeckPanel() {
 
   const listEl = document.getElementById('deckCardList');
   if (!deck.length) {
-    listEl.innerHTML = '<div class="py-6 text-center text-gray-400 text-sm">デッキは空です</div>';
+    listEl.innerHTML = `
+      <div class="py-6 px-4 text-center text-gray-400 text-sm space-y-3">
+        <div class="text-3xl">🃏</div>
+        <div class="font-medium text-gray-500">デッキは空です</div>
+        <div class="text-left bg-gray-50 rounded-xl p-4 space-y-2 text-xs text-gray-500">
+          <div class="font-semibold text-gray-600 mb-1">デッキの作り方</div>
+          <div>① カードをタップして詳細を開く</div>
+          <div>② 「＋ デッキに追加」をタップ</div>
+          <div>③ 右下の 🃏 ボタンでデッキを確認</div>
+          <div>④「デッキを共有」で URL をコピーして友達に送れるよ</div>
+        </div>
+      </div>`;
     return;
   }
   listEl.innerHTML = deck.map(e => `
     <div class="flex items-center gap-2 py-2 text-sm">
-      <span class="flex-1 truncate cursor-pointer hover:text-indigo-600" onclick="selectCard('${e.id}')">${escapeHtml(e.name)}</span>
+      <span class="flex-1 truncate cursor-pointer hover:text-indigo-600" onclick="selectCard('${e.id}', true)">${escapeHtml(e.name)}</span>
       <span class="text-gray-500 shrink-0">×${e.count}</span>
       <button onclick="removeFromDeck('${e.id}')" class="text-red-400 hover:text-red-600 text-lg leading-none shrink-0 w-6">−</button>
     </div>
@@ -634,6 +889,14 @@ function showToast(msg) {
 
 loadDeck();
 renderDeckBadge();
+
+// デッキFAB 吹き出し：初回のみ表示
+if (!localStorage.getItem('dm_tooltip_seen')) {
+  const tip = document.getElementById('deckTooltip');
+  tip.classList.remove('hidden');
+  setTimeout(() => tip.classList.add('hidden'), 4000);
+  localStorage.setItem('dm_tooltip_seen', '1');
+}
 </script>
 </body>
 </html>

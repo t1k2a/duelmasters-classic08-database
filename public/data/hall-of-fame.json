@@ -1,0 +1,184 @@
+[
+  {
+    "id": "dm10-009",
+    "name": "無双竜機ボルバルザーク",
+    "status": "プレ殿",
+    "since": "2006-03-15",
+    "inPool": true
+  },
+  {
+    "id": "dm06-057",
+    "name": "ヘル・スラッシュ",
+    "status": "プレ殿",
+    "since": "2007-01-15",
+    "inPool": true
+  },
+  {
+    "id": "dm09-014",
+    "name": "ロスト・チャージャー",
+    "status": "プレ殿",
+    "since": "2007-01-15",
+    "inPool": true
+  },
+  {
+    "id": null,
+    "name": "ボルメテウス・サファイア・ドラゴン",
+    "status": "プレ殿",
+    "since": "2007-01-15",
+    "inPool": false
+  },
+  {
+    "id": null,
+    "name": "フューチャー・スラッシュ",
+    "status": "プレ殿",
+    "since": "2007-01-15",
+    "inPool": false
+  },
+  {
+    "id": "dm15-002",
+    "name": "アクア・パトロール",
+    "status": "プレ殿",
+    "since": "2007-08-15",
+    "inPool": true
+  },
+  {
+    "id": "dm13-031",
+    "name": "炎槍と水剣の裁",
+    "status": "プレ殿",
+    "since": "2007-11-15",
+    "inPool": true
+  },
+  {
+    "id": "dm08-014",
+    "name": "スケルトン・バイス",
+    "status": "プレ殿",
+    "since": "2008-10-15",
+    "inPool": true
+  },
+  {
+    "id": "dm01-052",
+    "name": "サイバー・ブレイン",
+    "status": "殿堂",
+    "since": "2004-03-15",
+    "inPool": true
+  },
+  {
+    "id": "dm04-002",
+    "name": "アストラル・リーフ",
+    "status": "殿堂",
+    "since": "2004-03-15",
+    "inPool": true
+  },
+  {
+    "id": "dm03-042",
+    "name": "エメラル",
+    "status": "殿堂",
+    "since": "2004-03-15",
+    "inPool": true
+  },
+  {
+    "id": "dm03-011",
+    "name": "ストリーミング・シェイパー",
+    "status": "殿堂",
+    "since": "2004-03-15",
+    "inPool": true
+  },
+  {
+    "id": "dm02-026",
+    "name": "ディープ・オペレーション",
+    "status": "殿堂",
+    "since": "2004-03-15",
+    "inPool": true
+  },
+  {
+    "id": "dm04-010",
+    "name": "アクアン",
+    "status": "殿堂",
+    "since": "2005-03-15",
+    "inPool": true
+  },
+  {
+    "id": "dm12-026",
+    "name": "クローン・バイス",
+    "status": "殿堂",
+    "since": "2007-11-15",
+    "inPool": true
+  },
+  {
+    "id": "dm08-008",
+    "name": "予言者マリエル",
+    "status": "殿堂",
+    "since": "2007-11-15",
+    "inPool": true
+  },
+  {
+    "id": "dm01-080",
+    "name": "アクア・ハルカス",
+    "status": "殿堂",
+    "since": "2008-04-15",
+    "inPool": true
+  },
+  {
+    "id": "dm07-019",
+    "name": "呪紋の化身",
+    "status": "殿堂",
+    "since": "2008-04-15",
+    "inPool": true
+  },
+  {
+    "id": "dm10-036",
+    "name": "母なる大地",
+    "status": "殿堂",
+    "since": "2008-04-15",
+    "inPool": true
+  },
+  {
+    "id": "dm11-004",
+    "name": "魂と記憶の盾",
+    "status": "殿堂",
+    "since": "2008-04-15",
+    "inPool": true
+  },
+  {
+    "id": "dm13-009",
+    "name": "パシフィック・チャンピオン",
+    "status": "殿堂",
+    "since": "2008-04-15",
+    "inPool": true
+  },
+  {
+    "id": "dm19-027",
+    "name": "インフェルノ・ゲート",
+    "status": "殿堂",
+    "since": "2008-04-15",
+    "inPool": true
+  },
+  {
+    "id": "dm22-015",
+    "name": "インフィニティ・ドラゴン",
+    "status": "殿堂",
+    "since": "2008-04-15",
+    "inPool": true
+  },
+  {
+    "id": "dm08-s04",
+    "name": "超竜バジュラ",
+    "status": "殿堂",
+    "since": "2008-04-15",
+    "inPool": true
+  },
+  {
+    "id": "dm15-s04",
+    "name": "バジュラズ・ソウル",
+    "status": "殿堂",
+    "since": "2008-10-15",
+    "inPool": true
+  },
+  {
+    "id": null,
+    "name": "凶星王ダーク・ヒドラ",
+    "status": "殿堂",
+    "since": "2008-10-15",
+    "inPool": false
+  }
+]

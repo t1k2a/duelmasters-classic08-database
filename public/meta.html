@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メタデッキ紹介 | デュエマ クラシック08</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .civ-光  { background:#fef9c3; border-color:#ca8a04; color:#713f12; }
+    .civ-水  { background:#dbeafe; border-color:#3b82f6; color:#1e3a8a; }
+    .civ-闇  { background:#f3e8ff; border-color:#9333ea; color:#581c87; }
+    .civ-火  { background:#fee2e2; border-color:#ef4444; color:#7f1d1d; }
+    .civ-自然 { background:#dcfce7; border-color:#22c55e; color:#14532d; }
+  </style>
+</head>
+<body class="bg-gray-300 min-h-screen">
+
+<!-- ヘッダー（全幅） -->
+<header class="bg-indigo-700 text-white px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-20">
+  <span class="text-lg font-bold tracking-wide">🃏 メタデッキ紹介</span>
+  <a href="index.html" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">カード検索</a>
+</header>
+
+<!-- LP ラッパー: SP幅を中央に配置 -->
+<div class="flex justify-center min-h-[calc(100vh-52px)]">
+  <div class="w-full max-w-[430px] bg-gray-50 flex flex-col shadow-2xl min-h-[calc(100vh-52px)]">
+    <div class="px-4 py-3">
+      <p class="text-xs text-gray-500 leading-relaxed">
+        クラシック08環境（2008年12月時点）の代表的なメタデッキです。カード名をタップするとカード検索で詳細を確認できます。
+      </p>
+    </div>
+    <div id="deckList" class="px-4 pb-8 space-y-4">
+      <div id="loadingMsg" class="py-8 text-center text-gray-400 text-sm">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CIV_COLORS = {光:'civ-光',水:'civ-水',闇:'civ-闇',火:'civ-火',自然:'civ-自然'};
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function civBadge(civs) {
+  return (civs || []).map(c =>
+    `<span class="${CIV_COLORS[c] || ''} border rounded-full px-2 py-0.5 text-xs">${escapeHtml(c)}</span>`
+  ).join(' ');
+}
+
+function tagBadge(tags) {
+  return (tags || []).map(t =>
+    `<span class="bg-gray-100 text-gray-600 border border-gray-200 rounded px-2 py-0.5 text-xs">${escapeHtml(t)}</span>`
+  ).join(' ');
+}
+
+function deckCardLink(card) {
+  const href = `index.html?q=${encodeURIComponent(card.name)}`;
+  return `
+    <a href="${href}" class="flex items-center justify-between gap-2 py-1.5 px-2 rounded hover:bg-indigo-50">
+      <span class="text-sm text-gray-800 truncate hover:text-indigo-600">${escapeHtml(card.name)}</span>
+      <span class="text-xs text-gray-500 shrink-0">×${card.count | 0}</span>
+    </a>`;
+}
+
+function deckCardHTML(deck) {
+  const total = (deck.cards || []).reduce((s, c) => s + (c.count | 0), 0);
+  return `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h2 class="font-bold text-base text-gray-900">${escapeHtml(deck.name)}</h2>
+          <span class="ml-auto text-xs text-gray-400 shrink-0">${total}枚掲載</span>
+        </div>
+        <div class="flex items-center gap-1 flex-wrap mt-2">
+          ${civBadge(deck.civilization)}
+          ${tagBadge(deck.tags)}
+        </div>
+        <p class="text-xs text-gray-600 leading-relaxed mt-2">${escapeHtml(deck.description)}</p>
+      </div>
+      <div class="divide-y divide-gray-50 px-2 py-1">
+        ${(deck.cards || []).map(deckCardLink).join('')}
+      </div>
+    </div>`;
+}
+
+fetch('data/meta-decks.json')
+  .then(r => r.json())
+  .then(decks => {
+    document.getElementById('loadingMsg')?.remove();
+    if (!Array.isArray(decks) || !decks.length) {
+      document.getElementById('deckList').innerHTML =
+        `<div class="py-8 text-center text-gray-400 text-sm">メタデッキがまだ登録されていません。</div>`;
+      return;
+    }
+    document.getElementById('deckList').innerHTML = decks.map(deckCardHTML).join('');
+  })
+  .catch(() => {
+    document.getElementById('deckList').innerHTML =
+      `<div class="py-8 text-center text-gray-400 text-sm">読み込みに失敗しました。</div>`;
+  });
+</script>
+</body>
+</html>
