@@ -17,7 +17,8 @@
     "api": "tsx src/api/server.ts",
     "search": "tsx src/api/search-cli.ts",
     "scrape:dmc": "tsx src/scraper/run-dmc.ts",
-    "scrape:dmc:test": "TEST_SET=DMC-09 tsx src/scraper/run-dmc.ts"
+    "scrape:dmc:test": "TEST_SET=DMC-09 tsx src/scraper/run-dmc.ts",
+    "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers node scripts/e2e.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
