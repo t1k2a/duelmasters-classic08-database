@@ -33,8 +33,9 @@ async function scrapeSet(setCode: string): Promise<{ scraped: number; failed: nu
   const prefix = setCodeToPrefix(setCode)
   let scraped = 0
   let failed = 0
-  let consecutiveInvalid = 0
 
+  // --- Normal numeric enumeration (001-999) ---
+  let consecutiveInvalid = 0
   for (let i = 1; i <= 999; i++) {
     const cardId = `${prefix}-${String(i).padStart(3, '0')}`
     const html = await fetchCardDetail(cardId, setCode)
@@ -49,6 +50,40 @@ async function scrapeSet(setCode: string): Promise<{ scraped: number; failed: nu
     }
 
     consecutiveInvalid = 0
+
+    const card = parseCardHtml(html, cardId, setCode)
+    if (!card) {
+      console.warn(`  Parse failed: ${cardId}`)
+      failed++
+      continue
+    }
+
+    try {
+      await upsertCard(card)
+      console.log(`  ✓ ${card.name} [${card.setCode} ${card.cardNumber}] ${card.rarity ?? ''}`)
+      scraped++
+    } catch (err) {
+      console.error(`  ✗ DB error for ${cardId}:`, err)
+      failed++
+    }
+  }
+
+  // --- SR enumeration (s01-s99): DM-06 onwards may have SR cards ---
+  let srConsecutiveInvalid = 0
+  for (let i = 1; i <= 99; i++) {
+    const cardId = `${prefix}-s${String(i).padStart(2, '0')}`
+    const html = await fetchCardDetail(cardId, setCode)
+
+    if (!html || !isValidCardPage(html)) {
+      srConsecutiveInvalid++
+      if (srConsecutiveInvalid >= 3) {
+        // No more SR cards in this set
+        break
+      }
+      continue
+    }
+
+    srConsecutiveInvalid = 0
 
     const card = parseCardHtml(html, cardId, setCode)
     if (!card) {

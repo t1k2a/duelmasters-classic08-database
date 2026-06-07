@@ -24,8 +24,8 @@ function parseRaces(raw: string): string[] {
 }
 
 function parseCardNumber(packname: string): string {
-  // packname text = "(DM6 1/110)"
-  const m = packname.match(/\([A-Z0-9+]+\s+([\d\/]+)\)/)
+  // packname text = "(DM6 1/110)" for normal cards, "(DM6 S8/S10)" for SR cards
+  const m = packname.match(/\([A-Z0-9+]+\s+([A-Z0-9\/]+)\)/)
   return m ? m[1] : ''
 }
 

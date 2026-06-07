@@ -1,16 +1,16 @@
 /**
- * Phase 2b scraper — DMC/DMS/variant/promo sets using Playwright listing page.
+ * DMC/DMS set scraper — ID enumeration approach
  *
- * For each target set, fetches the listing page to get card IDs, then
- * fetches each card's detail page (SSR, no headless needed for detail).
- * Skips cards already in the DB (idempotent).
+ * Enumerates card IDs sequentially (dmc01-001, dmc01-002, ...) until
+ * 5 consecutive invalid pages are encountered per set.
+ * Cards already in DB by name get a new printing entry only (reprint handling).
+ * Idempotent: cached raw HTML is reused on re-runs.
  *
  * Usage:
- *   npx tsx src/scraper/run-dmc.ts                  # all DMC/DMS sets
- *   TEST_SET=DMC-09 npx tsx src/scraper/run-dmc.ts  # single set
+ *   npm run scrape:dmc                   # all DMC/DMS sets in scope
+ *   TEST_SET=DMC-09 npm run scrape:dmc   # single set
  */
 
-import { listCardIdsByPlaywright } from './list-ids-playwright.js'
 import { fetchCardDetail } from './fetch-detail.js'
 import { parseCardHtml, isValidCardPage } from './parse-card.js'
 import { upsertCard, prisma } from '../ingest/upsert-card.js'
@@ -21,7 +21,6 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Load set list from seeds
 function loadSets(lineFilter: string[]): string[] {
   const json = JSON.parse(
     readFileSync(join(__dirname, '../../data/seeds/sets_dmc08.json'), 'utf-8')
@@ -31,27 +30,43 @@ function loadSets(lineFilter: string[]): string[] {
     .map((s: { set_code: string }) => s.set_code)
 }
 
-async function scrapeSetViaPlaywright(setCode: string): Promise<{ scraped: number; failed: number; skipped: number }> {
-  let scraped = 0
-  let failed = 0
-  let skipped = 0
+// "DMC-01" → "dmc01", "DMS-02" → "dms02"
+function setCodeToPrefix(setCode: string): string {
+  return setCode.replace(/-/g, '').toLowerCase()
+}
 
-  // Get card IDs from listing page
-  const cardIds = await listCardIdsByPlaywright(setCode)
-  console.log(`  Found ${cardIds.length} card IDs for ${setCode}`)
-
-  if (cardIds.length === 0) {
-    console.log(`  ⚠ No cards found for ${setCode} — may not have dedicated card pages`)
-    return { scraped: 0, failed: 0, skipped: 0 }
+async function addPrintingIfMissing(cardId: string, existingCardId: number, card: { setCode: string; cardNumber: string; rarity?: string }): Promise<void> {
+  const set = await prisma.set.findUnique({ where: { setCode: card.setCode } })
+  if (!set || !card.cardNumber) return
+  const exists = await prisma.printing.findFirst({
+    where: { setId: set.id, cardNumber: card.cardNumber },
+  })
+  if (!exists) {
+    await prisma.printing.create({
+      data: { cardId: existingCardId, setId: set.id, cardNumber: card.cardNumber, rarity: card.rarity ?? null },
+    })
+    console.log(`  ↺ Reprint: [${card.setCode} ${card.cardNumber}] (cardId ${existingCardId})`)
   }
+}
 
-  for (const cardId of cardIds) {
+async function scrapeSet(setCode: string): Promise<{ scraped: number; reprints: number; failed: number }> {
+  const prefix = setCodeToPrefix(setCode)
+  let scraped = 0
+  let reprints = 0
+  let failed = 0
+  let consecutive = 0
+  const MAX_CONSECUTIVE = 5
+
+  for (let i = 1; i <= 999; i++) {
+    const cardId = `${prefix}-${String(i).padStart(3, '0')}`
     const html = await fetchCardDetail(cardId, setCode)
+
     if (!html || !isValidCardPage(html)) {
-      console.warn(`  ✗ Invalid page: ${cardId}`)
-      failed++
+      consecutive++
+      if (consecutive >= MAX_CONSECUTIVE) break
       continue
     }
+    consecutive = 0
 
     const card = parseCardHtml(html, cardId, setCode)
     if (!card) {
@@ -60,23 +75,11 @@ async function scrapeSetViaPlaywright(setCode: string): Promise<{ scraped: numbe
       continue
     }
 
-    // Check if card already exists (by name) — if so, just add printing
+    // Reprint: card already exists by name → only add printing
     const existing = await prisma.card.findUnique({ where: { name: card.name } })
     if (existing) {
-      skipped++
-      // Still add the printing for this set if it doesn't exist
-      const set = await prisma.set.findUnique({ where: { setCode: card.setCode } })
-      if (set && card.cardNumber) {
-        const printingExists = await prisma.printing.findFirst({
-          where: { setId: set.id, cardNumber: card.cardNumber },
-        })
-        if (!printingExists) {
-          await prisma.printing.create({
-            data: { cardId: existing.id, setId: set.id, cardNumber: card.cardNumber, rarity: card.rarity ?? null },
-          })
-          console.log(`  ↺ Added printing: ${card.name} [${card.setCode} ${card.cardNumber}]`)
-        }
-      }
+      await addPrintingIfMissing(cardId, existing.id, card)
+      reprints++
       continue
     }
 
@@ -90,37 +93,26 @@ async function scrapeSetViaPlaywright(setCode: string): Promise<{ scraped: numbe
     }
   }
 
-  return { scraped, failed, skipped }
+  return { scraped, reprints, failed }
 }
 
 async function main() {
   const testSet = process.env['TEST_SET']
+  const sets = testSet ? [testSet] : loadSets(['DMC', 'DMS'])
 
-  let sets: string[]
-  if (testSet) {
-    sets = [testSet]
-  } else {
-    // DMC + DMS + variant sets
-    sets = loadSets(['DMC', 'DMS', 'DM']).filter(code =>
-      code.includes('+') || // variant sets like DM-22+1D
-      code.startsWith('DMC-') ||
-      code.startsWith('DMS-')
-    )
-  }
-
-  console.log(`Processing ${sets.length} sets via Playwright listing`)
+  console.log(`Processing ${sets.length} sets via ID enumeration`)
 
   let totalScraped = 0
+  let totalReprints = 0
   let totalFailed = 0
-  let totalSkipped = 0
 
   for (const setCode of sets) {
     console.log(`\n=== ${setCode} ===`)
-    const { scraped, failed, skipped } = await scrapeSetViaPlaywright(setCode)
-    console.log(`  → ${scraped} new, ${skipped} reprints added, ${failed} failed`)
+    const { scraped, reprints, failed } = await scrapeSet(setCode)
+    console.log(`  → ${scraped} new, ${reprints} reprints, ${failed} failed`)
     totalScraped += scraped
+    totalReprints += reprints
     totalFailed += failed
-    totalSkipped += skipped
   }
 
   const cardCount = await prisma.card.count()
@@ -129,7 +121,7 @@ async function main() {
   console.log('\n=== Summary ===')
   console.log(`Sets processed : ${sets.length}`)
   console.log(`New cards      : ${totalScraped}`)
-  console.log(`Reprint entries: ${totalSkipped}`)
+  console.log(`Reprint entries: ${totalReprints}`)
   console.log(`Errors         : ${totalFailed}`)
   console.log(`DB cards       : ${cardCount}`)
   console.log(`DB printings   : ${printingCount}`)
