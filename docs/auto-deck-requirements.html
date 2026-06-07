@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>要件定義【最終確定版】— デッキレシピ推薦＋投稿機能</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+<div class="max-w-4xl mx-auto px-4 py-10">
+
+  <!-- ヘッダー -->
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-2">
+      <span class="text-2xl">📋</span>
+      <h1 class="text-2xl font-bold text-gray-900">デッキレシピ推薦＋投稿機能 — 要件定義【最終確定版】</h1>
+    </div>
+    <p class="text-sm text-gray-500">DuelMasters Classic08 Database &nbsp;|&nbsp; 2026-06-07 &nbsp;|&nbsp; 実装着手可能</p>
+    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+      <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">アルゴリズム生成 → 廃止</span>
+      <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">実レシピ推薦 → 採用</span>
+      <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full">データ源: DM Vault / Wayback</span>
+      <span class="bg-orange-100 text-orange-700 px-2 py-1 rounded-full">投稿: GitHub PR プレフィル</span>
+    </div>
+  </div>
+
+  <!-- ユーザーストーリー -->
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="text-blue-500">👤</span> ユーザーストーリー
+    </h2>
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2 text-sm">
+      <p><span class="font-semibold text-blue-700">As</span> 08環境プレイヤー</p>
+      <p><span class="font-semibold text-blue-700">I want</span> 詳細画面からそのカードを実際に使う合法レシピを推薦され、気に入ればデッキビルダーに読み込み、自分のレシピも投稿したい</p>
+      <p><span class="font-semibold text-blue-700">So that</span> 機械生成でなく実プレイヤーの感覚で組まれた信頼できるデッキを出発点にでき、共有できる</p>
+    </div>
+  </section>
+
+  <!-- 受け入れ条件 -->
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="text-green-500">✅</span> 受け入れ条件 (AC-1 〜 AC-8)
+    </h2>
+    <div class="space-y-4 text-sm">
+
+      <div class="border border-gray-100 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 mt-0.5 shrink-0">AC-1</span>
+          <div>
+            <p class="font-medium mb-1">エントリーポイント</p>
+            <p class="text-gray-600">詳細モーダルに「📋 このカードを使うデッキを見る」ボタン＋マッチ件数を表示する。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-gray-100 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 mt-0.5 shrink-0">AC-2</span>
+          <div>
+            <p class="font-medium mb-1">推薦リスト表示・読込</p>
+            <ul class="text-gray-600 space-y-1 list-disc list-inside">
+              <li>レシピカード: デッキ名 / 文明バッジ / アーキタイプ / 採用枚数 / 出典URL</li>
+              <li>「デッキビルダーに読込」→ 既存 <code>deck</code> 配列に流込 → 上書き確認ダイアログ</li>
+              <li><strong>出典 URL の表示は必須</strong>（Wayback リンク）</li>
+              <li>表示順: 初期=採用枚数降順</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-gray-100 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 mt-0.5 shrink-0">AC-3</span>
+          <div>
+            <p class="font-medium mb-1">合法性保証</p>
+            <p class="text-gray-600"><code>validated: true</code> のレシピのみ表示。全カードが <code>cards.json</code> に存在すること（= Classic08準拠フィルタ）。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-gray-100 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 mt-0.5 shrink-0">AC-4</span>
+          <div>
+            <p class="font-medium mb-1">0件フォールバック</p>
+            <ol class="text-gray-600 list-decimal list-inside space-y-1">
+              <li>シードカード直接マッチ → 0件なら同種族/同文明のレシピを提示</li>
+              <li>それも0件なら「レシピがありません → 投稿する」導線を表示</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-red-200 bg-red-50 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-xs bg-red-500 text-white rounded px-2 py-1 mt-0.5 shrink-0">AC-5 ★</span>
+          <div>
+            <p class="font-medium text-red-800 mb-2">HOF_MAP ロードタイミング保証（最重要）</p>
+            <p class="text-red-700 text-xs mb-2">
+              既存 <code>index.html:296</code> の fetch は <code>.catch()</code> で握りつぶし。失敗時 HOF_MAP が空のまま残り、殿堂チェックがすり抜ける危険がある。
+            </p>
+            <ul class="text-red-700 space-y-1 list-disc list-inside text-sm">
+              <li><strong>AC-5-1</strong>: ロード完了まで「読込」ボタンを disabled</li>
+              <li><strong>AC-5-2</strong>: 押下時に未ロードなら完了を待ってから実行</li>
+              <li><strong>AC-5-3</strong>: <code>generateDeck()</code>/<code>loadRecipe()</code> 冒頭で <code>HOF_MAP.size === 0</code> なら中断＋「読込中」表示</li>
+              <li><strong>判定は name 照合のみ・id 照合禁止</strong>（HOF の id は null 混在）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-gray-100 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 mt-0.5 shrink-0">AC-6</span>
+          <div>
+            <p class="font-medium mb-1">ユーザー投稿 — GitHub PR プレフィル</p>
+            <p class="text-gray-600">サーバー不要。フォーム入力 → JSON 断片生成 → GitHub PR/Issue 作成 URL にプレフィルして新規タブで開く。オーナーがレビュー・マージ。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-gray-100 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 mt-0.5 shrink-0">AC-7</span>
+          <div>
+            <p class="font-medium mb-1">投稿時クライアントバリデーション</p>
+            <div class="overflow-x-auto mt-1">
+              <table class="text-xs border-collapse w-full">
+                <thead><tr class="bg-gray-50"><th class="border border-gray-200 px-2 py-1">コード</th><th class="border border-gray-200 px-2 py-1">チェック内容</th></tr></thead>
+                <tbody>
+                  <tr><td class="border border-gray-200 px-2 py-1 font-mono">V1</td><td class="border border-gray-200 px-2 py-1">合計ちょうど40枚</td></tr>
+                  <tr class="bg-gray-50"><td class="border border-gray-200 px-2 py-1 font-mono">V2</td><td class="border border-gray-200 px-2 py-1">同名カード ≤ 4枚</td></tr>
+                  <tr><td class="border border-gray-200 px-2 py-1 font-mono">V3</td><td class="border border-gray-200 px-2 py-1">殿堂カード ≤ 1枚 (name照合)</td></tr>
+                  <tr class="bg-gray-50"><td class="border border-gray-200 px-2 py-1 font-mono">V4</td><td class="border border-gray-200 px-2 py-1">プレミアム殿堂 = 0枚</td></tr>
+                  <tr><td class="border border-gray-200 px-2 py-1 font-mono">V5</td><td class="border border-gray-200 px-2 py-1">全カードが cards.json (08環境) に存在</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="text-gray-500 text-xs mt-1">不合格は違反内容を明示してブロック。合格後に PR URL を生成。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-gray-100 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 mt-0.5 shrink-0">AC-8</span>
+          <div>
+            <p class="font-medium mb-1">パフォーマンス</p>
+            <p class="text-gray-600">最大8,000件の <code>recipes.json</code> 読込・フィルタが UI をブロックしない。gzip 圧縮サイズを確認し、必要なら遅延ロード・分割を検討。</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- データ収集フロー -->
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="text-indigo-500">🔄</span> データ収集フロー
+    </h2>
+    <div class="text-sm">
+      <div class="flex flex-wrap items-center gap-2 mb-4 text-xs font-mono">
+        <span class="bg-indigo-100 text-indigo-700 px-3 py-2 rounded">DM Vault<br>(Wayback)</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-indigo-100 text-indigo-700 px-3 py-2 rounded">① 取得<br>(出典URL記録)</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-indigo-100 text-indigo-700 px-3 py-2 rounded">② パース<br>(≈90%)</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-indigo-100 text-indigo-700 px-3 py-2 rounded">③ name→id<br>突合(92.9%)</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-indigo-100 text-indigo-700 px-3 py-2 rounded">④ V1-V5<br>バリデ</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-green-100 text-green-700 px-3 py-2 rounded font-bold">recipes.json<br>(validated:true)</span>
+      </div>
+      <ul class="text-gray-600 space-y-1 list-disc list-inside">
+        <li>収集スクリプト: <code>scripts/build-recipes.ts</code></li>
+        <li>未突合カードを含むデッキは <code>validated: false</code> で記録・推薦から除外</li>
+        <li>source.url で重複排除・冪等実行</li>
+        <li>収集見込み: <strong>5,000〜8,000件</strong> の Classic08 準拠レシピ</li>
+        <li>Wayback へのレート制限: 2.5秒/リクエスト</li>
+      </ul>
+      <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded p-3 text-xs text-yellow-800">
+        <strong>EUC-JP 変換必須:</strong> DM Vault のページは EUC-JP エンコーディング。<code>iconv-lite</code> で UTF-8 に変換してからパース。
+      </div>
+    </div>
+  </section>
+
+  <!-- 推薦ロジック -->
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="text-teal-500">🎯</span> 推薦ロジック
+    </h2>
+    <div class="text-sm space-y-3">
+      <div class="bg-teal-50 border border-teal-200 rounded-lg p-3 font-mono text-xs">
+        selectCard(seedId)<br>
+        &nbsp;→ ① <strong>一次</strong>: recipes.filter(r => r.validated && r.cards.some(c => c.id === seedId))<br>
+        &nbsp;→ 0件なら ② <strong>フォールバック</strong>: 同種族 / 同文明 のレシピ<br>
+        &nbsp;→ 0件なら ③ <strong>投稿導線</strong>: 「このカードのレシピを投稿する」
+      </div>
+      <ul class="text-gray-600 space-y-1 list-disc list-inside">
+        <li>「デッキビルダーに読込」→ 既存 <code>deck=[{id,name,count}]</code> に流込・URL共有再利用</li>
+        <li>上書き確認ダイアログを必ず表示</li>
+        <li>HOF_MAP ロード完了前は読込ボタン無効 (AC-5)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 投稿フロー -->
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="text-orange-500">📤</span> ユーザー投稿フロー (GitHub PR プレフィル)
+    </h2>
+    <div class="text-sm">
+      <div class="flex flex-wrap items-center gap-2 mb-4 text-xs font-mono">
+        <span class="bg-orange-100 text-orange-700 px-3 py-2 rounded">フォーム入力<br>(既存検索UI流用)</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-orange-100 text-orange-700 px-3 py-2 rounded">クライアント<br>バリデ V1-V5</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-orange-100 text-orange-700 px-3 py-2 rounded">JSON断片<br>生成</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-green-100 text-green-700 px-3 py-2 rounded">GitHub PR URL<br>新規タブ</span>
+        <span class="text-gray-400">→</span>
+        <span class="bg-gray-100 text-gray-600 px-3 py-2 rounded">オーナー<br>レビュー/マージ</span>
+      </div>
+      <ul class="text-gray-600 space-y-1 list-disc list-inside">
+        <li>サーバー不要 — GitHub Pages 構成を維持</li>
+        <li>スパム対策: マージ承認がゲート</li>
+        <li>GitHub アカウントが必要 (P2 で非 GitHub 向け JSON コピー投稿を追加予定)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 実装タスク分割 -->
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="text-gray-500">📋</span> 優先度付き実装タスク分割
+    </h2>
+    <div class="space-y-6">
+
+      <!-- P0 -->
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-white text-xs font-bold px-3 py-1 rounded-full bg-red-600">P0 — MVP</span>
+          <span class="text-sm text-gray-500">着手順: T0 → T1 → T2 → T3 → T4</span>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
+            <span class="font-mono text-xs bg-red-500 text-white rounded px-2 py-1 shrink-0">T0 ★最優先</span>
+            <div class="text-sm">
+              <p class="font-medium text-red-800">HOF_MAP ロード状態管理</p>
+              <p class="text-red-700">ロード完了フラグ/Promise + 読込ボタン連動 + 関数冒頭フェイルセーフ (AC-5)。T2〜T3 の前提。</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-gray-200 text-gray-700 rounded px-2 py-1 shrink-0">T1</span>
+            <div class="text-sm">
+              <p class="font-medium">DM Vault 収集スクリプト</p>
+              <p class="text-gray-600"><code>scripts/build-recipes.ts</code>: Wayback 取得 → EUC-JP 変換 → パース → name→id 突合 → V1-V5 → <code>recipes.json</code> 生成。<code>npm run scrape:recipes</code> で実行。</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-gray-200 text-gray-700 rounded px-2 py-1 shrink-0">T2</span>
+            <div class="text-sm">
+              <p class="font-medium">詳細モーダルに推薦エントリ追加</p>
+              <p class="text-gray-600">「📋 このカードを使うデッキを見る」ボタン + 件数 + レシピ一覧表示 (AC-1, 2, 3)。</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-gray-200 text-gray-700 rounded px-2 py-1 shrink-0">T3</span>
+            <div class="text-sm">
+              <p class="font-medium">レシピ → デッキビルダー読込</p>
+              <p class="text-gray-600">上書き確認 → <code>deck</code> 配列書込 → URL共有・パネル表示 (AC-2)。</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-gray-200 text-gray-700 rounded px-2 py-1 shrink-0">T4</span>
+            <div class="text-sm">
+              <p class="font-medium">0件フォールバック + 投稿導線</p>
+              <p class="text-gray-600">同種族/同文明フォールバック → 0件なら投稿へ誘導 (AC-4)。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P1 -->
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-white text-xs font-bold px-3 py-1 rounded-full bg-amber-500">P1 — 投稿/品質</span>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-amber-100 text-amber-700 rounded px-2 py-1 shrink-0">T5</span>
+            <div class="text-sm"><p class="font-medium">投稿フォーム + クライアントバリデ V1-V5</p><p class="text-gray-600">既存検索 UI でカード選択。V1-V5 チェック + 違反内容表示。</p></div>
+          </div>
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-amber-100 text-amber-700 rounded px-2 py-1 shrink-0">T6</span>
+            <div class="text-sm"><p class="font-medium">GitHub PR プレフィル誘導</p><p class="text-gray-600">バリデ通過後に JSON 断片 → GitHub PR URL 生成 → 新規タブ (AC-6)。</p></div>
+          </div>
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-amber-100 text-amber-700 rounded px-2 py-1 shrink-0">T7</span>
+            <div class="text-sm"><p class="font-medium">殿堂バッジ・出典リンク表示</p><p class="text-gray-600">レシピカード内に既存 <code>hofBadge()</code> 流用 + Wayback リンク (AC-2)。</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- P2 -->
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-white text-xs font-bold px-3 py-1 rounded-full bg-gray-500">P2 — 拡張</span>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 shrink-0">T8</span>
+            <div class="text-sm"><p class="font-medium">パフォーマンス最適化</p><p class="text-gray-600">recipes.json の gzip サイズ確認。8,000件でも UI がブロックしないよう遅延ロード・分割を検討 (AC-8)。</p></div>
+          </div>
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 shrink-0">T9</span>
+            <div class="text-sm"><p class="font-medium">非 GitHub ユーザー向け JSON コピー投稿</p><p class="text-gray-600">GitHub アカウントなしでも JSON をコピーしてオーナーに送れる代替手段。</p></div>
+          </div>
+          <div class="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+            <span class="font-mono text-xs bg-gray-100 text-gray-600 rounded px-2 py-1 shrink-0">T10</span>
+            <div class="text-sm"><p class="font-medium">E2E テスト追加</p><p class="text-gray-600"><code>scripts/e2e.mjs</code> に推薦レシピの合法性検証を追加。validated レシピは全て 40枚 / 殿堂≤1 / プレ殿=0 / 同名≤4 / 全カード存在。</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- recipes.json スキーマ -->
+  <section class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="text-gray-500">🗄️</span> recipes.json スキーマ
+    </h2>
+    <pre class="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto"><code>{
+  "id": "rcp-0001",
+  "name": "光水メカオー",
+  "cards": [{ "id": "dm15-001", "count": 4 }],
+  "civilizations": ["光", "水"],
+  "archetype": "メカ・デル・ソル",
+  "author": "匿名可",
+  "source": {
+    "type": "scraped",          // "scraped" | "user"
+    "url": "https://web.archive.org/web/.../deck12345.html",
+    "collectedAt": "2026-06-07"
+  },
+  "tags": ["ビートダウン"],
+  "createdAt": "2008-04-01",    // 任意・分かる範囲で
+  "validated": true,             // V1-V5 全て通過
+  "validationNote": ""
+}</code></pre>
+  </section>
+
+  <!-- フッター -->
+  <div class="text-center text-xs text-gray-400 pt-4 border-t border-gray-200">
+    Generated by dm-autodeck team (researcher + po) &nbsp;|&nbsp; 2026-06-07 &nbsp;|&nbsp; v2 最終確定版
+  </div>
+
+</div>
+</body>
+</html>
