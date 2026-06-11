@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsx scripts/build-json.ts",
+    "build": "tsx scripts/build-json.ts && tsx scripts/build-card-pages.ts",
+    "build:card-pages": "tsx scripts/build-card-pages.ts",
     "serve": "npx serve public",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",

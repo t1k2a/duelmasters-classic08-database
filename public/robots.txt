@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://t1k2a.github.io/duelmasters-classic08-database/sitemap.xml
