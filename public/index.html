@@ -608,6 +608,8 @@ function recipeCardHTML(r, highlightId) {
       <div class="flex items-center gap-3 pt-1">
         <button onclick="loadRecipe('${escapeHtml(r.id)}')"
           class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 py-1 font-medium">読込</button>
+        <button onclick="copyRecipeURL('${escapeHtml(r.id)}')"
+          class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-3 py-1 font-medium">URLをコピー</button>
         ${srcLink}
       </div>
     </div>`;
@@ -1000,20 +1002,69 @@ function closeDeckPanel(e) {
   }
 }
 
-function shareDeck() {
-  if (!deck.length) { showToast('デッキが空です'); return; }
+// デッキ内の最高レアカードを返す。同レアなら採用枚数が多い方、それも同率なら先頭。
+function topRarityCard(deckEntries) {
+  let best = null, bestRank = 99, bestCount = -1;
+  for (const e of deckEntries) {
+    const card = cardById(e.id);
+    if (!card) continue;
+    const rank = RARITY_ORDER[card.rarity] ?? 9;
+    const count = e.count || 0;
+    if (rank < bestRank || (rank === bestRank && count > bestCount)) {
+      best = card; bestRank = rank; bestCount = count;
+    }
+  }
+  return best;
+}
+
+// デッキの説明文（共有テキスト・タイトル用）を組み立てる。
+function deckSummaryText(deckEntries) {
+  const total = deckEntries.reduce((s, e) => s + (e.count || 0), 0);
+  const top = topRarityCard(deckEntries);
+  if (top) {
+    const rarity = top.rarity ? `【${top.rarity}】` : '';
+    return `${rarity}${top.name}入りデッキ（${total}枚）`;
+  }
+  return `デッキ（${total}枚）`;
+}
+
+function buildDeckURL() {
   const payload = deck.map(e => ({ id: e.id, count: e.count }));
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
   const params = new URLSearchParams(location.search);
   params.set('deck', encoded);
-  const url = `${location.origin}${location.pathname}?${params.toString()}`;
-  navigator.clipboard.writeText(url)
-    .then(() => showToast('共有URLをコピーしました'))
+  params.delete('recipe');
+  return `${location.origin}${location.pathname}?${params.toString()}`;
+}
+
+function shareDeck() {
+  if (!deck.length) { showToast('デッキが空です'); return; }
+  const url = buildDeckURL();
+  const summary = deckSummaryText(deck);
+  const text = `${summary}\nデッキのURL: ${url}`;
+  if (navigator.share) {
+    navigator.share({ title: `${summary} | デュエマ クラシック08`, text: summary, url })
+      .catch(() => {/* ユーザーがキャンセルした等は無視 */});
+    return;
+  }
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('共有テキストをコピーしました'))
     .catch(() => showToast('コピーに失敗しました'));
+}
+
+// deck/recipe をブラウザで開いたとき document.title を動的に更新する。
+function updateDeckTitle(deckEntries) {
+  if (!deckEntries.length) return;
+  document.title = `${deckSummaryText(deckEntries)} | デュエマ クラシック08`;
 }
 
 function restoreDeckFromURL() {
   const params = new URLSearchParams(location.search);
+  // ?recipe=rcp-XXXX で開かれた場合は該当レシピを読み込む（静的OGPページからのリダイレクト先）
+  if (params.has('recipe')) {
+    restoreRecipeFromURL(params.get('recipe'));
+    return;
+  }
   if (!params.has('deck')) return;
   try {
     const decoded = JSON.parse(decodeURIComponent(escape(atob(params.get('deck')))));
@@ -1028,8 +1079,45 @@ function restoreDeckFromURL() {
     deck = restored;
     saveDeck();
     renderDeckBadge();
+    updateDeckTitle(deck);
     openDeckPanel();
   } catch { /* 不正な deck param は無視 */ }
+}
+
+// 静的レシピページからのリダイレクト（?recipe=rcp-XXXX）でレシピを開く。
+function restoreRecipeFromURL(recipeId) {
+  const apply = () => {
+    const recipe = RECIPES.find(r => r.id === recipeId);
+    if (!recipe) return false;
+    deck = (recipe.cards || [])
+      .map(rc => {
+        const card = cardById(rc.id);
+        if (!card) return null;
+        return { id: rc.id, name: card.name, count: Math.min(CARD_MAX, Math.max(1, rc.count | 0)) };
+      })
+      .filter(Boolean);
+    saveDeck();
+    renderDeckBadge();
+    updateDeckTitle(deck);
+    openDeckPanel();
+    return true;
+  };
+  // RECIPES がまだ読み込まれていない場合に備えて遅延リトライ
+  if (!apply()) {
+    let tries = 0;
+    const timer = setInterval(() => {
+      if (apply() || ++tries > 40) clearInterval(timer);
+    }, 100);
+  }
+}
+
+// レシピの共有URL（静的OGPページ）をコピーする。
+function copyRecipeURL(recipeId) {
+  const base = location.pathname.replace(/\/[^/]*$/, '');
+  const url = `${location.origin}${base}/recipe/${recipeId}/`;
+  navigator.clipboard.writeText(url)
+    .then(() => showToast('レシピのURLをコピーしました'))
+    .catch(() => showToast('コピーに失敗しました'));
 }
 
 function loadRecipe(recipeId) {

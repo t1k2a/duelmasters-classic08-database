@@ -39,6 +39,8 @@ npm run serve
 # → http://localhost:3000 などで開く
 ```
 
+> 📝 静的ページ（`public/card/`・`public/recipe/`）と `sitemap.xml` は CI ではビルドされません。データ更新時は `npm run build:card-pages` でローカル生成し、`public/` ごとコミットしてください。
+
 ## 技術スタック
 
 スクレイピングで収集したデータを正規化し、静的サイトとして GitHub Pages に配信するパイプライン構成です。
