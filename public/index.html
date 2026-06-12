@@ -31,12 +31,16 @@
     .card-row.selected { background:#eff6ff; border-left:3px solid #3b82f6; }
     .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   </style>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4338ca">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
 </head>
 <body class="bg-gray-300 min-h-screen">
 
 <!-- ヘッダー（全幅） -->
 <header class="bg-indigo-700 text-white px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-20">
   <span class="text-lg font-bold tracking-wide">🎴 デュエマ クラシック08 カード検索</span>
+  <button id="pwaInstallBtn" onclick="pwaInstall()" class="hidden bg-white/15 hover:bg-white/25 text-white text-sm rounded px-2 py-1 leading-none">📲 インストール</button>
   <a href="meta.html" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">メタデッキ</a>
   <span id="cardCountBadge" class="text-indigo-200 text-sm"></span>
 </header>
@@ -820,6 +824,8 @@ function applyURLParams() {
       if (shouldBeOn !== isOn) toggleMobileCiv(btn, civ);
     });
   }
+  // ?id=xxx で開かれた場合は該当カード詳細を開く（静的OGPページからのリダイレクト先）
+  if (params.has('id')) selectCard(params.get('id'));
 }
 
 ['textSearch','mobileCardType','mobileCostMax','mobileSetFilter','mobileRaceFilter','powerFilter','rarityFilter','abilityFilter','sortKey','sortDir']
@@ -1214,6 +1220,64 @@ if (!localStorage.getItem('dm_tooltip_seen')) {
   setTimeout(() => tip.classList.add('hidden'), 4000);
   localStorage.setItem('dm_tooltip_seen', '1');
 }
+</script>
+
+<!-- PWA: Service Worker 登録 + インストールプロンプト制御 -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
+
+(function () {
+  const DISMISS_KEY = 'dm_pwa_dismissed_until';
+  let deferredPrompt = null;
+
+  const btn = () => document.getElementById('pwaInstallBtn');
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function dismissedRecently() {
+    const until = Number(localStorage.getItem(DISMISS_KEY) || 0);
+    return Date.now() < until;
+  }
+
+  function showBtn() {
+    if (isStandalone() || dismissedRecently()) return;
+    const b = btn();
+    if (b) b.classList.remove('hidden');
+  }
+
+  function hideBtn() {
+    const b = btn();
+    if (b) b.classList.add('hidden');
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showBtn();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    hideBtn();
+  });
+
+  window.pwaInstall = async function () {
+    if (!deferredPrompt) { hideBtn(); return; }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    hideBtn();
+    if (outcome === 'dismissed') {
+      localStorage.setItem(DISMISS_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    }
+  };
+})();
 </script>
 </body>
 </html>

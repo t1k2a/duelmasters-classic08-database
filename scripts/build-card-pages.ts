@@ -88,7 +88,9 @@ function cardPageHtml(card: CardJson): string {
   const image = `${IMG_BASE}/${card.id}.jpg`
   const title = `${card.name} - デュエルマスターズ クラシック08`
   const desc = (card.text ?? card.name).replace(/\s+/g, ' ').trim()
-  const redirect = `/?id=${encodeURIComponent(card.id)}`
+  // card/{id}/index.html から SPA トップ(public/index.html)へは2階層上。
+  // GitHub Pages のサブパス配信でも壊れないよう相対パスにする。
+  const redirect = `../../?id=${encodeURIComponent(card.id)}`
 
   const jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -178,7 +180,8 @@ function deckPageHtml(opts: {
   const desc = `${topPart}${total}枚デッキ。${civPart}${extraDesc ? ` ${extraDesc}` : ''}`
     .replace(/\s+/g, ' ')
     .trim()
-  const redirect = `/?recipe=${encodeURIComponent(redirectId)}`
+  // recipe/{slug}/index.html から SPA トップへは2階層上（相対パス）。
+  const redirect = `../../?recipe=${encodeURIComponent(redirectId)}`
 
   const jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -272,9 +275,10 @@ async function main() {
     const matchedRecipeId = recipeByName.get(deck.name)
     // SPA で開ける recipe があればそこへ、無ければトップへ。
     // SPA は ?id= を消費せず着地がトップになるだけなので、明示的に / に統一する。
+    // recipe/meta-{n}/index.html から SPA トップへは2階層上（相対パス）。
     const redirect = matchedRecipeId
-      ? `/?recipe=${encodeURIComponent(matchedRecipeId)}`
-      : '/'
+      ? `../../?recipe=${encodeURIComponent(matchedRecipeId)}`
+      : '../../'
     const url = `${SITE}/recipe/${slug}/`
     const total = deckTotal(deck.cards || [])
     const rarityTag = top && top.rarity ? `【${top.rarity}】` : ''
