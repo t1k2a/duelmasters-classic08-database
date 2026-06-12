@@ -1028,13 +1028,61 @@ function deckSummaryText(deckEntries) {
   return `デッキ（${total}枚）`;
 }
 
+// カードID（dm06-008 / dm06-s08）を短縮トークン（6-8 / 6-s8）へ変換する。
+// 弾番号・通常番号のゼロ埋めを除去し、s番号は s を保持して桁ゼロ埋めを除去する。
+function encodeCardId(id) {
+  const m = /^dm(\d+)-(s?)(\d+)$/.exec(id);
+  if (!m) return null;
+  const set = String(parseInt(m[1], 10));
+  const num = m[2] + String(parseInt(m[3], 10));
+  return `${set}-${num}`;
+}
+
+// 短縮トークン（6-8 / 6-s8）をカードID（dm06-008 / dm06-s08）へ復元する。
+// 弾は2桁、通常番号は3桁、s番号は2桁でゼロ埋めする。
+function decodeCardToken(token) {
+  const m = /^(\d+)-(s?)(\d+)$/.exec(token);
+  if (!m) return null;
+  const set = m[1].padStart(2, '0');
+  const num = m[2]
+    ? 's' + m[3].padStart(2, '0')
+    : m[3].padStart(3, '0');
+  return `dm${set}-${num}`;
+}
+
+// デッキを ?d=6-8x2.1-52... 形式の文字列へエンコードする（count>1 のみ xN）。
+function encodeDeck(deckEntries) {
+  return deckEntries
+    .map(e => {
+      const tok = encodeCardId(e.id);
+      if (!tok) return null;
+      const count = e.count | 0;
+      return count > 1 ? `${tok}x${count}` : tok;
+    })
+    .filter(Boolean)
+    .join('.');
+}
+
+// ?d= 形式の文字列を [{id,count}] へデコードする。
+// cards.json に存在しないIDや不正トークンは黙ってスキップする。
+function decodeDeck(str) {
+  return str
+    .split('.')
+    .map(part => {
+      const m = /^(.+?)(?:x(\d+))?$/.exec(part);
+      if (!m) return null;
+      const id = decodeCardToken(m[1]);
+      if (!id || !CARDS.find(c => c.id === id)) return null;
+      const count = m[2] ? parseInt(m[2], 10) : 1;
+      return { id, count };
+    })
+    .filter(Boolean);
+}
+
 function buildDeckURL() {
-  const payload = deck.map(e => ({ id: e.id, count: e.count }));
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-  const params = new URLSearchParams(location.search);
-  params.set('deck', encoded);
-  params.delete('recipe');
-  return `${location.origin}${location.pathname}?${params.toString()}`;
+  // 共有URLには d のみを載せる（q 等の無関係なクエリは除去する）。
+  const encoded = encodeDeck(deck);
+  return `${location.origin}${location.pathname}?d=${encoded}`;
 }
 
 function shareDeck() {
@@ -1065,9 +1113,16 @@ function restoreDeckFromURL() {
     restoreRecipeFromURL(params.get('recipe'));
     return;
   }
-  if (!params.has('deck')) return;
   try {
-    const decoded = JSON.parse(decodeURIComponent(escape(atob(params.get('deck')))));
+    let decoded = null;
+    if (params.has('d')) {
+      // 新形式 ?d=6-8x2.1-52...（優先）
+      decoded = decodeDeck(params.get('d'));
+    } else if (params.has('deck')) {
+      // 旧形式 ?deck=<base64(JSON)>（過去URL互換）
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(params.get('deck')))));
+      decoded = Array.isArray(parsed) ? parsed : null;
+    }
     if (!Array.isArray(decoded)) return;
     const restored = decoded
       .filter(e => e && e.id && CARDS.find(c => c.id === e.id))
@@ -1075,13 +1130,14 @@ function restoreDeckFromURL() {
         const card = CARDS.find(c => c.id === e.id);
         return { id: e.id, name: card.name, count: Math.min(CARD_MAX, Math.max(1, e.count | 0)) };
       });
+    if (!restored.length) return;
     if (deck.length && !confirm('共有されたデッキを読み込みます。現在のデッキは上書きされます。よろしいですか？')) return;
     deck = restored;
     saveDeck();
     renderDeckBadge();
     updateDeckTitle(deck);
     openDeckPanel();
-  } catch { /* 不正な deck param は無視 */ }
+  } catch { /* 不正な deck/d param は無視 */ }
 }
 
 // 静的レシピページからのリダイレクト（?recipe=rcp-XXXX）でレシピを開く。
