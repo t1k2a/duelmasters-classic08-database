@@ -972,8 +972,17 @@ function renderDeckPanel() {
     return;
   }
   listEl.innerHTML = deck.map(e => `
-    <div class="flex items-center gap-2 py-2 text-sm">
-      <span class="flex-1 truncate cursor-pointer hover:text-indigo-600" onclick="selectCard('${e.id}', true)">${escapeHtml(e.name)}</span>
+    <div class="flex items-center gap-2 py-1.5 text-sm">
+      <div class="relative shrink-0 w-9 h-[52px]">
+        <img
+          src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${e.id}.jpg"
+          alt=""
+          loading="lazy"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          class="w-9 h-[52px] object-cover rounded shadow-sm">
+        <div style="display:none" class="w-9 h-[52px] rounded bg-gray-100 items-center justify-center text-gray-300 text-base">🎴</div>
+      </div>
+      <span class="flex-1 truncate cursor-pointer hover:text-indigo-600 leading-tight" onclick="selectCard('${e.id}', true)">${escapeHtml(e.name)}</span>
       <span class="text-gray-500 shrink-0">×${e.count}</span>
       <button onclick="removeFromDeck('${e.id}')" class="text-red-400 hover:text-red-600 text-lg leading-none shrink-0 w-6">−</button>
     </div>
