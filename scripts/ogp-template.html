@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f172a 100%);
+    color: #f8fafc;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 70px 80px;
+  }
+  /* 文明カラーの帯（上端） */
+  .civ-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 14px;
+    display: flex;
+  }
+  .civ-bar > div { flex: 1; }
+  .civ-light   { background: #facc15; }
+  .civ-water   { background: #3b82f6; }
+  .civ-dark    { background: #9333ea; }
+  .civ-fire    { background: #ef4444; }
+  .civ-nature  { background: #22c55e; }
+
+  .eyebrow {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: #38bdf8;
+    margin-bottom: 22px;
+  }
+  h1 {
+    font-size: 76px;
+    font-weight: 900;
+    line-height: 1.18;
+    letter-spacing: 0.01em;
+    margin-bottom: 28px;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.45);
+  }
+  h1 .accent { color: #fbbf24; }
+  .tagline {
+    font-size: 34px;
+    font-weight: 500;
+    color: #cbd5e1;
+    margin-bottom: 54px;
+    line-height: 1.5;
+  }
+  .stats {
+    display: flex;
+    gap: 60px;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+  }
+  .stat .num {
+    font-size: 60px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+  }
+  .stat .num .unit {
+    font-size: 30px;
+    font-weight: 700;
+    margin-left: 6px;
+    color: #94a3b8;
+  }
+  .stat .label {
+    font-size: 24px;
+    font-weight: 600;
+    color: #38bdf8;
+    margin-top: 12px;
+    letter-spacing: 0.04em;
+  }
+  .url {
+    position: absolute;
+    bottom: 48px;
+    right: 80px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+  <div class="civ-bar">
+    <div class="civ-light"></div>
+    <div class="civ-water"></div>
+    <div class="civ-dark"></div>
+    <div class="civ-fire"></div>
+    <div class="civ-nature"></div>
+  </div>
+
+  <div class="eyebrow">DUEL MASTERS CLASSIC 08</div>
+  <h1>デュエル・マスターズ<br><span class="accent">クラシック08</span> データベース</h1>
+  <div class="tagline">全カード検索・デッキビルダー・メタデッキTier表</div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="num">2,134<span class="unit">枚</span></div>
+      <div class="label">収録カード</div>
+    </div>
+    <div class="stat">
+      <div class="num">462<span class="unit">件</span></div>
+      <div class="label">デッキレシピ</div>
+    </div>
+    <div class="stat">
+      <div class="num">5<span class="unit">文明</span></div>
+      <div class="label">完全網羅</div>
+    </div>
+  </div>
+
+  <div class="url">t1k2a.github.io/duelmasters-classic08-database</div>
+</body>
+</html>
