@@ -47,7 +47,7 @@
 
 <!-- LP ラッパー: SP幅を中央に配置 -->
 <div class="flex justify-center min-h-[calc(100vh-52px)]">
-  <div class="w-full max-w-[430px] bg-gray-50 flex flex-col shadow-2xl" style="height:calc(100vh - 52px); overflow:hidden;">
+  <div class="w-full max-w-[430px] md:max-w-4xl lg:max-w-6xl bg-gray-50 flex flex-col shadow-2xl" style="height:calc(100vh - 52px); overflow:hidden;">
 
     <!-- 今日の1枚バナー -->
     <div id="todayPick" class="hidden flex-shrink-0 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-100 px-4 py-2">
@@ -200,7 +200,7 @@
 <!-- デッキパネル ボトムシート（全幅） -->
 <div id="deckPanel" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeDeckPanel(event)">
   <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
-    <div class="w-full max-w-[430px] bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
+    <div class="w-full max-w-[430px] md:max-w-2xl bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
       <div class="flex justify-between items-center gap-3 mb-3">
         <h2 class="font-bold text-base">マイデッキ <span id="deckTotal" class="text-sm font-normal text-gray-500">0 / 40</span></h2>
         <button onclick="closeDeckPanel()" class="text-gray-400 text-xl leading-none shrink-0">&times;</button>
@@ -221,7 +221,7 @@
 <!-- カード詳細 ボトムシート（全幅） -->
 <div id="mobileDetail" class="fixed inset-0 bg-black/50 z-30 hidden" onclick="closeDetail(event)">
   <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
-    <div class="w-full max-w-[430px] bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
+    <div class="w-full max-w-[430px] md:max-w-2xl bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
       <div class="flex justify-between items-start gap-3 mb-4">
         <h2 id="detailName" class="font-bold text-base leading-snug min-w-0 break-words"></h2>
         <div class="flex items-center gap-2 shrink-0">
@@ -496,7 +496,7 @@ function cardItemHTML(c) {
 function applyListContainerClass() {
   const el = document.getElementById('cardList');
   if (viewMode === 'grid') {
-    el.className = 'grid grid-cols-2 gap-2 p-2';
+    el.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 p-2';
   } else {
     el.className = 'divide-y divide-gray-100';
   }
