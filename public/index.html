@@ -295,6 +295,7 @@ fetch('cards.json')
   .then(r => r.json())
   .then(data => {
     CARDS = data;
+    CARDS.forEach(c => { c._kana = normalizeKana(c.name); })
     DM_SET_MAP = buildSetMap(CARDS);
     populateSetSelects();
     populateRaceSelect();
@@ -383,8 +384,17 @@ function civBadge(civs) {
 
 function rarityClass(r) { return `rarity-${r}`; }
 
+function normalizeKana(s) {
+  return (s || '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[ぁ-ゖ]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60))
+    .replace(/[・\s]/g, '');
+}
+
 function getFilters() {
-  const text = document.getElementById('textSearch').value.trim().toLowerCase();
+  const text = document.getElementById('textSearch').value.trim();
+  const kana = normalizeKana(text);
   const civs = [...mobileCivFilter];
   const costVal = document.getElementById('mobileCostMax').value || '';
   const costParts = costVal ? costVal.split(':') : [];
@@ -397,13 +407,13 @@ function getFilters() {
   const powerFilter = powerVal ? { mode: powerParts[0], n: parseInt(powerParts[1]), n2: parseInt(powerParts[2]) } : null;
   const rarity = document.getElementById('rarityFilter').value || '';
   const ability = document.getElementById('abilityFilter').value || '';
-  return { text, civs, costFilter, type, setCode, race, powerFilter, rarity, ability };
+  return { text, kana, civs, costFilter, type, setCode, race, powerFilter, rarity, ability };
 }
 
 function filterCards() {
-  const { text, civs, costFilter, type, setCode, race, powerFilter, rarity, ability } = getFilters();
+  const { text, kana, civs, costFilter, type, setCode, race, powerFilter, rarity, ability } = getFilters();
   return CARDS.filter(c => {
-    if (text && !c.name.toLowerCase().includes(text) && !(c.text || '').toLowerCase().includes(text)) return false;
+    if (text && !c._kana.includes(kana) && !(c.text || '').toLowerCase().includes(text.toLowerCase())) return false;
     if (civs.length && !c.civilizations.some(cv => civs.includes(cv))) return false;
     if (costFilter) {
       if (costFilter.mode === 'max' && c.cost !== null && c.cost > costFilter.n) return false;
