@@ -218,6 +218,34 @@
 <!-- トースト -->
 <div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
 
+<!-- iOS「ホーム画面に追加」案内 ボトムシート -->
+<div id="iosInstallSheet" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="closeIosInstall(event)">
+  <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
+    <div class="w-full max-w-[430px] md:max-w-2xl bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
+      <div class="flex justify-between items-center gap-3 mb-3">
+        <h2 class="font-bold text-base">ホーム画面に追加</h2>
+        <button onclick="closeIosInstall()" class="text-gray-400 text-xl leading-none shrink-0">&times;</button>
+      </div>
+      <p class="text-sm text-gray-600 mb-4">このサイトをアプリのように使えます。下の手順で追加してください。</p>
+      <ol class="space-y-3 mb-4 text-sm text-gray-700">
+        <li class="flex items-center gap-3">
+          <span class="shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 font-bold text-xs flex items-center justify-center">1</span>
+          <span>画面下の共有アイコン <span class="inline-block align-middle text-indigo-600 font-bold">⬆️</span>（□から↑が出るマーク）をタップ</span>
+        </li>
+        <li class="flex items-center gap-3">
+          <span class="shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 font-bold text-xs flex items-center justify-center">2</span>
+          <span>「ホーム画面に追加」を選ぶ</span>
+        </li>
+        <li class="flex items-center gap-3">
+          <span class="shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 font-bold text-xs flex items-center justify-center">3</span>
+          <span>右上の「追加」をタップ</span>
+        </li>
+      </ol>
+      <button onclick="dismissIosInstall()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm rounded-lg py-2">後で（しばらく表示しない）</button>
+    </div>
+  </div>
+</div>
+
 <!-- カード詳細 ボトムシート（全幅） -->
 <div id="mobileDetail" class="fixed inset-0 bg-black/50 z-30 hidden" onclick="closeDetail(event)">
   <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
@@ -1250,6 +1278,13 @@ if ('serviceWorker' in navigator) {
     return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   }
 
+  // iOS判定。iPadOS13+ は UA を Mac に偽装するため maxTouchPoints でも拾う。
+  function isIOS() {
+    const ua = navigator.userAgent || '';
+    if (/iphone|ipad|ipod/i.test(ua)) return true;
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
   function dismissedRecently() {
     const until = Number(localStorage.getItem(DISMISS_KEY) || 0);
     return Date.now() < until;
@@ -1277,16 +1312,54 @@ if ('serviceWorker' in navigator) {
     hideBtn();
   });
 
-  window.pwaInstall = async function () {
-    if (!deferredPrompt) { hideBtn(); return; }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    hideBtn();
-    if (outcome === 'dismissed') {
-      localStorage.setItem(DISMISS_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
-    }
+  function suppressFor7Days() {
+    localStorage.setItem(DISMISS_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+  }
+
+  // iOS: ネイティブの beforeinstallprompt が無いので手動の追加手順を案内する
+  const iosSheet = () => document.getElementById('iosInstallSheet');
+
+  function openIosInstall() {
+    const s = iosSheet();
+    if (s) s.classList.remove('hidden');
+  }
+
+  window.closeIosInstall = function (e) {
+    // 背景タップ時のみ閉じる（onclick から直接呼ぶ場合は e 無し）
+    if (e && e.target !== iosSheet()) return;
+    const s = iosSheet();
+    if (s) s.classList.add('hidden');
   };
+
+  window.dismissIosInstall = function () {
+    const s = iosSheet();
+    if (s) s.classList.add('hidden');
+    suppressFor7Days();
+    hideBtn();
+  };
+
+  window.pwaInstall = async function () {
+    if (deferredPrompt) {
+      // Android / desktop: ネイティブプロンプト
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      hideBtn();
+      if (outcome === 'dismissed') suppressFor7Days();
+      return;
+    }
+    if (isIOS() && !isStandalone()) {
+      // iOS: 追加手順を案内
+      openIosInstall();
+      return;
+    }
+    hideBtn();
+  };
+
+  // iOS はページロード時にボタンを出す（beforeinstallprompt が発火しないため）
+  window.addEventListener('load', () => {
+    if (isIOS() && !isStandalone() && !dismissedRecently()) showBtn();
+  });
 })();
 </script>
 </body>
