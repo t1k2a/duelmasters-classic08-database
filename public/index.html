@@ -62,13 +62,27 @@
     </div>
 
     <!-- 検索バー + フィルター -->
-    <div class="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+    <div class="bg-white border-b border-gray-200 flex-shrink-0">
+      <!-- トグルヘッダー（常時表示） -->
+      <button onclick="toggleFilterPanel()" id="filterPanelToggle"
+        class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50">
+        <span class="text-sm font-semibold text-gray-700">🔍 検索・絞り込み</span>
+        <span id="filterPanelChevron" class="text-gray-400 text-sm leading-none">▼</span>
+      </button>
+
+      <!-- 開閉本体（初期は折りたたみ） -->
+      <div id="filterPanelBody" class="hidden px-4 pb-3">
       <input id="textSearch" type="text" placeholder="カード名・テキストで検索..."
         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
 
       <div class="mt-3 space-y-2">
         <!-- 絞り込み セクション -->
         <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">絞り込み</p>
+        <!-- クラシック05環境フィルター -->
+        <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer select-none">
+          <input type="checkbox" id="classic05Filter" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-400">
+          クラシック05環境のみ
+        </label>
         <!-- 文明タグ -->
         <div class="flex gap-2 flex-wrap" id="mobileCivTags">
           <button onclick="toggleMobileCiv(this,'光')"  data-civ="光"  data-on="1" class="civ-光  border rounded-full px-3 py-0.5 text-xs font-medium">光</button>
@@ -151,6 +165,7 @@
             <option value="desc">降順 ↓</option>
           </select>
         </div>
+      </div>
       </div>
     </div>
 
@@ -250,6 +265,7 @@ let debounceTimer = null;
 let urlTimer = null;
 const VIEW_KEY = 'dm_view_mode';
 let viewMode = localStorage.getItem(VIEW_KEY) === 'grid' ? 'grid' : 'list';
+const FILTER_COLLAPSE_KEY = 'dm_filter_collapsed';
 
 function buildSetMap(cards) {
   const map = new Map();
@@ -268,6 +284,24 @@ function buildSetMap(cards) {
 function setShortName(setCode) {
   const full = DM_SET_MAP.get(setCode) || setCode;
   return full.replace(/^DM-\d+\s*/, '');
+}
+
+// クラシック05環境 = 収録セット（printings または setsContaining）のいずれかが DM-01〜DM-16 なら対象（方式B）
+function isClassic05(card) {
+  const inRange = code => {
+    const m = String(code).match(/^DM-(\d+)$/);
+    if (!m) return false;
+    const n = parseInt(m[1], 10);
+    return n >= 1 && n <= 16;
+  };
+  for (const pr of card.printings) {
+    if (pr.setCode && inRange(pr.setCode)) return true;
+  }
+  for (const s of card.setsContaining) {
+    const m = s.match(/^(DM-\d+)/);
+    if (m && inRange(m[1])) return true;
+  }
+  return false;
 }
 
 function populateSetSelects() {
@@ -407,12 +441,14 @@ function getFilters() {
   const powerFilter = powerVal ? { mode: powerParts[0], n: parseInt(powerParts[1]), n2: parseInt(powerParts[2]) } : null;
   const rarity = document.getElementById('rarityFilter').value || '';
   const ability = document.getElementById('abilityFilter').value || '';
-  return { text, kana, civs, costFilter, type, setCode, race, powerFilter, rarity, ability };
+  const classic05 = document.getElementById('classic05Filter').checked;
+  return { text, kana, civs, costFilter, type, setCode, race, powerFilter, rarity, ability, classic05 };
 }
 
 function filterCards() {
-  const { text, kana, civs, costFilter, type, setCode, race, powerFilter, rarity, ability } = getFilters();
+  const { text, kana, civs, costFilter, type, setCode, race, powerFilter, rarity, ability, classic05 } = getFilters();
   return CARDS.filter(c => {
+    if (classic05 && !isClassic05(c)) return false;
     if (text && !c._kana.includes(kana) && !(c.text || '').toLowerCase().includes(text.toLowerCase())) return false;
     if (civs.length && !c.civilizations.some(cv => civs.includes(cv))) return false;
     if (costFilter) {
@@ -807,6 +843,7 @@ function syncURL() {
   set('power', document.getElementById('powerFilter').value);
   set('rarity', document.getElementById('rarityFilter').value);
   set('ability', document.getElementById('abilityFilter').value);
+  set('c05', document.getElementById('classic05Filter').checked ? '1' : '');
   set('sortKey', document.getElementById('sortKey').value);
   set('sortDir', document.getElementById('sortDir').value === 'asc' ? '' : 'desc');
   const qs = params.toString();
@@ -823,6 +860,7 @@ function applyURLParams() {
   if (params.has('power')) document.getElementById('powerFilter').value = params.get('power');
   if (params.has('rarity')) document.getElementById('rarityFilter').value = params.get('rarity');
   if (params.has('ability')) document.getElementById('abilityFilter').value = params.get('ability');
+  if (params.get('c05') === '1') document.getElementById('classic05Filter').checked = true;
   if (params.has('sortKey')) document.getElementById('sortKey').value = params.get('sortKey');
   if (params.has('sortDir')) document.getElementById('sortDir').value = params.get('sortDir') === 'desc' ? 'desc' : 'asc';
   if (params.has('civs')) {
@@ -838,8 +876,24 @@ function applyURLParams() {
   if (params.has('id')) selectCard(params.get('id'));
 }
 
-['textSearch','mobileCardType','mobileCostMax','mobileSetFilter','mobileRaceFilter','powerFilter','rarityFilter','abilityFilter','sortKey','sortDir']
+['textSearch','mobileCardType','mobileCostMax','mobileSetFilter','mobileRaceFilter','powerFilter','rarityFilter','abilityFilter','classic05Filter','sortKey','sortDir']
   .forEach(id => document.getElementById(id)?.addEventListener('input', scheduleUpdate));
+
+// ---- 検索・絞り込みパネルの開閉 ----
+// 保存値が無い初回は折りたたみ（'0' のときだけ展開）
+function applyFilterPanelCollapsed() {
+  const collapsed = localStorage.getItem(FILTER_COLLAPSE_KEY) !== '0';
+  document.getElementById('filterPanelBody').classList.toggle('hidden', collapsed);
+  document.getElementById('filterPanelChevron').textContent = collapsed ? '▼' : '▲';
+}
+
+function toggleFilterPanel() {
+  const collapsed = localStorage.getItem(FILTER_COLLAPSE_KEY) !== '0';
+  localStorage.setItem(FILTER_COLLAPSE_KEY, collapsed ? '0' : '1');
+  applyFilterPanelCollapsed();
+}
+
+applyFilterPanelCollapsed();
 
 // ---- 今日の1枚 ----
 const TODAY_HIDE_KEY = 'dm_today_hidden';
