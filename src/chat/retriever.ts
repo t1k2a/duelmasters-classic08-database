@@ -5,6 +5,17 @@ import { normalizeKana } from './normalize.js'
 
 const CIVS = ['光', '水', '闇', '火', '自然']
 
+// 「天門（ヘブンズ・ゲートコントロール）」→「天門」のように、括弧前の主要語を取り出す。
+function headTerm(s: string): string {
+  return s.split(/[（(]/)[0]?.trim() ?? s
+}
+
+// 2語のいずれかが他方を（正規化後に）含むなら一致とみなす。短すぎる語の誤爆を避け min 文字以上で判定。
+function mutualIncludes(an: string, bn: string, min = 2): boolean {
+  if (an.length < min || bn.length < min) return false
+  return an.includes(bn) || bn.includes(an)
+}
+
 export function retrieve(corpus: Corpus, question: string): RetrievalResult {
   const qn = normalizeKana(question)
   // (a) カード名一致
@@ -28,21 +39,49 @@ export function retrieve(corpus: Corpus, question: string): RetrievalResult {
       aux.push(card); if (named.length + aux.length >= 8) break
     }
   }
+  // (meta) アーキタイプ名・タグ・主要語と質問の相互部分一致（normalizeKana経由）
+  const metaHits: { json: string; cardRefs: { id: string }[] }[] = []
+  for (const m of corpus.meta) {
+    try {
+      const o = JSON.parse(m)
+      if (!o?.name) continue
+      const candidates = [o.name, headTerm(o.name), ...(Array.isArray(o.tags) ? o.tags : [])]
+      const matched = candidates.some(t => mutualIncludes(qn, normalizeKana(String(t))))
+      if (matched) metaHits.push({ json: m, cardRefs: Array.isArray(o.cards) ? o.cards : [] })
+    } catch { /* 不正JSONは無視 */ }
+  }
+  const meta = metaHits.slice(0, 2).map(h => h.json)
+
+  // (S1) ヒットしたmetaのキーカードを cards に昇格（重複除去・上限8）
   const cards = [...named, ...aux]
+  const seen = new Set(cards.map(c => c.id))
+  for (const h of metaHits) {
+    for (const ref of h.cardRefs) {
+      if (cards.length >= 8) break
+      if (!ref?.id || seen.has(ref.id)) continue
+      const cd = corpus.cardById.get(ref.id)
+      if (cd) { cards.push(cd); seen.add(cd.id) }
+    }
+    if (cards.length >= 8) break
+  }
+
   // (c) 関連レシピ
   const idSet = new Set(cards.map(c => c.id))
   const recipes = corpus.recipes
     .filter(r => Array.isArray(r.cards) && r.cards.some(rc => idSet.has(rc.id)))
     .sort((a, b) => Number(b.validated) - Number(a.validated))
     .slice(0, 3)
-  // (d) knowledge: タイトルのnormalizeKana部分一致で最大3件
+  // (d) knowledge: タイトル全体／タイトル先頭の主要語と質問の相互部分一致（2文字以上）
+  // 「殿堂レギュレーション」に対し「殿堂って何？」のように主要語のみの質問も拾う。
   const knowledge = corpus.knowledge
-    .filter(k => qn.includes(normalizeKana(k.title)))
+    .filter(k => {
+      const tn = normalizeKana(k.title)
+      if (mutualIncludes(qn, tn)) return true
+      // タイトル先頭の連続漢字を主要語として抽出し質問に含まれるか判定
+      const head = k.title.match(/^[一-龠々]{2,}/)?.[0]
+      return head ? qn.includes(normalizeKana(head)) : false
+    })
     .slice(0, 3)
     .map(k => `${k.title}: ${k.body}`)
-  // (meta) アーキタイプ名がそのまま質問に含まれるもの
-  const meta = corpus.meta.filter(m => {
-    try { const o = JSON.parse(m); return o?.name && question.includes(o.name) } catch { return false }
-  }).slice(0, 2)
   return { cards, recipes, meta, knowledge }
 }

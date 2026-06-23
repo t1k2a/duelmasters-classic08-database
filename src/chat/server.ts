@@ -13,12 +13,12 @@ import type { ChatTurn } from './types.js'
 const ALLOW = new Set(['https://t1k2a.github.io', 'http://localhost:3000'])
 const TIMEOUT_MS = 60_000
 
-export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; upImpl?: typeof isOllamaUp }): Hono {
+export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; upImpl?: typeof isOllamaUp; ratePerMin?: number; maxWaiting?: number }): Hono {
   const app = new Hono()
   const chat = deps.chatImpl ?? streamChat
   const up = deps.upImpl ?? isOllamaUp
-  const queue = new SingleFlightQueue(5)
-  const rl = new RateLimiter(10)
+  const queue = new SingleFlightQueue(deps.maxWaiting ?? 5)
+  const rl = new RateLimiter(deps.ratePerMin ?? 10)
 
   app.use('*', async (c, next) => {
     const origin = c.req.header('origin') ?? ''

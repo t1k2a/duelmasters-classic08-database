@@ -21,3 +21,17 @@ test('DB外の語では空に近い結果', async () => {
   const r = retrieve(c, '令和の最新カードについて')
   assert.equal(r.cards.length, 0)
 })
+
+test('アーキタイプ主要語（天門）でmetaまたはキーカードを抽出', async () => {
+  const c = await loadCorpus()
+  const r = retrieve(c, '天門デッキを組みたい')
+  assert.ok(r.meta.length > 0 || r.cards.length > 0, 'meta/cardsいずれか非空')
+  // S1: ヒットしたmetaのキーカードがcardsに昇格していること
+  assert.ok(r.cards.length > 0, 'キーカード昇格')
+})
+
+test('用語の主要語（殿堂）で knowledge を抽出', async () => {
+  const c = await loadCorpus()
+  const r = retrieve(c, '殿堂って何？')
+  assert.ok(r.knowledge.some(k => k.includes('殿堂')), '殿堂レギュレーション抽出')
+})
