@@ -35,3 +35,10 @@ test('用語の主要語（殿堂）で knowledge を抽出', async () => {
   const r = retrieve(c, '殿堂って何？')
   assert.ok(r.knowledge.some(k => k.includes('殿堂')), '殿堂レギュレーション抽出')
 })
+
+test('略記された質問（クラシック05と08の違い）でも環境knowledgeを抽出', async () => {
+  const c = await loadCorpus()
+  // サジェストチップの実文。タイトルは「クラシック05とクラシック08の違い」だが2つ目の「クラシック」が略されている
+  const r = retrieve(c, 'クラシック05と08の違いは？')
+  assert.ok(r.knowledge.some(k => k.includes('クラシック05')), '環境の違いを抽出（バイグラム照合）')
+})

@@ -16,6 +16,23 @@ function mutualIncludes(an: string, bn: string, min = 2): boolean {
   return an.includes(bn) || bn.includes(an)
 }
 
+// 文字バイグラム集合
+function bigrams(s: string): Set<string> {
+  const set = new Set<string>()
+  for (let i = 0; i < s.length - 1; i++) set.add(s.slice(i, i + 2))
+  return set
+}
+
+// タイトルのバイグラムのうち質問に含まれる割合（略記・語順揺れに強い）。
+// 例: タイトル「クラシック05とクラシック08の違い」と質問「クラシック05と08の違いは？」でも高スコア。
+function bigramCoverage(qn: string, tn: string): number {
+  if (qn.length < 2 || tn.length < 3) return 0
+  const qb = bigrams(qn), tb = bigrams(tn)
+  let inter = 0
+  for (const g of tb) if (qb.has(g)) inter++
+  return inter / tb.size
+}
+
 export function retrieve(corpus: Corpus, question: string): RetrievalResult {
   const qn = normalizeKana(question)
   // (a) カード名一致
@@ -79,7 +96,9 @@ export function retrieve(corpus: Corpus, question: string): RetrievalResult {
       if (mutualIncludes(qn, tn)) return true
       // タイトル先頭の連続漢字を主要語として抽出し質問に含まれるか判定
       const head = k.title.match(/^[一-龠々]{2,}/)?.[0]
-      return head ? qn.includes(normalizeKana(head)) : false
+      if (head && qn.includes(normalizeKana(head))) return true
+      // 略記・語順揺れ対策: タイトルのバイグラムの過半が質問に出現すれば一致
+      return bigramCoverage(qn, tn) >= 0.5
     })
     .slice(0, 3)
     .map(k => `${k.title}: ${k.body}`)
