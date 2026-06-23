@@ -1415,6 +1415,12 @@ async function chatAsk(question, history) {
     body: JSON.stringify({ question, history }),
   });
   const bubble = appendAssistantBubble();
+  // 最初のトークンが来るまで「考え中」のタイピングドットを表示
+  bubble.innerHTML = '<span class="chat-typing inline-flex gap-1 items-center py-0.5">'
+    + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>'
+    + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>'
+    + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>'
+    + '</span>';
   if (!res.ok || !res.body) {
     bubble.textContent = chatErrorMessage(res.status === 429 ? 'RATE_LIMIT' : 'ERROR');
     return '';
@@ -1443,6 +1449,9 @@ async function chatAsk(question, history) {
     // ストリーミング中はプレーン表示、完了時に Markdown を整形描画へ差し替え
     bubble.classList.remove('whitespace-pre-wrap');
     bubble.innerHTML = renderMarkdown(assistant);
+  } else {
+    // トークンもエラーも無い（空応答）: タイピングドットを残さない
+    bubble.textContent = '（応答がありませんでした）';
   }
   if (final?.cards?.length) renderCardCards(bubble, final.cards);
   return assistant;
