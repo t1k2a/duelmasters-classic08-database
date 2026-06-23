@@ -6,7 +6,7 @@ import type { Corpus } from './corpus.js'
 import { loadCorpus } from './corpus.js'
 import { retrieve } from './retriever.js'
 import { buildMessages } from './prompt.js'
-import { streamChat, isOllamaUp } from './ollama.js'
+import { streamChat, isOllamaUp, warmup } from './ollama.js'
 import { SingleFlightQueue, RateLimiter } from './queue.js'
 import type { ChatTurn } from './types.js'
 
@@ -74,4 +74,7 @@ if (process.argv[1] && process.argv[1].endsWith('server.ts')) {
   const port = parseInt(process.env['CHAT_PORT'] ?? '8788')
   console.log(`Chat server on http://localhost:${port}`)
   serve({ fetch: app.fetch, port })
+  // モデルをVRAMへプリロード（初回ユーザーのコールドスタート解消）。失敗は無視。
+  console.log('Warming up model...')
+  warmup().then(ok => console.log(ok ? 'Model warm.' : 'Warmup skipped (Ollama未起動 or モデル未取得).'))
 }
