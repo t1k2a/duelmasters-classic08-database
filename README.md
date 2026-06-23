@@ -41,6 +41,32 @@ npm run serve
 
 > 📝 静的ページ（`public/card/`・`public/recipe/`）と `sitemap.xml` は CI ではビルドされません。データ更新時は `npm run build:card-pages` でローカル生成し、`public/` ごとコミットしてください。
 
+## AIアシスタント（ローカルLLM）
+
+クラシック08のカード・用語・環境について質問できるチャット機能です。回答はローカルの [Ollama](https://ollama.com/) と本リポジトリのカードDBを使った RAG で生成し、**カードの数値や能力テキストはLLMに創作させずDB実値を返す**設計です。サイト本体（GitHub Pages）→ ngrok → 自宅の Ollama を中継する構成のため、**あなたのマシンで Ollama が起動している間だけ**サイト上に「💬 AIに聞く」ボタンが現れます（停止すれば自動でオフライン＝ボタン非表示）。
+
+### 起動手順
+
+```bash
+# 1. Ollama を起動し、モデルを取得（初回のみ pull）
+ollama serve
+ollama pull qwen2.5:7b        # モデル名は環境変数 OLLAMA_MODEL で変更可
+
+# 2. チャットサーバを起動（:8788。カードDB検索用の `npm run api`(:3000) とは別プロセス）
+npm run chat
+
+# 3. ngrok で固定ドメインを 8788 に向ける（無料の固定ドメインを取得済みの前提）
+ngrok http --url=<あなたの固定>.ngrok-free.app 8788
+```
+
+最後に `public/index.html` の `CHAT_API_BASE` を、手順3で割り当てた固定ドメイン（例 `https://<あなたの固定>.ngrok-free.app`）に差し替えてコミットします。差し替え前に動作確認したい場合は、URL に `?chatApi=https://<あなたの固定>.ngrok-free.app` を付けて開くと一時的に上書きできます。
+
+### 注意点
+
+- **無料枠の制限**: ngrok 無料プランは固定ドメイン1つ・月20,000リクエストまで。Ollama 推論はあなたのマシンの帯域・1GBメモリ目安を消費します。
+- **マシン停止＝自動オフライン**: Ollama / `npm run chat` / ngrok のいずれかを止めると health 応答が落ち、サイト側のチャットボタンは自動的に非表示になります。常時公開用途ではありません。
+- 回答精度の手動チェックは `node scripts/chat-smoke.mjs`（実 Ollama 起動が前提・CI非対象）で行えます。
+
 ## 技術スタック
 
 スクレイピングで収集したデータを正規化し、静的サイトとして GitHub Pages に配信するパイプライン構成です。
