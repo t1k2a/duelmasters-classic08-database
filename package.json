@@ -20,6 +20,7 @@
     "scrape:dmc": "tsx src/scraper/run-dmc.ts",
     "scrape:dmc:test": "TEST_SET=DMC-09 tsx src/scraper/run-dmc.ts",
     "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers node scripts/e2e.mjs",
+    "test:e2e:chat": "PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers node scripts/e2e-chat.mjs",
     "scrape:recipes": "tsx src/scraper/scrape-recipes.ts",
     "scrape:recipes:sample": "LIMIT=30 tsx src/scraper/scrape-recipes.ts",
     "chat": "tsx src/chat/server.ts",
