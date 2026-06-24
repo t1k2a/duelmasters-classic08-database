@@ -1359,19 +1359,29 @@ if (!localStorage.getItem('dm_tooltip_seen')) {
 let chatHistory = [];   // { role:'user'|'assistant', content } の往復履歴
 let chatBusy = false;
 
-// health で FAB を出し分け（落ちていれば非表示＝「今は使えません」）
+// タイピングドット（「考え中」表示）。起動中メッセージでも再利用する。
+const CHAT_DOTS = '<span class="chat-typing inline-flex gap-1 items-center py-0.5">'
+  + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>'
+  + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>'
+  + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>'
+  + '</span>';
+
+// health で FAB を出し分け。Render無料枠はスリープするため、未応答＝「落ちている」と
+// 即断せず、スリープの可能性を考慮して楽観的にFABを表示する（ping自体が起動トリガーにもなる）。
 async function pollChatHealth() {
+  const fab = document.getElementById('chatFab');
   // CHAT_API_BASE 未設定（プレースホルダのまま）なら問い合わせずFAB非表示のまま
-  if (CHAT_API_BASE.includes('YOUR-DOMAIN')) {
-    document.getElementById('chatFab').classList.add('hidden');
-    return;
-  }
+  if (CHAT_API_BASE.includes('YOUR-DOMAIN')) { fab.classList.add('hidden'); return; }
   try {
-    const r = await fetch(CHAT_API_BASE + '/api/health', { headers: CHAT_HEADERS });
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3500);
+    const r = await fetch(CHAT_API_BASE + '/api/health', { headers: CHAT_HEADERS, signal: ctrl.signal });
+    clearTimeout(t);
     const j = await r.json();
-    document.getElementById('chatFab').classList.toggle('hidden', !j.up);
+    fab.classList.toggle('hidden', !j.up);
   } catch {
-    document.getElementById('chatFab').classList.add('hidden');
+    // タイムアウト/未応答はスリープ中の可能性が高い。送信時に起動＋「起動中」表示で対応するためFABは出す。
+    fab.classList.remove('hidden');
   }
 }
 window.addEventListener('load', pollChatHealth);
@@ -1379,6 +1389,10 @@ window.addEventListener('load', pollChatHealth);
 function openChatSheet() {
   document.getElementById('chatSheet').classList.remove('hidden');
   document.getElementById('chatInput').focus();
+  // スリープ中なら先に起こしておく（fire-and-forget）。最初の送信の待ち時間を短縮。
+  if (!CHAT_API_BASE.includes('YOUR-DOMAIN')) {
+    fetch(CHAT_API_BASE + '/api/health', { headers: CHAT_HEADERS }).catch(() => {});
+  }
 }
 
 function closeChatSheet(e) {
@@ -1491,18 +1505,29 @@ function renderMarkdown(src) {
 }
 
 async function chatAsk(question, history) {
-  const res = await fetch(CHAT_API_BASE + '/api/chat', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', ...CHAT_HEADERS },
-    body: JSON.stringify({ question, history }),
-  });
+  // 送信直後に即ドット表示（fetch解決を待たない）。Renderスリープ時の無反応を防ぐ。
   const bubble = appendAssistantBubble();
-  // 最初のトークンが来るまで「考え中」のタイピングドットを表示
-  bubble.innerHTML = '<span class="chat-typing inline-flex gap-1 items-center py-0.5">'
-    + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>'
-    + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>'
-    + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>'
-    + '</span>';
+  bubble.innerHTML = CHAT_DOTS;
+  // 一定時間応答が来なければ、スリープからの起動中とみなしてその旨を表示。
+  const wakeTimer = setTimeout(() => {
+    bubble.innerHTML = '<span class="inline-flex items-center gap-2 text-gray-500">' + CHAT_DOTS
+      + '<span class="text-xs">サーバを起動中… 初回は約1分かかります</span></span>';
+    document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
+  }, 4000);
+  let res;
+  try {
+    res = await fetch(CHAT_API_BASE + '/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...CHAT_HEADERS },
+      body: JSON.stringify({ question, history }),
+    });
+  } catch {
+    clearTimeout(wakeTimer);
+    bubble.textContent = chatErrorMessage('ERROR');
+    return '';
+  }
+  clearTimeout(wakeTimer);
+  bubble.innerHTML = CHAT_DOTS; // 起動完了。最初のトークンまでは通常のドットに戻す
   if (!res.ok || !res.body) {
     bubble.textContent = chatErrorMessage(res.status === 429 ? 'RATE_LIMIT' : 'ERROR');
     return '';
