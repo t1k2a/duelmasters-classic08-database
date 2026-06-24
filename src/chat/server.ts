@@ -1,4 +1,5 @@
 // src/chat/server.ts
+import './env.js' // 他importより前に .env を読み込む（プロバイダ選択・APIキー解決のため）
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { streamSSE } from 'hono/streaming'
@@ -6,17 +7,17 @@ import type { Corpus } from './corpus.js'
 import { loadCorpus } from './corpus.js'
 import { retrieve } from './retriever.js'
 import { buildMessages } from './prompt.js'
-import { streamChat, isOllamaUp, warmup } from './ollama.js'
+import { streamChat, isUp as isProviderUp, warmup, providerName } from './provider.js'
 import { SingleFlightQueue, RateLimiter } from './queue.js'
 import type { ChatTurn } from './types.js'
 
 const ALLOW = new Set(['https://t1k2a.github.io', 'http://localhost:3000'])
 const TIMEOUT_MS = 60_000
 
-export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; upImpl?: typeof isOllamaUp; ratePerMin?: number; maxWaiting?: number }): Hono {
+export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; upImpl?: typeof isProviderUp; ratePerMin?: number; maxWaiting?: number }): Hono {
   const app = new Hono()
   const chat = deps.chatImpl ?? streamChat
-  const up = deps.upImpl ?? isOllamaUp
+  const up = deps.upImpl ?? isProviderUp
   const queue = new SingleFlightQueue(deps.maxWaiting ?? 5)
   const rl = new RateLimiter(deps.ratePerMin ?? 10)
 
@@ -32,7 +33,7 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
 
   app.get('/api/health', async (c) => {
     const s = await up()
-    return c.json({ status: 'ok', up: s.up, model: s.model, depth: queue.depth })
+    return c.json({ status: 'ok', provider: providerName, up: s.up, model: s.model, depth: queue.depth })
   })
 
   app.post('/api/chat', async (c) => {
@@ -71,10 +72,11 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
 if (process.argv[1] && process.argv[1].endsWith('server.ts')) {
   const corpus = await loadCorpus()
   const app = createApp({ corpus })
-  const port = parseInt(process.env['CHAT_PORT'] ?? '8788')
-  console.log(`Chat server on http://localhost:${port}`)
+  // Render など PaaS は PORT を注入する。なければ CHAT_PORT、最後にローカル既定 8788。
+  const port = parseInt(process.env['PORT'] ?? process.env['CHAT_PORT'] ?? '8788')
+  console.log(`Chat server on :${port} (provider=${providerName})`)
   serve({ fetch: app.fetch, port })
-  // モデルをVRAMへプリロード（初回ユーザーのコールドスタート解消）。失敗は無視。
+  // モデルのプリロード（Ollama のコールドスタート解消用。Gemini では no-op）。失敗は無視。
   console.log('Warming up model...')
-  warmup().then(ok => console.log(ok ? 'Model warm.' : 'Warmup skipped (Ollama未起動 or モデル未取得).'))
+  warmup().then(ok => console.log(ok ? 'Model warm.' : 'Warmup skipped.'))
 }
