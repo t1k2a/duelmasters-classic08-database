@@ -29,3 +29,22 @@ export function buildMessages(input: { question: string; retrieval: RetrievalRes
     { role: 'user', content: `参考情報:\n${renderContext(input.retrieval)}\n\n質問: ${input.question}` },
   ]
 }
+
+// DB（クラシック08）に該当が無くWeb検索にフォールバックした場合のプロンプト。
+// 「DB範囲外のWeb情報」であることを明示し、検索結果のみを根拠にさせる（推測の創作は禁止）。
+const SEARCH_SYSTEM = `あなたはデュエル・マスターズ「クラシック08環境」の対話アシスタントです。
+今回の質問はこのDB（クラシック08）に該当が無かったため、Web検索結果を参考に回答します。
+厳守事項:
+- 回答の冒頭で「※このDB（クラシック08）の収録範囲外の情報です」と必ず一言断る。
+- 以下の「検索結果」に書かれていることだけを根拠にする。書かれていなければ「確かな情報が見つかりませんでした」と答える。
+- 検索結果に無い数値・能力・事実を推測で創作しない。
+- 日本語で簡潔に（目安5〜8行程度）。出典は別途リンク表示されるため本文に羅列しなくてよい。`
+
+export function buildSearchMessages(input: { question: string; search: { context: string }; history: ChatTurn[] }) {
+  const recent = input.history.slice(-6)
+  return [
+    { role: 'system', content: SEARCH_SYSTEM },
+    ...recent.map(t => ({ role: t.role, content: t.content })),
+    { role: 'user', content: `検索結果:\n${input.search.context || '(検索結果なし)'}\n\n質問: ${input.question}` },
+  ]
+}
