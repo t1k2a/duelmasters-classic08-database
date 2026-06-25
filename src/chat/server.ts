@@ -6,7 +6,8 @@ import { streamSSE } from 'hono/streaming'
 import type { Corpus } from './corpus.js'
 import { loadCorpus } from './corpus.js'
 import { retrieve } from './retriever.js'
-import { buildMessages } from './prompt.js'
+import { buildMessages, buildSearchMessages } from './prompt.js'
+import { webSearch, searchEnabled } from './search.js'
 import { streamChat, isUp as isProviderUp, warmup, providerName } from './provider.js'
 import { SingleFlightQueue, RateLimiter } from './queue.js'
 import type { ChatTurn } from './types.js'
@@ -14,10 +15,13 @@ import type { ChatTurn } from './types.js'
 const ALLOW = new Set(['https://t1k2a.github.io', 'http://localhost:3000'])
 const TIMEOUT_MS = 60_000
 
-export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; upImpl?: typeof isProviderUp; ratePerMin?: number; maxWaiting?: number }): Hono {
+export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; upImpl?: typeof isProviderUp; searchImpl?: typeof webSearch; ratePerMin?: number; maxWaiting?: number }): Hono {
   const app = new Hono()
   const chat = deps.chatImpl ?? streamChat
   const up = deps.upImpl ?? isProviderUp
+  const search = deps.searchImpl ?? webSearch
+  // 検索フォールバックの有効判定。テスト等で searchImpl 注入時は有効扱い。
+  const canSearch = Boolean(deps.searchImpl) || searchEnabled()
   const queue = new SingleFlightQueue(deps.maxWaiting ?? 5)
   const rl = new RateLimiter(deps.ratePerMin ?? 10)
 
@@ -43,8 +47,19 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
     try { body = await c.req.json() } catch { return c.json({ error: 'BAD_INPUT' }, 400) }
     const question = (body.question ?? '').trim()
     if (!question || question.length > 500) return c.json({ error: 'BAD_INPUT' }, 400)
+    const history = body.history ?? []
     const retrieval = retrieve(deps.corpus, question)
-    const messages = buildMessages({ question, retrieval, history: body.history ?? [] })
+    // DB(クラシック08)に該当が無く、検索が有効なら Web検索へフォールバック。
+    const empty = !retrieval.cards.length && !retrieval.recipes.length && !retrieval.meta.length && !retrieval.knowledge.length
+    let messages = buildMessages({ question, retrieval, history })
+    let sources: { title: string; url: string }[] = []
+    if (empty && canSearch) {
+      const sr = await search(question).catch(() => null)
+      if (sr && sr.sources.length) {
+        messages = buildSearchMessages({ question, search: sr, history })
+        sources = sr.sources
+      }
+    }
 
     return streamSSE(c, async (stream) => {
       try {
@@ -57,7 +72,7 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
             }
           } finally { clearTimeout(timer) }
         })
-        await stream.writeSSE({ data: JSON.stringify({ done: true, cards: retrieval.cards, recipes: retrieval.recipes.map(r => ({ id: r.id, name: r.name })) }) })
+        await stream.writeSSE({ data: JSON.stringify({ done: true, cards: retrieval.cards, recipes: retrieval.recipes.map(r => ({ id: r.id, name: r.name })), sources }) })
       } catch (e: any) {
         const code = e?.message === 'BUSY' ? 'BUSY' : 'ERROR'
         await stream.writeSSE({ data: JSON.stringify({ error: code, done: true }) })

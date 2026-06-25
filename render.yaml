@@ -22,3 +22,6 @@ services:
         value: "512"
       - key: GROQ_API_KEY
         sync: false
+      # Web検索フォールバック（任意）。未設定ならDB未ヒット時は「情報がありません」で打ち止め。
+      - key: TAVILY_API_KEY
+        sync: false

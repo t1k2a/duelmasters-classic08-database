@@ -1561,7 +1561,21 @@ async function chatAsk(question, history) {
     bubble.textContent = '（応答がありませんでした）';
   }
   if (final?.cards?.length) renderCardCards(bubble, final.cards);
+  if (final?.sources?.length) renderSources(bubble, final.sources);
   return assistant;
+}
+
+// Web検索フォールバック時の出典リンク（DB範囲外であることを明示）
+function renderSources(bubble, sources) {
+  const wrap = bubble.parentElement;
+  const box = document.createElement('div');
+  box.className = 'w-full text-xs text-gray-500 border-t border-gray-100 pt-1 mt-1';
+  const links = sources.slice(0, 5).map(s =>
+    `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="block text-indigo-600 underline truncate">${escapeHtml(s.title || s.url)}</a>`
+  ).join('');
+  box.innerHTML = `<div class="text-gray-400 mb-0.5">🔎 Web検索の出典（DB収録範囲外）</div>${links}`;
+  wrap.appendChild(box);
+  document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
 }
 
 async function sendChat() {
