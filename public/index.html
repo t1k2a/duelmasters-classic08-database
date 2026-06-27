@@ -237,8 +237,7 @@
       </div>
       <div class="px-5 pb-5 pt-1 flex gap-2 border-t border-gray-100">
         <input id="chatInput" type="text" placeholder="質問を入力..."
-          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          onkeydown="if(event.key==='Enter')sendChat()">
+          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
         <button id="chatSendBtn" onclick="sendChat()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg px-4 font-medium">送信</button>
       </div>
     </div>
@@ -311,8 +310,7 @@
 </div>
 
 <script>
-// ローカルLLMチャットAPI（ngrok経由）。ユーザーが自分の固定ドメインに差し替える。
-let CHAT_API_BASE = 'https://dm-classic08-chat.onrender.com'; // 公開用Renderサービス(Groq駆動)。ローカル確認は ?chatApi=http://localhost:8788 で上書き可
+let CHAT_API_BASE = 'https://dm-classic08-chat.fly.dev/'; // 公開用Fly.ioサービス(Groq駆動)。ローカル確認は ?chatApi=http://localhost:8788 で上書き可
 // ?chatApi= で一時的に上書き可能（差し替え前の動作確認・E2E用）
 try {
   const _ca = new URLSearchParams(location.search).get('chatApi');
@@ -1505,15 +1503,8 @@ function renderMarkdown(src) {
 }
 
 async function chatAsk(question, history) {
-  // 送信直後に即ドット表示（fetch解決を待たない）。Renderスリープ時の無反応を防ぐ。
   const bubble = appendAssistantBubble();
   bubble.innerHTML = CHAT_DOTS;
-  // 一定時間応答が来なければ、スリープからの起動中とみなしてその旨を表示。
-  const wakeTimer = setTimeout(() => {
-    bubble.innerHTML = '<span class="inline-flex items-center gap-2 text-gray-500">' + CHAT_DOTS
-      + '<span class="text-xs">サーバを起動中… 初回は約1分かかります</span></span>';
-    document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
-  }, 4000);
   let res;
   try {
     res = await fetch(CHAT_API_BASE + '/api/chat', {
@@ -1522,12 +1513,10 @@ async function chatAsk(question, history) {
       body: JSON.stringify({ question, history }),
     });
   } catch {
-    clearTimeout(wakeTimer);
     bubble.textContent = chatErrorMessage('ERROR');
     return '';
   }
-  clearTimeout(wakeTimer);
-  bubble.innerHTML = CHAT_DOTS; // 起動完了。最初のトークンまでは通常のドットに戻す
+  bubble.innerHTML = CHAT_DOTS;
   if (!res.ok || !res.body) {
     bubble.textContent = chatErrorMessage(res.status === 429 ? 'RATE_LIMIT' : 'ERROR');
     return '';
@@ -1600,6 +1589,23 @@ async function sendChat() {
     input.focus();
   }
 }
+
+// IME変換確定Enterの誤送信を防ぐ。compositionend と同フレームに発火する keydown も抑止するため、
+// フラグの解除は次フレーム（rAF）まで遅延させる。
+(function setupChatInputEnter() {
+  const input = document.getElementById('chatInput');
+  if (!input) return;
+  let composing = false;
+  input.addEventListener('compositionstart', () => { composing = true; });
+  input.addEventListener('compositionend', () => {
+    requestAnimationFrame(() => { composing = false; });
+  });
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    if (composing || event.isComposing || event.keyCode === 229) return;
+    sendChat();
+  });
+})();
 </script>
 
 <!-- PWA: Service Worker 登録 + インストールプロンプト制御 -->

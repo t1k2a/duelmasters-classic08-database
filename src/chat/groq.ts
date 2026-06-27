@@ -8,7 +8,7 @@ type FetchLike = (url: string, init?: any) => Promise<Response>
 const DEFAULT_BASE = process.env['GROQ_BASE_URL'] ?? 'https://api.groq.com/openai/v1'
 // 日本語品質を優先し 70B 系を既定に。速度優先なら llama-3.1-8b-instant 等に変更可。
 const DEFAULT_MODEL = process.env['GROQ_MODEL'] ?? 'llama-3.3-70b-versatile'
-const DEFAULT_MAX_TOKENS = parseInt(process.env['GROQ_MAX_TOKENS'] ?? '512', 10)
+const DEFAULT_MAX_TOKENS = parseInt(process.env['GROQ_MAX_TOKENS'] ?? '256', 10)
 const API_KEY = process.env['GROQ_API_KEY'] ?? ''
 
 export async function* streamChat(
