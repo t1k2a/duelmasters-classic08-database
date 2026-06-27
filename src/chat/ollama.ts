@@ -3,7 +3,7 @@ type FetchLike = (url: string, init?: any) => Promise<Response>
 const DEFAULT_BASE = process.env['OLLAMA_BASE_URL'] ?? 'http://localhost:11434'
 const DEFAULT_MODEL = process.env['OLLAMA_MODEL'] ?? 'qwen2.5:7b'
 // 1リクエストの最大生成トークン数（応答が冗長＝遅くなり過ぎるのを防ぐ上限）
-const DEFAULT_NUM_PREDICT = parseInt(process.env['OLLAMA_NUM_PREDICT'] ?? '512', 10)
+const DEFAULT_NUM_PREDICT = parseInt(process.env['OLLAMA_NUM_PREDICT'] ?? '256', 10)
 // モデルをVRAMに保持する時間（コールドロード再発を防ぐ）。'-1' で常駐
 const DEFAULT_KEEP_ALIVE = process.env['OLLAMA_KEEP_ALIVE'] ?? '30m'
 

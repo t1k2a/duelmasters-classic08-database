@@ -14,6 +14,8 @@ import type { ChatTurn } from './types.js'
 
 const ALLOW = new Set(['https://t1k2a.github.io', 'http://localhost:3000'])
 const TIMEOUT_MS = 60_000
+// Tavily検索のタイムアウト。SSEストリーム開始前のブロックを抑え、体感応答時間を5秒以内に収める狙い。
+const SEARCH_TIMEOUT_MS = parseInt(process.env['SEARCH_TIMEOUT_MS'] ?? '3000', 10)
 
 export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; upImpl?: typeof isProviderUp; searchImpl?: typeof webSearch; ratePerMin?: number; maxWaiting?: number }): Hono {
   const app = new Hono()
@@ -54,7 +56,7 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
     let messages = buildMessages({ question, retrieval, history })
     let sources: { title: string; url: string }[] = []
     if (empty && canSearch) {
-      const sr = await search(question).catch(() => null)
+      const sr = await search(question, { signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS) }).catch(() => null)
       if (sr && sr.sources.length) {
         messages = buildSearchMessages({ question, search: sr, history })
         sources = sr.sources
