@@ -10,3 +10,5 @@ export interface CardData {
 export interface RecipeData { id: string; name?: string; cards: { id: string; count: number }[]; validated?: boolean; [k: string]: unknown }
 export interface RetrievalResult { cards: CardData[]; recipes: RecipeData[]; meta: string[]; knowledge: string[] }
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }
+// デッキ構築要求に対して返す、選定済み40枚レシピ。
+export interface DeckPayload { id: string; name?: string; archetype?: string; cards: { id: string; count: number }[] }

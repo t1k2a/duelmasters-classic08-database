@@ -6,11 +6,13 @@ import { streamSSE } from 'hono/streaming'
 import type { Corpus } from './corpus.js'
 import { loadCorpus } from './corpus.js'
 import { retrieve } from './retriever.js'
+import { detectDeckIntent, selectDeck } from './deck.js'
 import { buildMessages, buildSearchMessages } from './prompt.js'
+import type { DeckContext } from './prompt.js'
 import { webSearch, searchEnabled } from './search.js'
 import { streamChat, isUp as isProviderUp, warmup, providerName } from './provider.js'
 import { SingleFlightQueue, RateLimiter } from './queue.js'
-import type { ChatTurn } from './types.js'
+import type { ChatTurn, DeckPayload } from './types.js'
 
 const ALLOW = new Set(['https://t1k2a.github.io', 'http://localhost:3000'])
 const TIMEOUT_MS = 60_000
@@ -51,16 +53,45 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
     if (!question || question.length > 500) return c.json({ error: 'BAD_INPUT' }, 400)
     const history = body.history ?? []
     const retrieval = retrieve(deps.corpus, question)
+    // デッキ構築要求なら既存レシピ（validated&&40枚）から1件選定。
+    // 選定できたら、そのレシピをLLM contextの参考レシピ先頭に昇格し、done で deck を返す。
+    let deck: DeckPayload | undefined
+    let deckContext: DeckContext | undefined
+    if (detectDeckIntent(question)) {
+      const sel = selectDeck(deps.corpus, question, retrieval)
+      if (sel) {
+        const r = sel.recipe
+        deck = { id: r.id, name: r.name, archetype: typeof r.archetype === 'string' ? r.archetype : undefined, cards: r.cards }
+        retrieval.recipes = [r, ...retrieval.recipes.filter(x => x.id !== r.id)].slice(0, 3)
+        // LLM contextに40枚全カードを渡せるよう、名前・コストを解決した提示デッキを組み立てる。
+        deckContext = {
+          name: r.name ?? r.id,
+          archetype: typeof r.archetype === 'string' ? r.archetype : undefined,
+          cards: r.cards.map(rc => {
+            const cd = deps.corpus.cardById.get(rc.id)
+            return { name: cd?.name ?? rc.id, cost: cd?.cost ?? null, count: rc.count }
+          }),
+        }
+      }
+    }
     // DB(クラシック08)に該当が無く、検索が有効なら Web検索へフォールバック。
     const empty = !retrieval.cards.length && !retrieval.recipes.length && !retrieval.meta.length && !retrieval.knowledge.length
-    let messages = buildMessages({ question, retrieval, history })
     let sources: { title: string; url: string }[] = []
+    // retrieval にヒットがあるが答えが無い場合に備え、通常パスでは [[WEB]] センチネルを許可する。
+    // retrieval 完全空のときは従来どおり先に直接検索する（センチネル待ちのバッファリング不要）。
+    let searchAvailable = false
+    let messages
     if (empty && canSearch) {
       const sr = await search(question, { signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS) }).catch(() => null)
       if (sr && sr.sources.length) {
         messages = buildSearchMessages({ question, search: sr, history })
         sources = sr.sources
+      } else {
+        messages = buildMessages({ question, retrieval, history, deck: deckContext })
       }
+    } else {
+      searchAvailable = canSearch && !empty
+      messages = buildMessages({ question, retrieval, history, deck: deckContext, searchAvailable })
     }
 
     return streamSSE(c, async (stream) => {
@@ -68,13 +99,51 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
         await queue.run(async () => {
           const ac = new AbortController()
           const timer = setTimeout(() => ac.abort(), TIMEOUT_MS)
+          const send = (token: string) => stream.writeSSE({ data: JSON.stringify({ token }) })
           try {
-            for await (const tok of chat(messages, { signal: ac.signal })) {
-              await stream.writeSSE({ data: JSON.stringify({ token: tok }) })
+            if (!searchAvailable) {
+              for await (const tok of chat(messages, { signal: ac.signal })) {
+                await send(tok)
+              }
+            } else {
+              // 一段目: 先頭が [[WEB]] センチネルになり得る間はバッファし、クライアントへ流さない。
+              const SENTINEL = '[[WEB]]'
+              let buffer = ''
+              let passthrough = false
+              let isSentinel = false
+              for await (const tok of chat(messages, { signal: ac.signal })) {
+                if (passthrough) { await send(tok); continue }
+                buffer += tok
+                const t = buffer.trim()
+                // センチネル一致（後続に余分テキストが続く場合含む）→ sticky に保持し残りは破棄。
+                if (t.startsWith(SENTINEL)) { isSentinel = true; continue }
+                if (SENTINEL.startsWith(t)) { isSentinel = false; continue }
+                // センチネルと分岐 → 溜めたバッファを flush して以降は素通し（通常回答）。
+                passthrough = true
+                isSentinel = false
+                await send(buffer)
+                buffer = ''
+              }
+              if (isSentinel) {
+                // 二段目: Web検索して検索用プロンプトで回答を生成する。
+                const sr = await search(question, { signal: ac.signal }).catch(() => null)
+                if (sr && sr.sources.length) {
+                  sources = sr.sources
+                  const searchMessages = buildSearchMessages({ question, search: sr, history })
+                  for await (const tok of chat(searchMessages, { signal: ac.signal })) {
+                    await send(tok)
+                  }
+                } else {
+                  await send('このDBには情報がありません')
+                }
+              } else if (!passthrough && buffer) {
+                // センチネル未確定のまま終了（バッファがセンチネルの接頭辞のみ）→ そのまま吐き出す。
+                await send(buffer)
+              }
             }
           } finally { clearTimeout(timer) }
         })
-        await stream.writeSSE({ data: JSON.stringify({ done: true, cards: retrieval.cards, recipes: retrieval.recipes.map(r => ({ id: r.id, name: r.name })), sources }) })
+        await stream.writeSSE({ data: JSON.stringify({ done: true, cards: retrieval.cards, recipes: retrieval.recipes.map(r => ({ id: r.id, name: r.name })), deck, sources }) })
       } catch (e: any) {
         const code = e?.message === 'BUSY' ? 'BUSY' : 'ERROR'
         await stream.writeSSE({ data: JSON.stringify({ error: code, done: true }) })
