@@ -7,7 +7,7 @@ type FetchLike = (url: string, init?: any) => Promise<Response>
 const DEFAULT_BASE = process.env['GEMINI_BASE_URL'] ?? 'https://generativelanguage.googleapis.com/v1beta/openai'
 const DEFAULT_MODEL = process.env['GEMINI_MODEL'] ?? 'gemini-2.0-flash'
 // 1リクエストの最大生成トークン数（冗長＝遅い/枠消費を防ぐ上限）。Ollama版の num_predict 相当。
-const DEFAULT_MAX_TOKENS = parseInt(process.env['GEMINI_MAX_TOKENS'] ?? '512', 10)
+const DEFAULT_MAX_TOKENS = parseInt(process.env['GEMINI_MAX_TOKENS'] ?? '256', 10)
 const API_KEY = process.env['GEMINI_API_KEY'] ?? ''
 
 export async function* streamChat(
