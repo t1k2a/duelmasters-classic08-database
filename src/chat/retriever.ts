@@ -11,7 +11,7 @@ function headTerm(s: string): string {
 }
 
 // 2語のいずれかが他方を（正規化後に）含むなら一致とみなす。短すぎる語の誤爆を避け min 文字以上で判定。
-function mutualIncludes(an: string, bn: string, min = 2): boolean {
+export function mutualIncludes(an: string, bn: string, min = 2): boolean {
   if (an.length < min || bn.length < min) return false
   return an.includes(bn) || bn.includes(an)
 }

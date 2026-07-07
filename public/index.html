@@ -1470,6 +1470,65 @@ function renderCardCard(card) {
     </div>`;
 }
 
+// デッキ構築要求への応答：選定レシピの40枚を画像グリッドで描画（合成画像は作らず個別カード）
+function renderDeckCards(bubble, deck) {
+  const wrap = bubble.parentElement;
+  const box = document.createElement('div');
+  box.className = 'w-full';
+  const cards = Array.isArray(deck.cards) ? deck.cards : [];
+  const total = cards.reduce((s, c) => s + (c.count || 0), 0);
+  const title = escapeHtml(deck.name || 'デッキ');
+  const arch = deck.archetype ? `<span class="text-gray-400 font-normal">（${escapeHtml(deck.archetype)}）</span>` : '';
+  // ユニークカードをコスト昇順で安定ソート（未解決カードは末尾）
+  const entries = cards.map((rc, i) => ({ rc, card: cardById(rc.id), i }));
+  entries.sort((a, b) => {
+    const ca = a.card && a.card.cost != null ? a.card.cost : 99;
+    const cb = b.card && b.card.cost != null ? b.card.cost : 99;
+    return ca - cb || a.i - b.i;
+  });
+  const grid = entries.map(e => e.card ? renderDeckCard(e.card, e.rc.count) : renderDeckCardMissing(e.rc)).join('');
+  box.innerHTML = `
+    <div class="w-full border border-emerald-100 rounded-lg overflow-hidden">
+      <div class="bg-emerald-50 px-3 py-2 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <div class="font-semibold text-sm text-gray-900 truncate">🃏 ${title} ${arch}</div>
+          <div class="text-xs text-gray-500">${total}枚（${entries.length}種）</div>
+        </div>
+        <button onclick="loadRecipe('${escapeHtml(deck.id)}')" class="shrink-0 bg-emerald-600 text-white text-xs rounded-full px-3 py-1.5 hover:bg-emerald-700">デッキに読み込む</button>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2">${grid}</div>
+    </div>`;
+  wrap.appendChild(box);
+  document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
+}
+
+// デッキ内の1カードタイル（画像＋枚数バッジ）。タップで既存の詳細遷移。
+function renderDeckCard(card, count) {
+  return `
+    <div class="border border-gray-100 rounded-lg p-1.5 cursor-pointer hover:bg-gray-50" onclick="closeChatSheet();selectCard('${card.id}')">
+      <div class="relative">
+        <img src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${card.id}.jpg"
+          alt="" loading="lazy"
+          onerror="this.parentNode.querySelector('.card-img-placeholder').style.display='flex';this.style.display='none'"
+          class="w-full aspect-[5/7] object-cover rounded bg-gray-100">
+        <div class="card-img-placeholder w-full aspect-[5/7] rounded bg-gray-100 hidden items-center justify-center text-gray-300 text-2xl">🎴</div>
+        <span class="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[10px] font-bold rounded px-1">×${count}</span>
+      </div>
+      <div class="font-semibold text-[11px] text-gray-900 truncate mt-1">${escapeHtml(card.name)}</div>
+      <div class="text-[10px] text-gray-500 truncate">${card.cost ?? '—'}コスト</div>
+    </div>`;
+}
+
+// CARDS に存在しないidでも崩れずに表示（id＋枚数のみ）。
+function renderDeckCardMissing(rc) {
+  return `
+    <div class="border border-gray-100 rounded-lg p-1.5 text-[11px] text-gray-500">
+      <div class="w-full aspect-[5/7] rounded bg-gray-100 flex items-center justify-center text-gray-300 text-2xl">🎴</div>
+      <div class="truncate mt-1">${escapeHtml(rc.id)}</div>
+      <div class="text-[10px]">×${rc.count}</div>
+    </div>`;
+}
+
 // 軽量Markdown→HTML。信頼できない出力を想定し、escapeHtml後にのみ整形タグを挿入（XSS安全）。
 function renderMarkdown(src) {
   const inline = (s) => s
@@ -1549,7 +1608,9 @@ async function chatAsk(question, history) {
     // トークンもエラーも無い（空応答）: タイピングドットを残さない
     bubble.textContent = '（応答がありませんでした）';
   }
-  if (final?.cards?.length) renderCardCards(bubble, final.cards);
+  // デッキ構築要求で40枚が返ったターンは deck を優先し、8枚グリッドは省略（二重表示を避ける）
+  if (final?.deck) renderDeckCards(bubble, final.deck);
+  else if (final?.cards?.length) renderCardCards(bubble, final.cards);
   if (final?.sources?.length) renderSources(bubble, final.sources);
   return assistant;
 }
