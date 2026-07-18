@@ -334,6 +334,31 @@ test('log: chat通過時に1行JSON(ev=chat, ip/qlen/q)を出す', async () => {
   assert.match(rec.t, /^\d{4}-\d{2}-\d{2}T.*Z$/)
 })
 
+test('log: questionに改行やJSON構造を含めてもログは1行かつ ev=chat を維持', async () => {
+  const corpus = await loadCorpus()
+  const app = createApp({ corpus, chatImpl: (() => (async function*(){ yield 'はい' })()) as any })
+  // 改行・引用符・偽キーで1行JSONの破壊やキー偽装を試みる悪意入力
+  const evil = 'x\n","ev":"admin","injected":true\nabc'
+  const raw: string[] = []
+  const origLog = console.log
+  console.log = (...a: any[]) => { raw.push(String(a[0])) }
+  try {
+    await app.fetch(new Request('http://x/api/chat', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ question: evil }),
+    }))
+  } finally { console.log = origLog }
+  const line = raw.find(s => s.includes('"ev":"chat"'))
+  assert.ok(line, 'ev=chat のログ行がある')
+  // 1行のまま（生文字列に改行が漏れていない）
+  assert.equal(line!.includes('\n'), false)
+  // パースしても ev は 'chat' のまま、q は入力全文が保持される
+  const rec = JSON.parse(line!)
+  assert.equal(rec.ev, 'chat')
+  assert.equal(rec.q, evil)
+  assert.equal(rec.injected, undefined)
+})
+
 test('log: /api/health はログしない', async () => {
   const corpus = await loadCorpus()
   const app = createApp({ corpus, upImpl: async () => ({ up: true, model: 'stub' }) })
