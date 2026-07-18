@@ -30,6 +30,11 @@
     .card-row:hover { background:#f9fafb; }
     .card-row.selected { background:#eff6ff; border-left:3px solid #3b82f6; }
     .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    /* iOS Safari は font-size<16px の入力欄フォーカス時にページを自動ズームする。
+       SP幅のみ入力欄を16pxにして抑止（デスクトップの見た目 text-sm は維持）。 */
+    @media (max-width: 640px) {
+      #textSearch, #chatInput { font-size: 16px; }
+    }
   </style>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#4338ca">
