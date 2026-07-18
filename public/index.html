@@ -310,7 +310,7 @@
 </div>
 
 <script>
-let CHAT_API_BASE = 'https://dm-classic08-chat.fly.dev/'; // 公開用Fly.ioサービス(Groq駆動)。ローカル確認は ?chatApi=http://localhost:8788 で上書き可
+let CHAT_API_BASE = 'https://api.dm-classic08.org'; // AWS EC2 + Cloudflare Tunnel(Groq駆動)。ローカル確認は ?chatApi=http://localhost:8788 で上書き可
 // ?chatApi= で一時的に上書き可能（差し替え前の動作確認・E2E用）
 try {
   const _ca = new URLSearchParams(location.search).get('chatApi');
