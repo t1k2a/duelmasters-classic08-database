@@ -305,6 +305,98 @@ test('OPTIONSプリフライトは204', async () => {
   assert.match(res.headers.get('access-control-allow-methods') ?? '', /POST/)
 })
 
+// console.log/error を一時捕捉して構造化ログ行(JSON)を集める
+async function captureLogs(run: () => Promise<void>): Promise<{ out: any[]; err: any[] }> {
+  const origLog = console.log, origErr = console.error
+  const out: any[] = [], err: any[] = []
+  const parse = (bucket: any[]) => (...args: any[]) => {
+    try { bucket.push(JSON.parse(args[0])) } catch { /* JSON以外は無視 */ }
+  }
+  console.log = parse(out); console.error = parse(err)
+  try { await run() } finally { console.log = origLog; console.error = origErr }
+  return { out, err }
+}
+
+test('log: chat通過時に1行JSON(ev=chat, ip/qlen/q)を出す', async () => {
+  const corpus = await loadCorpus()
+  const app = createApp({ corpus, chatImpl: (() => (async function*(){ yield 'はい' })()) as any })
+  const { out } = await captureLogs(async () => {
+    await app.fetch(new Request('http://x/api/chat', {
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.5' },
+      body: JSON.stringify({ question: 'ブロッカーって何？' }),
+    }))
+  })
+  const rec = out.find(o => o.ev === 'chat')
+  assert.ok(rec, 'ev=chat のログ行がある')
+  assert.equal(rec.ip, '203.0.113.5')
+  assert.equal(rec.q, 'ブロッカーって何？')
+  assert.equal(rec.qlen, 'ブロッカーって何？'.length)
+  assert.match(rec.t, /^\d{4}-\d{2}-\d{2}T.*Z$/)
+})
+
+test('log: questionに改行やJSON構造を含めてもログは1行かつ ev=chat を維持', async () => {
+  const corpus = await loadCorpus()
+  const app = createApp({ corpus, chatImpl: (() => (async function*(){ yield 'はい' })()) as any })
+  // 改行・引用符・偽キーで1行JSONの破壊やキー偽装を試みる悪意入力
+  const evil = 'x\n","ev":"admin","injected":true\nabc'
+  const raw: string[] = []
+  const origLog = console.log
+  console.log = (...a: any[]) => { raw.push(String(a[0])) }
+  try {
+    await app.fetch(new Request('http://x/api/chat', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ question: evil }),
+    }))
+  } finally { console.log = origLog }
+  const line = raw.find(s => s.includes('"ev":"chat"'))
+  assert.ok(line, 'ev=chat のログ行がある')
+  // 1行のまま（生文字列に改行が漏れていない）
+  assert.equal(line!.includes('\n'), false)
+  // パースしても ev は 'chat' のまま、q は入力全文が保持される
+  const rec = JSON.parse(line!)
+  assert.equal(rec.ev, 'chat')
+  assert.equal(rec.q, evil)
+  assert.equal(rec.injected, undefined)
+})
+
+test('log: /api/health はログしない', async () => {
+  const corpus = await loadCorpus()
+  const app = createApp({ corpus, upImpl: async () => ({ up: true, model: 'stub' }) })
+  const { out } = await captureLogs(async () => {
+    await app.fetch(new Request('http://x/api/health'))
+  })
+  assert.equal(out.length, 0)
+})
+
+test('log: レート制限拒否は ev=rate_limited で ip のみ(q無し)', async () => {
+  const corpus = await loadCorpus()
+  const app = createApp({ corpus, chatImpl: (() => (async function*(){ yield 'ok' })()) as any, ratePerMin: 1 })
+  const mk = () => app.fetch(new Request('http://x/api/chat', {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.9' },
+    body: JSON.stringify({ question: 'ブロッカーって何？' }),
+  }))
+  const { out } = await captureLogs(async () => { await mk(); await mk() })
+  const rec = out.find(o => o.ev === 'rate_limited')
+  assert.ok(rec, 'ev=rate_limited のログ行がある')
+  assert.equal(rec.ip, '198.51.100.9')
+  assert.equal(rec.q, undefined)
+})
+
+test('log: chat中の例外は ev=chat_error でmsgを出す', async () => {
+  const corpus = await loadCorpus()
+  const chatImpl = (() => (async function*(){ throw new Error('boom') })()) as any
+  const app = createApp({ corpus, chatImpl })
+  const { err } = await captureLogs(async () => {
+    await app.fetch(new Request('http://x/api/chat', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ question: 'ブロッカーって何？' }),
+    }))
+  })
+  const rec = err.find(o => o.ev === 'chat_error')
+  assert.ok(rec, 'ev=chat_error のログ行がある')
+  assert.equal(rec.msg, 'boom')
+})
+
 test('health: ollama down時は up=false', async () => {
   const corpus = await loadCorpus()
   const app = createApp({ corpus, upImpl: async () => ({ up: false, model: '' }) })

@@ -46,11 +46,17 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
 
   app.post('/api/chat', async (c) => {
     const ip = c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local'
-    if (!rl.allow(ip)) return c.json({ error: 'RATE_LIMIT' }, 429)
+    if (!rl.allow(ip)) {
+      // 拒否リクエストは ip のみ記録（q はレート悪用の可能性があり残さない）
+      console.log(JSON.stringify({ t: new Date().toISOString(), ev: 'rate_limited', ip }))
+      return c.json({ error: 'RATE_LIMIT' }, 429)
+    }
     let body: { question?: string; history?: ChatTurn[] }
     try { body = await c.req.json() } catch { return c.json({ error: 'BAD_INPUT' }, 400) }
     const question = (body.question ?? '').trim()
     if (!question || question.length > 500) return c.json({ error: 'BAD_INPUT' }, 400)
+    // 構造化アクセスログ（1行JSON）。CloudWatch Logs Insights でのクエリ用。
+    console.log(JSON.stringify({ t: new Date().toISOString(), ev: 'chat', ip, qlen: question.length, q: question }))
     const history = body.history ?? []
     const retrieval = retrieve(deps.corpus, question)
     // デッキ構築要求なら既存レシピ（validated&&40枚）から1件選定。
@@ -146,6 +152,7 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
         await stream.writeSSE({ data: JSON.stringify({ done: true, cards: retrieval.cards, recipes: retrieval.recipes.map(r => ({ id: r.id, name: r.name })), deck, sources }) })
       } catch (e: any) {
         const code = e?.message === 'BUSY' ? 'BUSY' : 'ERROR'
+        console.error(JSON.stringify({ t: new Date().toISOString(), ev: 'chat_error', msg: e?.message ?? String(e) }))
         await stream.writeSSE({ data: JSON.stringify({ error: code, done: true }) })
       }
     })
