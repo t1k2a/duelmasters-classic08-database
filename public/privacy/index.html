@@ -61,6 +61,14 @@
         </li>
         <li>ブラウザの Cookie ブロック機能やプライベートブラウジングを利用する。</li>
       </ul>
+      <p>
+        このサイト上での同意状態をリセットしたい場合は、下のボタンから行えます。
+        リセット後、次回アクセス時に同意バナーが再表示されます。
+      </p>
+      <button type="button" id="ga-consent-reset"
+        class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">
+        アクセス解析の同意をリセット
+      </button>
     </div>
 
     <h2 class="text-lg font-semibold mt-8">お問い合わせ・改定</h2>
@@ -75,5 +83,28 @@
       <a href="../" class="text-indigo-600 hover:underline text-sm">デュエマ クラシック08 データベース トップへ</a>
     </p>
   </main>
+
+  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+
+  <script>
+    // analytics.js と同じ localStorage キー 'ga-consent' を削除して同意状態をリセットする。
+    (function () {
+      var CONSENT_KEY = 'ga-consent';
+      var btn = document.getElementById('ga-consent-reset');
+      var toast = document.getElementById('toast');
+      function showToast(msg) {
+        if (!toast) { alert(msg); return; }
+        toast.textContent = msg;
+        toast.classList.remove('hidden');
+        setTimeout(function () { toast.classList.add('hidden'); }, 2500);
+      }
+      if (btn) {
+        btn.addEventListener('click', function () {
+          try { localStorage.removeItem(CONSENT_KEY); } catch (e) {}
+          showToast('同意状態をリセットしました。次回アクセス時に再度確認します。');
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
