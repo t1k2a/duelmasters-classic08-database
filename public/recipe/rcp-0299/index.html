@@ -99,9 +99,13 @@
   <script>
 function shareCard() {
   var url = "https://t1k2a.github.io/duelmasters-classic08-database/recipe/rcp-0299/";
-  var title = "ザ　キング　カタストロフィ<破壊の帝王＞ — デッキレシピ | デュエマ クラシック08";
+  var title = "ザ　キング　カタストロフィ\u003c破壊の帝王＞ — デッキレシピ | デュエマ クラシック08";
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    return;
+  }
+  if (!navigator.clipboard) {
+    showToast('この環境では共有に対応していません');
     return;
   }
   navigator.clipboard.writeText(title + '\n' + url)

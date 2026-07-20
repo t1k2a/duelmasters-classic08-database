@@ -89,9 +89,13 @@
   <script>
 function shareCard() {
   var url = "https://t1k2a.github.io/duelmasters-classic08-database/recipe/rcp-13604/";
-  var title = "起源神が見る<WORLD> — デッキレシピ | デュエマ クラシック08";
+  var title = "起源神が見る\u003cWORLD> — デッキレシピ | デュエマ クラシック08";
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    return;
+  }
+  if (!navigator.clipboard) {
+    showToast('この環境では共有に対応していません');
     return;
   }
   navigator.clipboard.writeText(title + '\n' + url)

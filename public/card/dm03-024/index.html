@@ -31,7 +31,7 @@
   <main class="max-w-3xl mx-auto px-4 py-8">
     <div class="sm:flex sm:gap-6">
       <img src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/dm03-024.jpg" alt="キング・ボニータス" width="300" height="418"
-           class="w-56 mx-auto sm:mx-0 rounded-lg shadow" loading="lazy">
+           class="w-56 mx-auto sm:mx-0 rounded-lg shadow" loading="eager" fetchpriority="high">
       <div class="mt-4 sm:mt-0 flex-1">
         <h1 class="text-2xl font-bold">キング・ボニータス</h1>
         <div class="flex flex-wrap gap-1.5 mt-3"><span class="civ-水 border rounded-full px-2 py-0.5 text-xs font-medium">水</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">クリーチャー</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">U</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">コスト 8</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">パワー 4000</span></div>
@@ -54,6 +54,10 @@ function shareCard() {
   var title = "キング・ボニータス - デュエルマスターズ クラシック08";
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    return;
+  }
+  if (!navigator.clipboard) {
+    showToast('この環境では共有に対応していません');
     return;
   }
   navigator.clipboard.writeText(title + '\n' + url)

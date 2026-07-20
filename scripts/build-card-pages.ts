@@ -106,14 +106,24 @@ function civBadges(civs: string[]): string {
     .join(' ')
 }
 
+// <script> ブロック内に文字列を埋め込む際、"</script>" で早期クローズされるのを防ぐ。
+// JSON-LD 側と同様に < を < へ退避する。
+function scriptJson(value: string): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c')
+}
+
 // navigator.share + クリップボード fallback（public/index.html:1231 shareDeck() と同方式）。
 function shareScript(shareTitle: string, shareUrl: string): string {
   return `<script>
 function shareCard() {
-  var url = ${JSON.stringify(shareUrl)};
-  var title = ${JSON.stringify(shareTitle)};
+  var url = ${scriptJson(shareUrl)};
+  var title = ${scriptJson(shareTitle)};
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    return;
+  }
+  if (!navigator.clipboard) {
+    showToast('この環境では共有に対応していません');
     return;
   }
   navigator.clipboard.writeText(title + '\\n' + url)
@@ -188,7 +198,7 @@ ${jsonLdEscape(jsonLd)}
   <main class="max-w-3xl mx-auto px-4 py-8">
     <div class="sm:flex sm:gap-6">
       <img src="${escapeHtml(image)}" alt="${escapeHtml(card.name)}" width="300" height="418"
-           class="w-56 mx-auto sm:mx-0 rounded-lg shadow" loading="lazy">
+           class="w-56 mx-auto sm:mx-0 rounded-lg shadow" loading="eager" fetchpriority="high">
       <div class="mt-4 sm:mt-0 flex-1">
         <h1 class="text-2xl font-bold">${escapeHtml(card.name)}</h1>
         <div class="flex flex-wrap gap-1.5 mt-3">${civs} ${specs.join(' ')}</div>

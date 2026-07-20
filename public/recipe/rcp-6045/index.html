@@ -99,9 +99,13 @@
   <script>
 function shareCard() {
   var url = "https://t1k2a.github.io/duelmasters-classic08-database/recipe/rcp-6045/";
-  var title = "良いバトルで勉強になりました　　　　　　　　　また機会があればバトルしましょう♪　　　　　　それでは(>ω<)ﾉ — デッキレシピ | デュエマ クラシック08";
+  var title = "良いバトルで勉強になりました　　　　　　　　　また機会があればバトルしましょう♪　　　　　　それでは(>ω\u003c)ﾉ — デッキレシピ | デュエマ クラシック08";
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    return;
+  }
+  if (!navigator.clipboard) {
+    showToast('この環境では共有に対応していません');
     return;
   }
   navigator.clipboard.writeText(title + '\n' + url)

@@ -31,7 +31,7 @@
   <main class="max-w-3xl mx-auto px-4 py-8">
     <div class="sm:flex sm:gap-6">
       <img src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/dm28-070.jpg" alt="霊壁の使徒ミルース" width="300" height="418"
-           class="w-56 mx-auto sm:mx-0 rounded-lg shadow" loading="lazy">
+           class="w-56 mx-auto sm:mx-0 rounded-lg shadow" loading="eager" fetchpriority="high">
       <div class="mt-4 sm:mt-0 flex-1">
         <h1 class="text-2xl font-bold">霊壁の使徒ミルース</h1>
         <div class="flex flex-wrap gap-1.5 mt-3"><span class="civ-光 border rounded-full px-2 py-0.5 text-xs font-medium">光</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">クリーチャー</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">C</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">コスト 5</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">パワー 4500</span></div>
@@ -55,6 +55,10 @@ function shareCard() {
   var title = "霊壁の使徒ミルース - デュエルマスターズ クラシック08";
   if (navigator.share) {
     navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    return;
+  }
+  if (!navigator.clipboard) {
+    showToast('この環境では共有に対応していません');
     return;
   }
   navigator.clipboard.writeText(title + '\n' + url)
