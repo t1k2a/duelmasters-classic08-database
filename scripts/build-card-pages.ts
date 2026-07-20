@@ -2,11 +2,15 @@
  * Build script: generate per-card / per-recipe static pages, robots.txt and sitemap.xml.
  *
  * Reads public/cards.json, public/data/recipes.json, public/data/meta-decks.json and emits:
- *   - public/card/{id}/index.html        (OGP / Twitter Card / JSON-LD + redirect to /?id={id})
- *   - public/recipe/{rcp-id}/index.html  (deck OGP + redirect to /?recipe={rcp-id})
- *   - public/recipe/meta-{n}/index.html  (meta deck OGP + redirect to /?recipe={rcp-id of meta})
+ *   - public/card/{id}/index.html        (OGP / Twitter Card / JSON-LD + 静的コンテンツ + アプリへのリンク)
+ *   - public/recipe/{rcp-id}/index.html  (deck OGP + 静的カードリスト + アプリへのリンク)
+ *   - public/recipe/meta-{n}/index.html  (meta deck OGP + 静的カードリスト + アプリへのリンク)
  *   - public/robots.txt
  *   - public/sitemap.xml
+ *
+ * クローラにリダイレクト扱いされてロングテール検索資産が死ぬのを防ぐため、
+ * <body> には実コンテンツを静的描画し、即時リダイレクト（refresh=0 / location.replace）は行わない。
+ * アプリ（SPA）へは通常リンク / 遷移ボタンで案内する。
  *
  * Usage: npm run build:card-pages
  */
@@ -83,6 +87,49 @@ function jsonLdEscape(s: string): string {
   return s.replace(/</g, '\\u003c').replace(/>/g, '\\u003e')
 }
 
+// SPA(public/index.html)と同じ文明カラー。静的ページでも見た目を揃える。
+const PAGE_STYLE = `
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .civ-光  { background:#fef9c3; border-color:#ca8a04; color:#713f12; }
+    .civ-水  { background:#dbeafe; border-color:#3b82f6; color:#1e3a8a; }
+    .civ-闇  { background:#f3e8ff; border-color:#9333ea; color:#581c87; }
+    .civ-火  { background:#fee2e2; border-color:#ef4444; color:#7f1d1d; }
+    .civ-自然 { background:#dcfce7; border-color:#22c55e; color:#14532d; }`
+
+const CIV_CLASS: Record<string, string> = {
+  光: 'civ-光', 水: 'civ-水', 闇: 'civ-闇', 火: 'civ-火', 自然: 'civ-自然',
+}
+
+function civBadges(civs: string[]): string {
+  return civs
+    .map(c => `<span class="${CIV_CLASS[c] ?? ''} border rounded-full px-2 py-0.5 text-xs font-medium">${escapeHtml(c)}</span>`)
+    .join(' ')
+}
+
+// navigator.share + クリップボード fallback（public/index.html:1231 shareDeck() と同方式）。
+function shareScript(shareTitle: string, shareUrl: string): string {
+  return `<script>
+function shareCard() {
+  var url = ${JSON.stringify(shareUrl)};
+  var title = ${JSON.stringify(shareTitle)};
+  if (navigator.share) {
+    navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    return;
+  }
+  navigator.clipboard.writeText(title + '\\n' + url)
+    .then(function () { showToast('共有URLをコピーしました'); })
+    .catch(function () { showToast('コピーに失敗しました'); });
+}
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(function () { t.classList.add('hidden'); }, 2000);
+}
+</script>`
+}
+
 function cardPageHtml(card: CardJson): string {
   const url = `${SITE}/card/${card.id}/`
   const image = `${IMG_BASE}/${card.id}.jpg`
@@ -90,7 +137,7 @@ function cardPageHtml(card: CardJson): string {
   const desc = (card.text ?? card.name).replace(/\s+/g, ' ').trim()
   // card/{id}/index.html から SPA トップ(public/index.html)へは2階層上。
   // GitHub Pages のサブパス配信でも壊れないよう相対パスにする。
-  const redirect = `../../?id=${encodeURIComponent(card.id)}`
+  const appLink = `../../?id=${encodeURIComponent(card.id)}`
 
   const jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -100,6 +147,19 @@ function cardPageHtml(card: CardJson): string {
     image,
     url,
   })
+
+  const civs = civBadges(card.civilizations ?? [])
+  const specs: string[] = []
+  if (card.cardType) specs.push(`<span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">${escapeHtml(card.cardType)}</span>`)
+  if (card.rarity) specs.push(`<span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">${escapeHtml(card.rarity)}</span>`)
+  if (card.cost != null) specs.push(`<span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">コスト ${card.cost}</span>`)
+  if (card.power != null) specs.push(`<span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">パワー ${card.power}</span>`)
+  const racesRow = (card.races && card.races.length)
+    ? `<p class="text-sm text-gray-600 mt-2">種族: ${escapeHtml(card.races.join(' / '))}</p>`
+    : ''
+  const textBlock = card.text
+    ? `<div class="mt-4 text-sm leading-relaxed text-gray-800 whitespace-pre-wrap">${escapeHtml(card.text)}</div>`
+    : ''
 
   return `<!DOCTYPE html>
 <html lang="ja">
@@ -118,14 +178,34 @@ function cardPageHtml(card: CardJson): string {
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(desc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(redirect)}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>${PAGE_STYLE}</style>
   <script type="application/ld+json">
 ${jsonLdEscape(jsonLd)}
   </script>
-  <script>window.location.replace(${JSON.stringify(redirect)});</script>
 </head>
-<body>
-  <p><a href="${escapeHtml(redirect)}">${escapeHtml(card.name)} のページへ移動</a></p>
+<body class="bg-gray-50 text-gray-900">
+  <main class="max-w-3xl mx-auto px-4 py-8">
+    <div class="sm:flex sm:gap-6">
+      <img src="${escapeHtml(image)}" alt="${escapeHtml(card.name)}" width="300" height="418"
+           class="w-56 mx-auto sm:mx-0 rounded-lg shadow" loading="lazy">
+      <div class="mt-4 sm:mt-0 flex-1">
+        <h1 class="text-2xl font-bold">${escapeHtml(card.name)}</h1>
+        <div class="flex flex-wrap gap-1.5 mt-3">${civs} ${specs.join(' ')}</div>
+        ${racesRow}
+        ${textBlock}
+        <div class="flex flex-wrap gap-3 mt-6">
+          <a href="${escapeHtml(appLink)}"
+             class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">アプリで開く（検索・デッキ構築）</a>
+          <button type="button" onclick="shareCard()"
+             class="inline-block border border-gray-300 hover:bg-gray-100 text-sm font-medium rounded-lg px-4 py-2">共有</button>
+        </div>
+        <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
+      </div>
+    </div>
+  </main>
+  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  ${shareScript(title, url)}
 </body>
 </html>
 `
@@ -152,6 +232,23 @@ function topRarityCard(deckCards: DeckCard[], byId: Map<string, CardJson>): Card
 
 function deckTotal(deckCards: DeckCard[]): number {
   return deckCards.reduce((s, c) => s + (c.count || 0), 0)
+}
+
+// デッキ内のカードを画像サムネイル + 名前 + 枚数の静的リストで描画する。
+function deckCardListHtml(deckCards: DeckCard[], byId: Map<string, CardJson>): string {
+  const items = deckCards
+    .map(dc => {
+      const card = byId.get(dc.id)
+      const name = card?.name ?? dc.name ?? dc.id
+      const image = `${IMG_BASE}/${dc.id}.jpg`
+      return `    <li class="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-2">
+      <img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" width="40" height="56" class="w-10 rounded" loading="lazy">
+      <span class="flex-1 text-sm">${escapeHtml(name)}</span>
+      <span class="text-sm font-semibold text-gray-500">×${dc.count || 0}</span>
+    </li>`
+    })
+    .join('\n')
+  return `<ul class="grid sm:grid-cols-2 gap-2 mt-4">\n${items}\n  </ul>`
 }
 
 /**
@@ -181,7 +278,7 @@ function deckPageHtml(opts: {
     .replace(/\s+/g, ' ')
     .trim()
   // recipe/{slug}/index.html から SPA トップへは2階層上（相対パス）。
-  const redirect = `../../?recipe=${encodeURIComponent(redirectId)}`
+  const appLink = `../../?recipe=${encodeURIComponent(redirectId)}`
 
   const jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -191,6 +288,9 @@ function deckPageHtml(opts: {
     image,
     url,
   })
+
+  const civs = civBadges(civilizations)
+  const cardList = deckCardListHtml(cards, byId)
 
   return `<!DOCTYPE html>
 <html lang="ja">
@@ -209,14 +309,31 @@ function deckPageHtml(opts: {
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(desc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(redirect)}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>${PAGE_STYLE}</style>
   <script type="application/ld+json">
 ${jsonLdEscape(jsonLd)}
   </script>
-  <script>window.location.replace(${JSON.stringify(redirect)});</script>
 </head>
-<body>
-  <p><a href="${escapeHtml(redirect)}">${escapeHtml(deckName)} のデッキレシピへ移動</a></p>
+<body class="bg-gray-50 text-gray-900">
+  <main class="max-w-3xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold">${escapeHtml(deckName)}</h1>
+    <div class="flex flex-wrap items-center gap-1.5 mt-3">
+      ${civs}
+      <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">${total}枚</span>
+    </div>
+    <div class="flex flex-wrap gap-3 mt-6">
+      <a href="${escapeHtml(appLink)}"
+         class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">アプリで開く（デッキ構築）</a>
+      <button type="button" onclick="shareCard()"
+         class="inline-block border border-gray-300 hover:bg-gray-100 text-sm font-medium rounded-lg px-4 py-2">共有</button>
+    </div>
+    <h2 class="text-lg font-semibold mt-8">カードリスト</h2>
+    ${cardList}
+    <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
+  </main>
+  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  ${shareScript(title, url)}
 </body>
 </html>
 `
@@ -274,9 +391,8 @@ async function main() {
     const top = topRarityCard(deck.cards || [], byId)
     const matchedRecipeId = recipeByName.get(deck.name)
     // SPA で開ける recipe があればそこへ、無ければトップへ。
-    // SPA は ?id= を消費せず着地がトップになるだけなので、明示的に / に統一する。
     // recipe/meta-{n}/index.html から SPA トップへは2階層上（相対パス）。
-    const redirect = matchedRecipeId
+    const appLink = matchedRecipeId
       ? `../../?recipe=${encodeURIComponent(matchedRecipeId)}`
       : '../../'
     const url = `${SITE}/recipe/${slug}/`
@@ -299,6 +415,11 @@ async function main() {
       image,
       url,
     })
+    const civs = civBadges(civ)
+    const cardList = deckCardListHtml(deck.cards || [], byId)
+    const descBlock = deck.description
+      ? `<p class="mt-4 text-sm leading-relaxed text-gray-800 whitespace-pre-wrap">${escapeHtml(deck.description)}</p>`
+      : ''
     const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -316,14 +437,33 @@ async function main() {
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(desc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(redirect)}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>${PAGE_STYLE}</style>
   <script type="application/ld+json">
 ${jsonLdEscape(jsonLd)}
   </script>
-  <script>window.location.replace(${JSON.stringify(redirect)});</script>
 </head>
-<body>
-  <p><a href="${escapeHtml(redirect)}">${escapeHtml(deck.name)} のメタデッキへ移動</a></p>
+<body class="bg-gray-50 text-gray-900">
+  <main class="max-w-3xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold">${escapeHtml(deck.name)}</h1>
+    <div class="flex flex-wrap items-center gap-1.5 mt-3">
+      ${civs}
+      <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">${total}枚</span>
+      <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">メタデッキ</span>
+    </div>
+    ${descBlock}
+    <div class="flex flex-wrap gap-3 mt-6">
+      <a href="${escapeHtml(appLink)}"
+         class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">アプリで開く（デッキ構築）</a>
+      <button type="button" onclick="shareCard()"
+         class="inline-block border border-gray-300 hover:bg-gray-100 text-sm font-medium rounded-lg px-4 py-2">共有</button>
+    </div>
+    <h2 class="text-lg font-semibold mt-8">カードリスト</h2>
+    ${cardList}
+    <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
+  </main>
+  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  ${shareScript(title, url)}
 </body>
 </html>
 `

@@ -15,13 +15,59 @@
   <meta name="twitter:title" content="連龍陣 - デュエルマスターズ クラシック08">
   <meta name="twitter:description" content="S・トリガー(この呪文をシールドゾーンから手札に加える時、コストを支払わずにすぐ唱えてもよい) クリーチャーを１体、自分の墓地から手札に戻す。そのクリーチャーがドラゴンであれば、クリーチャーをもう１体、自分の墓地から手札に戻してもよい。">
   <meta name="twitter:image" content="https://dm.takaratomy.co.jp/wp-content/card/cardimage/dm22-047.jpg">
-  <meta http-equiv="refresh" content="0;url=../../?id=dm22-047">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .civ-光  { background:#fef9c3; border-color:#ca8a04; color:#713f12; }
+    .civ-水  { background:#dbeafe; border-color:#3b82f6; color:#1e3a8a; }
+    .civ-闇  { background:#f3e8ff; border-color:#9333ea; color:#581c87; }
+    .civ-火  { background:#fee2e2; border-color:#ef4444; color:#7f1d1d; }
+    .civ-自然 { background:#dcfce7; border-color:#22c55e; color:#14532d; }</style>
   <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Thing","name":"連龍陣","description":"S・トリガー(この呪文をシールドゾーンから手札に加える時、コストを支払わずにすぐ唱えてもよい)\nクリーチャーを１体、自分の墓地から手札に戻す。そのクリーチャーがドラゴンであれば、クリーチャーをもう１体、自分の墓地から手札に戻してもよい。","image":"https://dm.takaratomy.co.jp/wp-content/card/cardimage/dm22-047.jpg","url":"https://t1k2a.github.io/duelmasters-classic08-database/card/dm22-047/"}
   </script>
-  <script>window.location.replace("../../?id=dm22-047");</script>
 </head>
-<body>
-  <p><a href="../../?id=dm22-047">連龍陣 のページへ移動</a></p>
+<body class="bg-gray-50 text-gray-900">
+  <main class="max-w-3xl mx-auto px-4 py-8">
+    <div class="sm:flex sm:gap-6">
+      <img src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/dm22-047.jpg" alt="連龍陣" width="300" height="418"
+           class="w-56 mx-auto sm:mx-0 rounded-lg shadow" loading="lazy">
+      <div class="mt-4 sm:mt-0 flex-1">
+        <h1 class="text-2xl font-bold">連龍陣</h1>
+        <div class="flex flex-wrap gap-1.5 mt-3"><span class="civ-闇 border rounded-full px-2 py-0.5 text-xs font-medium">闇</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">呪文</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">C</span> <span class="border border-gray-300 rounded-full px-2 py-0.5 text-xs">コスト 3</span></div>
+        
+        <div class="mt-4 text-sm leading-relaxed text-gray-800 whitespace-pre-wrap">S・トリガー(この呪文をシールドゾーンから手札に加える時、コストを支払わずにすぐ唱えてもよい)
+クリーチャーを１体、自分の墓地から手札に戻す。そのクリーチャーがドラゴンであれば、クリーチャーをもう１体、自分の墓地から手札に戻してもよい。</div>
+        <div class="flex flex-wrap gap-3 mt-6">
+          <a href="../../?id=dm22-047"
+             class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">アプリで開く（検索・デッキ構築）</a>
+          <button type="button" onclick="shareCard()"
+             class="inline-block border border-gray-300 hover:bg-gray-100 text-sm font-medium rounded-lg px-4 py-2">共有</button>
+        </div>
+        <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
+      </div>
+    </div>
+  </main>
+  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  <script>
+function shareCard() {
+  var url = "https://t1k2a.github.io/duelmasters-classic08-database/card/dm22-047/";
+  var title = "連龍陣 - デュエルマスターズ クラシック08";
+  if (navigator.share) {
+    navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    return;
+  }
+  navigator.clipboard.writeText(title + '\n' + url)
+    .then(function () { showToast('共有URLをコピーしました'); })
+    .catch(function () { showToast('コピーに失敗しました'); });
+}
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(function () { t.classList.add('hidden'); }, 2000);
+}
+</script>
 </body>
 </html>
