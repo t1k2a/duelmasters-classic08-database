@@ -1776,5 +1776,14 @@ if ('serviceWorker' in navigator) {
   });
 })();
 </script>
+
+<!-- フッター（プライバシーポリシー導線） -->
+<footer class="mt-8 pb-24 px-4 text-center text-xs text-gray-400">
+  <a href="privacy/" class="hover:underline">プライバシーポリシー</a>
+</footer>
+
+<!-- Google Analytics 4 + 同意バナー（測定IDは env→build:analytics-config で js/analytics-config.js に注入） -->
+<script src="js/analytics-config.js"></script>
+<script src="js/analytics.js"></script>
 </body>
 </html>

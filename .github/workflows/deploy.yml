@@ -25,6 +25,21 @@ jobs:
 
       - uses: actions/configure-pages@v5
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # GA4測定IDを public/js/analytics-config.js に注入する（IDはリポジトリ変数から）。
+      # 未設定でもビルドは通り、空値（計測ノーオペ）になる。
+      - name: Build analytics config
+        env:
+          GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
+        run: npm run build:analytics-config
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public

@@ -140,6 +140,15 @@ function showToast(msg) {
 </script>`
 }
 
+// 生成ページ（card/{id}/・recipe/{slug}/ いずれも2階層下）共通のフッター＋GA4スニペット。
+// 測定IDは public/js/analytics.js の1箇所で設定する（プレースホルダなら何もしない安全側実装）。
+// リダイレクトを廃止した実コンテンツページに載るため、同意バナー＋計測がそのまま機能する。
+const PAGE_FOOTER = `  <footer class="max-w-3xl mx-auto mt-8 pb-8 px-4 text-center text-xs text-gray-400">
+    <a href="../../privacy/" class="hover:underline">プライバシーポリシー</a>
+  </footer>
+  <script src="../../js/analytics-config.js"></script>
+  <script src="../../js/analytics.js"></script>`
+
 function cardPageHtml(card: CardJson): string {
   const url = `${SITE}/card/${card.id}/`
   const image = `${IMG_BASE}/${card.id}.jpg`
@@ -216,6 +225,7 @@ ${jsonLdEscape(jsonLd)}
   </main>
   <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
   ${shareScript(title, url)}
+${PAGE_FOOTER}
 </body>
 </html>
 `
@@ -344,6 +354,7 @@ ${jsonLdEscape(jsonLd)}
   </main>
   <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
   ${shareScript(title, url)}
+${PAGE_FOOTER}
 </body>
 </html>
 `
@@ -474,6 +485,7 @@ ${jsonLdEscape(jsonLd)}
   </main>
   <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
   ${shareScript(title, url)}
+${PAGE_FOOTER}
 </body>
 </html>
 `
