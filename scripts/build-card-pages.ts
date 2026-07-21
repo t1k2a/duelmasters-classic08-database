@@ -146,6 +146,7 @@ function showToast(msg) {
 const PAGE_FOOTER = `  <footer class="max-w-3xl mx-auto mt-8 pb-8 px-4 text-center text-xs text-gray-400">
     <a href="../../privacy/" class="hover:underline">プライバシーポリシー</a>
   </footer>
+  <script src="../../js/analytics-config.js"></script>
   <script src="../../js/analytics.js"></script>`
 
 function cardPageHtml(card: CardJson): string {

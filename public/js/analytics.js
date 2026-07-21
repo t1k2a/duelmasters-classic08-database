@@ -5,23 +5,27 @@
  * カード/レシピ個別ページの両方から読み込まれる。
  *
  * 方針:
- *   - 測定IDは下の MEASUREMENT_ID 1箇所だけを書き換えれば全ページで有効になる。
- *   - プレースホルダのまま（未設定）なら gtag を読み込まず、バナーも出さず、何もしない。
+ *   - 測定IDはソースに直書きしない。ビルド時に env(GA_MEASUREMENT_ID) から生成される
+ *     js/analytics-config.js が window.__GA_ID__ にセットした値を読む。
+ *   - 未設定（空 or プレースホルダ）なら gtag を読み込まず、バナーも出さず、何もしない。
  *   - gtag.js の読み込み・送信は「同意後のみ」。初回は同意バナーを表示し、
  *     選択を localStorage に保存。拒否時は一切トラッキングしない。再訪問時はバナーを出さない。
  *   - IP匿名化など、プライバシー配慮のデフォルトを付与する。
  *
- * ★測定IDの設定方法: 下の MEASUREMENT_ID を 'G-XXXXXXXXXX' から実際のGA4測定ID
- *   （G- で始まる文字列）に書き換えるだけ。ここ1箇所で全ページに反映される。
+ * ★測定IDの設定方法: 環境変数 GA_MEASUREMENT_ID を設定して `npm run build:analytics-config`
+ *   （build にも組込み済み）を実行すると js/analytics-config.js が生成される。
+ *   このファイルは .gitignore 対象でリポジトリには追跡されない。
  */
 (function () {
   'use strict'
 
-  var MEASUREMENT_ID = 'G-XXXXXXXXXX' // ← ここを実際のGA4測定IDに書き換える
+  // 測定IDは js/analytics-config.js（ビルド時に env から生成、gitignore対象）が
+  // window.__GA_ID__ にセットする。ソースには直書きしない。
+  var MEASUREMENT_ID = (typeof window !== 'undefined' && window.__GA_ID__) || ''
   var PLACEHOLDER = 'G-XXXXXXXXXX'
   var CONSENT_KEY = 'ga-consent' // 'granted' | 'denied'
 
-  // 未設定（プレースホルダのまま）なら安全側で何もしない。
+  // 未設定（空 or プレースホルダ）なら安全側で何もしない。バナーもタグも出さない。
   if (!MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER) return
 
   // このスクリプト自身の src からサイトのベースパスを導出する。

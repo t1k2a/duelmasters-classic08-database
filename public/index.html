@@ -1782,7 +1782,8 @@ if ('serviceWorker' in navigator) {
   <a href="privacy/" class="hover:underline">プライバシーポリシー</a>
 </footer>
 
-<!-- Google Analytics 4 + 同意バナー（測定IDは js/analytics.js で設定） -->
+<!-- Google Analytics 4 + 同意バナー（測定IDは env→build:analytics-config で js/analytics-config.js に注入） -->
+<script src="js/analytics-config.js"></script>
 <script src="js/analytics.js"></script>
 </body>
 </html>
