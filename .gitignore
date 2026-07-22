@@ -6,3 +6,8 @@ data/raw/
 
 # GA4測定IDのビルド生成物（env から注入、ソースには追跡しない）
 public/js/analytics-config.js
+
+# marketing の運用ドキュメントは非公開（画像のみ追跡）
+docs/marketing/*.md
+docs/marketing/*.ics
+docs/marketing/scripts/
