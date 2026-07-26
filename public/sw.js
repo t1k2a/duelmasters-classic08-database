@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `dmc08-${CACHE_VERSION}`;
 
 // SW のスコープ（GitHub Pages サブパス /duelmasters-classic08-database/）を基準に解決する
@@ -31,12 +31,41 @@ const SWR_URLS = [
   './data/meta-decks.json',
 ].map((p) => new URL(p, SCOPE).toString());
 
+// redirected なレスポンスはナビゲーション（redirect mode != "follow"）に返せないため、
+// キャッシュへ書く前にフラグを落とした素の Response に作り替える
+function stripRedirect(response) {
+  if (!response.redirected) return Promise.resolve(response);
+  return response.blob().then((body) =>
+    new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    })
+  );
+}
+
+function fetchForCache(url) {
+  return fetch(url).then((response) => {
+    if (!response || !response.ok) throw new Error(`precache failed: ${url}`);
+    return stripRedirect(response);
+  });
+}
+
+function cachePut(cache, url) {
+  return fetchForCache(url).then((clean) => cache.put(url, clean));
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll(PRECACHE_REQUIRED).then(() =>
-        Promise.allSettled(PRECACHE_OPTIONAL.map((url) => cache.add(url).catch(() => {})))
-      )
+      // cache.addAll と同じアトミック性を保つため、全件取得に成功してから put する
+      Promise.all(PRECACHE_REQUIRED.map((url) => fetchForCache(url)))
+        .then((responses) =>
+          Promise.all(responses.map((res, i) => cache.put(PRECACHE_REQUIRED[i], res)))
+        )
+        .then(() =>
+          Promise.allSettled(PRECACHE_OPTIONAL.map((url) => cachePut(cache, url)))
+        )
     ).then(() => self.skipWaiting())
   );
 });
@@ -54,7 +83,11 @@ function staleWhileRevalidate(request) {
     cache.match(request).then((cached) => {
       const network = fetch(request)
         .then((response) => {
-          if (response && response.ok) cache.put(request, response.clone());
+          if (response && response.ok) {
+            stripRedirect(response.clone())
+              .then((clean) => cache.put(request, clean))
+              .catch(() => {});
+          }
           return response;
         })
         .catch(() => cached);
@@ -97,7 +130,11 @@ self.addEventListener('fetch', (event) => {
   // ただしオフライン時のナビゲーションは SPA シェルにフォールバックさせる。
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match(new URL('./index.html', SCOPE).toString()))
+      // ナビゲーションの redirect mode は "manual" のため、辿った結果をそのまま返すと
+      // ネットワークエラーになる。フラグを落としてから返す。
+      fetch(request)
+        .then(stripRedirect)
+        .catch(() => caches.match(new URL('./index.html', SCOPE).toString()))
     );
     return;
   }
