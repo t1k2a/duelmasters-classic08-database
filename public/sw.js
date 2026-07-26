@@ -44,19 +44,28 @@ function stripRedirect(response) {
   );
 }
 
-function cachePut(cache, url) {
+function fetchForCache(url) {
   return fetch(url).then((response) => {
     if (!response || !response.ok) throw new Error(`precache failed: ${url}`);
-    return stripRedirect(response).then((clean) => cache.put(url, clean));
+    return stripRedirect(response);
   });
+}
+
+function cachePut(cache, url) {
+  return fetchForCache(url).then((clean) => cache.put(url, clean));
 }
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      Promise.all(PRECACHE_REQUIRED.map((url) => cachePut(cache, url))).then(() =>
-        Promise.allSettled(PRECACHE_OPTIONAL.map((url) => cachePut(cache, url)))
-      )
+      // cache.addAll と同じアトミック性を保つため、全件取得に成功してから put する
+      Promise.all(PRECACHE_REQUIRED.map((url) => fetchForCache(url)))
+        .then((responses) =>
+          Promise.all(responses.map((res, i) => cache.put(PRECACHE_REQUIRED[i], res)))
+        )
+        .then(() =>
+          Promise.allSettled(PRECACHE_OPTIONAL.map((url) => cachePut(cache, url)))
+        )
     ).then(() => self.skipWaiting())
   );
 });
@@ -75,7 +84,9 @@ function staleWhileRevalidate(request) {
       const network = fetch(request)
         .then((response) => {
           if (response && response.ok) {
-            stripRedirect(response.clone()).then((clean) => cache.put(request, clean));
+            stripRedirect(response.clone())
+              .then((clean) => cache.put(request, clean))
+              .catch(() => {});
           }
           return response;
         })
@@ -119,7 +130,11 @@ self.addEventListener('fetch', (event) => {
   // ただしオフライン時のナビゲーションは SPA シェルにフォールバックさせる。
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match(new URL('./index.html', SCOPE).toString()))
+      // ナビゲーションの redirect mode は "manual" のため、辿った結果をそのまま返すと
+      // ネットワークエラーになる。フラグを落としてから返す。
+      fetch(request)
+        .then(stripRedirect)
+        .catch(() => caches.match(new URL('./index.html', SCOPE).toString()))
     );
     return;
   }
