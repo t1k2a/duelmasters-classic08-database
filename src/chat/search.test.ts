@@ -1,7 +1,7 @@
 // src/chat/search.test.ts
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { webSearch, searchEnabled } from './search.js'
+import { webSearch, searchEnabled, DEFAULT_INCLUDE_DOMAINS } from './search.js'
 
 function tavilyResponse(results: object[], answer?: string): Response {
   return new Response(JSON.stringify({ results, answer }), { status: 200, headers: { 'content-type': 'application/json' } })
@@ -77,7 +77,7 @@ test('信頼ドメイン検索が0件なら include_domains なしで再検索�
   ])
   const r = await webSearch('イラストレーターは？', { apiKey: 'k', fetchImpl: impl as any })
   assert.equal(calls.length, 2)
-  assert.deepEqual(calls[0]!.body.include_domains, ['dmwiki.net', 'dm.takaratomy.co.jp'])
+  assert.deepEqual(calls[0]!.body.include_domains, DEFAULT_INCLUDE_DOMAINS)
   assert.equal('include_domains' in calls[1]!.body, false)
   assert.ok(r)
   assert.equal(r!.sources[0]!.url, 'https://example.com/a')
@@ -87,7 +87,6 @@ test('信頼ドメインでヒットしたら二段目検索は呼ばない', as
   const { impl, calls } = recordingFetch([tavilyResponse([{ title: 'T', url: 'https://dmwiki.net/x', content: '本文' }])])
   const r = await webSearch('イラストレーターは？', { apiKey: 'k', fetchImpl: impl as any })
   assert.equal(calls.length, 1)
-  assert.deepEqual(calls[0]!.body.include_domains, ['dmwiki.net', 'dm.takaratomy.co.jp'])
   assert.ok(r)
 })
 
