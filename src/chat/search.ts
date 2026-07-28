@@ -10,7 +10,7 @@ const DEFAULT_MAX = parseInt(process.env['SEARCH_MAX_RESULTS'] ?? '5', 10)
 
 // 検索対象をデュエル・マスターズ関連に限定するための信頼ドメイン。
 // SEARCH_INCLUDE_DOMAINS（カンマ区切り）で上書き可能。
-const DEFAULT_INCLUDE_DOMAINS = ['dmwiki.net', 'dm.takaratomy.co.jp']
+export const DEFAULT_INCLUDE_DOMAINS = ['dmwiki.net', 'dm.takaratomy.co.jp', 'ja.wikipedia.org']
 // クエリにこのいずれも含まれなければ「デュエル・マスターズ」を付与し、無関係サイトの混入を防ぐ。
 const DM_KEYWORDS = ['デュエル・マスターズ', 'デュエルマスターズ', 'デュエマ']
 
