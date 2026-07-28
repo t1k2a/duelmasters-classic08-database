@@ -39,7 +39,7 @@ test('checkCompleteness: 分母どおり揃っていれば complete', () => {
 })
 
 test('checkCompleteness: 途中で中断したセットは欠番付きで incomplete になる', () => {
-  // 今回の不具合の再現: SR枠の取得が始まる前に停止し、s枠が0件のまま静かに通っていた
+  // 系列内の欠番パターン。系列が丸ごと0件のケースは absent のテストで別途担保する
   const { reports } = checkCompleteness([
     { setCode: 'DM-28', cardNumber: 's1/s10' },
     { setCode: 'DM-28', cardNumber: 's2/s10' },
@@ -99,9 +99,11 @@ test('checkCompleteness: 期待系列がすべて揃っていれば absent は�
 })
 
 test('EXPECTED_SERIES_BY_SET: DM-01〜DM-30 すべてが通常枠とS枠を持つ', () => {
-  const setCodes = Object.keys(EXPECTED_SERIES_BY_SET)
-  assert.equal(setCodes.length, 30)
-  assert.ok(setCodes.every(s => EXPECTED_SERIES_BY_SET[s]!.includes('') && EXPECTED_SERIES_BY_SET[s]!.includes('S')))
+  // 件数だけの検証では「DM-30 が欠落し別キーが混入」を見逃し、
+  // そのセットのS系列欠落を事前登録できなくなる。キー集合そのものを比較する
+  const expectedSetCodes = Array.from({ length: 30 }, (_v, i) => `DM-${String(i + 1).padStart(2, '0')}`)
+  assert.deepEqual(Object.keys(EXPECTED_SERIES_BY_SET).sort(), expectedSetCodes)
+  assert.ok(expectedSetCodes.every(s => EXPECTED_SERIES_BY_SET[s]!.includes('') && EXPECTED_SERIES_BY_SET[s]!.includes('S')))
 })
 
 test('checkCompleteness: cardNumber が空のものは unparsable として必ず表面化する', () => {
