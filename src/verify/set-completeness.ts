@@ -47,12 +47,34 @@ export interface SeriesReport {
   complete: boolean
   /** 同一系列で複数の分母が観測された場合（再録などの混入）に立つ */
   conflictingTotals: number[]
+  /** 期待されている系列が1件も観測されなかった（分母すら分からない）状態 */
+  absent: boolean
 }
 
 export interface CompletenessResult {
   reports: SeriesReport[]
   /** cardNumber が空 or 解釈不能なもの。正規表現の取りこぼしを表面化させる */
   unparsable: Entry[]
+}
+
+/**
+ * 各セットが持つはずの系列のマニフェスト。
+ * 観測データからしか系列を組み立てないと「系列が丸ごと0件」を検出できないため
+ * （DM-27 の S枠が0件のまま通っていたのがまさにこれ）、期待値を外から与える。
+ * DM-01〜DM-30 はいずれも通常枠とSR枠(S)の2系列を持つ。
+ */
+export const EXPECTED_SERIES_BY_SET: Record<string, string[]> = Object.fromEntries(
+  Array.from({ length: 30 }, (_v, i) => [`DM-${String(i + 1).padStart(2, '0')}`, ['', 'S']])
+)
+
+/** 検査対象セットに対する期待系列マップを返す。マニフェスト未登録のセットは検査対象外 */
+export function expectedSeriesFor(setCodes: string[]): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  for (const setCode of setCodes) {
+    const series = EXPECTED_SERIES_BY_SET[setCode]
+    if (series) map.set(setCode, series)
+  }
+  return map
 }
 
 /** "1/110" → {series:'', index:1, total:110} / "s6/s10" → {series:'S', index:6, total:10} */
@@ -84,9 +106,22 @@ function dominantTotal(totals: number[]): number {
   return best
 }
 
-export function checkCompleteness(entries: Entry[]): CompletenessResult {
+export function checkCompleteness(
+  entries: Entry[],
+  expectedSeries?: Map<string, string[]>
+): CompletenessResult {
   const groups = new Map<string, { setCode: string; series: string; parsed: PackNumber[] }>()
   const unparsable: Entry[] = []
+
+  // 期待系列を先に空グループとして起こしておく。こうしないと観測0件の系列は
+  // グループ自体が存在せず、欠落が報告されないまま通ってしまう
+  if (expectedSeries) {
+    for (const [setCode, seriesList] of expectedSeries) {
+      for (const series of seriesList) {
+        groups.set(`${setCode}|${series}`, { setCode, series, parsed: [] })
+      }
+    }
+  }
 
   for (const entry of entries) {
     const parsed = parsePackNumber(entry.cardNumber ?? '')
@@ -105,6 +140,19 @@ export function checkCompleteness(entries: Entry[]): CompletenessResult {
 
   const reports: SeriesReport[] = []
   for (const g of groups.values()) {
+    if (g.parsed.length === 0) {
+      reports.push({
+        setCode: g.setCode,
+        series: g.series,
+        expected: 0,
+        actual: 0,
+        missing: [],
+        complete: false,
+        conflictingTotals: [],
+        absent: true,
+      })
+      continue
+    }
     const totals = g.parsed.map(p => p.total)
     const expected = dominantTotal(totals)
     const present = new Set(g.parsed.filter(p => p.total === expected).map(p => p.index))
@@ -120,6 +168,7 @@ export function checkCompleteness(entries: Entry[]): CompletenessResult {
       missing,
       complete: missing.length === 0,
       conflictingTotals,
+      absent: false,
     })
   }
 
@@ -168,7 +217,7 @@ async function main() {
   console.log(`=== Set Completeness Verification (${setCodes.length} sets) ===\n`)
 
   const entries = await collectEntries(setCodes)
-  const { reports, unparsable } = checkCompleteness(entries)
+  const { reports, unparsable } = checkCompleteness(entries, expectedSeriesFor(setCodes))
 
   let failures = 0
 
@@ -180,6 +229,11 @@ async function main() {
 
   for (const r of reports) {
     const label = `${r.setCode}${r.series ? ` [${r.series}枠]` : ' [通常枠]'}`
+    if (r.absent) {
+      failures++
+      console.log(`  ✗ ${label}: 1件も取得できていません（系列ごと欠落）`)
+      continue
+    }
     if (r.complete) {
       console.log(`  ✓ ${label}: ${r.actual}/${r.expected}`)
     } else {

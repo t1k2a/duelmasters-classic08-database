@@ -39,17 +39,35 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
-async function fetchSetSr(setCode: string, maxMiss: number, maxSr: number): Promise<number> {
+interface SetResult {
+  valid: number
+  errors: string[]
+}
+
+async function fetchSetSr(setCode: string, maxMiss: number, maxSr: number): Promise<SetResult> {
   const prefix = setCodeToPrefix(setCode)
   let valid = 0
   let consecutive = 0
+  const errors: string[] = []
 
   for (let i = 1; i <= maxSr; i++) {
     const cardId = `${prefix}-s${String(i).padStart(2, '0')}`
     const filePath = join(RAW_DIR, setCode, `${cardId}.html`)
     const existedBefore = await fileExists(filePath)
 
-    const html = await fetchCardDetail(cardId, setCode)
+    // 1件の取得失敗で残りのカード・セットまで巻き添えにしない。記録して継続し、
+    // 最後にサマリで報告する（中断による「静かな欠落」こそがこのPRで直した不具合のため）
+    let html: string | null
+    try {
+      html = await fetchCardDetail(cardId, setCode)
+    } catch (e) {
+      // 「存在しないID」ではなく通信等の失敗なので、連続ミス打ち切りには数えない
+      // （数えると一時的な通信エラーで列挙が途中終了し、欠落を作ってしまう）
+      if (!existedBefore && (await fileExists(filePath))) await unlink(filePath)
+      errors.push(`${cardId}: ${e instanceof Error ? e.message : String(e)}`)
+      console.log(`  ! ${cardId}: 取得に失敗（継続します）`)
+      continue
+    }
 
     if (!html || !isValidCardPage(html)) {
       // 今回新規に保存された無効ページのみ削除（既存ファイルは絶対に消さない）
@@ -63,7 +81,19 @@ async function fetchSetSr(setCode: string, maxMiss: number, maxSr: number): Prom
     valid++
     console.log(`  ✓ ${cardId}${existedBefore ? ' (cached)' : ''}`)
   }
-  return valid
+  return { valid, errors }
+}
+
+/** 不正値を黙って NaN にして「1件も取得せず正常終了」するのを防ぐ */
+function intFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name]
+  if (raw === undefined || raw === '') return fallback
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < 1) {
+    console.error(`Invalid ${name}: "${raw}" (1以上の整数を指定してください)`)
+    process.exit(1)
+  }
+  return value
 }
 
 async function main() {
@@ -72,18 +102,27 @@ async function main() {
     console.error('No SETS provided. Example: SETS=DM-27,DM-28 tsx scripts/fetch-dm-sr-html.ts')
     process.exit(1)
   }
-  const maxMiss = parseInt(process.env['MAX_MISS'] ?? '3', 10)
-  const maxSr = parseInt(process.env['MAX_SR'] ?? '99', 10)
+  const maxMiss = intFromEnv('MAX_MISS', 3)
+  const maxSr = intFromEnv('MAX_SR', 99)
 
   console.log(`Fetching SR pages for ${sets.length} set(s): ${sets.join(', ')} (MAX_MISS=${maxMiss}, MAX_SR=${maxSr})`)
   let total = 0
+  const allErrors: string[] = []
   for (const setCode of sets) {
     console.log(`\n=== ${setCode} ===`)
-    const valid = await fetchSetSr(setCode, maxMiss, maxSr)
-    console.log(`  → ${valid} valid SR card pages cached`)
+    const { valid, errors } = await fetchSetSr(setCode, maxMiss, maxSr)
+    console.log(`  → ${valid} valid SR card pages cached${errors.length ? ` / ${errors.length} 件失敗` : ''}`)
     total += valid
+    allErrors.push(...errors.map(e => `${setCode} ${e}`))
   }
   console.log(`\nTotal valid SR pages: ${total}`)
+
+  if (allErrors.length) {
+    console.error(`\n=== ${allErrors.length} 件の取得エラー ===`)
+    for (const e of allErrors) console.error(`  ${e}`)
+    console.error('再実行すると未取得分のみ取得されます（既存ファイルはキャッシュヒット）。')
+    process.exit(1)
+  }
 }
 
 main().catch(e => { console.error(e); process.exit(1) })

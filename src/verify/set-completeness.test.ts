@@ -1,7 +1,13 @@
 // src/verify/set-completeness.test.ts
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parsePackNumber, checkCompleteness, findEmptySets } from './set-completeness.js'
+import {
+  parsePackNumber,
+  checkCompleteness,
+  findEmptySets,
+  expectedSeriesFor,
+  EXPECTED_SERIES_BY_SET,
+} from './set-completeness.js'
 
 test('parsePackNumber: 通常枠 "1/110" を分子・分母に分解する', () => {
   assert.deepEqual(parsePackNumber('1/110'), { series: '', index: 1, total: 110 })
@@ -65,6 +71,37 @@ test('findEmptySets: 1件も取得できていないセットを検出する（0
     { setCode: 'DM-29', cardNumber: '1/55' },
   ])
   assert.deepEqual(empty, ['DM-28'])
+})
+
+test('checkCompleteness: 系列が丸ごと欠けているセットを absent として検出する', () => {
+  // 実際に起きた不具合: DM-27 の通常枠55枚は取れたが S枠が0件。観測データからしか
+  // 系列グループを作らないと S枠のグループ自体が生まれず、欠落が素通りしていた
+  const { reports } = checkCompleteness(
+    Array.from({ length: 55 }, (_v, i) => ({ setCode: 'DM-27', cardNumber: `${i + 1}/55` })),
+    expectedSeriesFor(['DM-27'])
+  )
+  const sr = reports.find(r => r.series === 'S')!
+  assert.equal(sr.absent, true)
+  assert.equal(sr.complete, false)
+  assert.equal(reports.find(r => r.series === '')!.complete, true)
+})
+
+test('checkCompleteness: 期待系列がすべて揃っていれば absent は立たない', () => {
+  const { reports } = checkCompleteness(
+    [
+      ...Array.from({ length: 55 }, (_v, i) => ({ setCode: 'DM-27', cardNumber: `${i + 1}/55` })),
+      ...Array.from({ length: 5 }, (_v, i) => ({ setCode: 'DM-27', cardNumber: `S${i + 1}/S5` })),
+    ],
+    expectedSeriesFor(['DM-27'])
+  )
+  assert.equal(reports.length, 2)
+  assert.ok(reports.every(r => r.complete && !r.absent))
+})
+
+test('EXPECTED_SERIES_BY_SET: DM-01〜DM-30 すべてが通常枠とS枠を持つ', () => {
+  const setCodes = Object.keys(EXPECTED_SERIES_BY_SET)
+  assert.equal(setCodes.length, 30)
+  assert.ok(setCodes.every(s => EXPECTED_SERIES_BY_SET[s]!.includes('') && EXPECTED_SERIES_BY_SET[s]!.includes('S')))
 })
 
 test('checkCompleteness: cardNumber が空のものは unparsable として必ず表面化する', () => {
