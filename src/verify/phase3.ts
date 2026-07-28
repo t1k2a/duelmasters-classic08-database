@@ -3,6 +3,10 @@
  * Checks known cards, distribution counts, and data integrity.
  *
  * Usage: npx tsx src/verify/phase3.ts
+ *
+ * 注: このスクリプトは Prisma(PostgreSQL) に取り込み済みのデータを検査する。
+ * 「スクレイピングが途中で止まっていないか（セットが分母どおり揃っているか）」の検査は
+ * DB非依存で data/raw を直接読む src/verify/set-completeness.ts（npm run verify:sets）が担当。
  */
 
 import { PrismaClient } from '@prisma/client'

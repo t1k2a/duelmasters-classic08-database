@@ -16,6 +16,7 @@
     "scrape:dm": "tsx src/scraper/run-dm.ts",
     "scrape:dm:test": "TEST_SET=DM-06 tsx src/scraper/run-dm.ts",
     "verify": "tsx src/verify/phase3.ts",
+    "verify:sets": "tsx src/verify/set-completeness.ts",
     "api": "tsx src/api/server.ts",
     "search": "tsx src/api/search-cli.ts",
     "scrape:dmc": "tsx src/scraper/run-dmc.ts",
@@ -28,7 +29,8 @@
     "recipes:rematch": "tsx src/scraper/rematch-recipes.ts",
     "recipes:merge-checkpoint": "tsx src/scraper/merge-checkpoint.ts",
     "chat": "tsx src/chat/server.ts",
-    "test:chat": "tsx --test src/chat/*.test.ts"
+    "test:chat": "tsx --test src/chat/*.test.ts",
+    "test": "tsx --test src/chat/*.test.ts src/scraper/*.test.ts src/verify/*.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
