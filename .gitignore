@@ -3,6 +3,7 @@ dist/
 .env
 data/raw/
 *.log
+logs/
 
 # GA4測定IDのビルド生成物（env から注入、ソースには追跡しない）
 public/js/analytics-config.js
