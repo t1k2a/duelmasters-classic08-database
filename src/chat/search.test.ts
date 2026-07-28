@@ -78,6 +78,7 @@ test('信頼ドメイン検索が0件なら include_domains なしで再検索�
   const r = await webSearch('イラストレーターは？', { apiKey: 'k', fetchImpl: impl as any })
   assert.equal(calls.length, 2)
   assert.deepEqual(calls[0]!.body.include_domains, DEFAULT_INCLUDE_DOMAINS)
+  assert.ok(DEFAULT_INCLUDE_DOMAINS.includes('ja.wikipedia.org'))
   assert.equal('include_domains' in calls[1]!.body, false)
   assert.ok(r)
   assert.equal(r!.sources[0]!.url, 'https://example.com/a')
