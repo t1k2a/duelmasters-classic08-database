@@ -23,9 +23,11 @@ function parseRaces(raw: string): string[] {
   return raw.split('/').map(s => s.trim()).filter(Boolean)
 }
 
-function parseCardNumber(packname: string): string {
-  // packname text = "(DM6 1/110)" for normal cards, "(DM6 S8/S10)" for SR cards
-  const m = packname.match(/\([A-Z0-9+]+\s+([A-Z0-9\/]+)\)/)
+export function parseCardNumber(packname: string): string {
+  // packname text = "(DM6 1/110)" for normal cards, "(DM6 S8/S10)" for SR cards.
+  // 公式DBはSR枠の接頭辞に表記揺れがあり、DM-28以降は小文字 "(DM28 s1/s10)" になる。
+  // 小文字を許可しないと DM-28/29/30 のSR枠が空文字になるため [A-Za-z0-9/] を受ける。
+  const m = packname.match(/\([A-Z0-9+]+\s+([A-Za-z0-9\/]+)\)/)
   return m ? m[1] : ''
 }
 
