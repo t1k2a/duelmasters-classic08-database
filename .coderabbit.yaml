@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: ja-JP
+
+reviews:
+  auto_review:
+    enabled: true
+    base_branches:
+      - ".*"  # すべてのブランチで有効
+
+  profile: chill
+
+  review_status: true
+
+  # 生成物はレビュー対象外にする。レビューすべきは生成ロジックであって出力ではない。
+  # recipes.json は poolStatus 付与で 1 ファイル 18 万行の差分になり、
+  # レートリミットでレビューが打ち切られた実績がある（PR #43）。
+  path_filters:
+    - "!public/data/recipes.json"
+    - "!public/cards.json"
+    - "!public/card/**"
+    - "!public/sitemap.xml"
+    - "!data/seeds/out_of_pool_*.json"
+    - "!data/raw/**"
+    - "!package-lock.json"
