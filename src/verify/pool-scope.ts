@@ -174,6 +174,21 @@ export interface ClassifyAllResult {
   dateProvenCount: number
   /** 日付証明された名前のうち strong にも載っているもの（本来は空。>0 はどちらかが誤り） */
   dateProvenStrongConflicts: { name: string; set: string }[]
+  /** 日付証明された名前のうち weak にも載っているもの（再録なので正常。件数の増加だけ監視する） */
+  dateProvenWeakOverlaps: { name: string; set: string }[]
+}
+
+/** 日付証明された名前とプール外インデックスの交差を取る */
+function intersectIndex(
+  dateProven: Set<string>,
+  index: Map<string, string>
+): { name: string; set: string }[] {
+  const hits: { name: string; set: string }[] = []
+  for (const name of dateProven) {
+    const set = index.get(name)
+    if (set !== undefined) hits.push({ name, set })
+  }
+  return hits
 }
 
 /**
@@ -184,13 +199,23 @@ export function findDateProvenStrongConflicts(
   dateProven: Set<string>,
   ctx: ScopeContext
 ): { name: string; set: string }[] {
-  const conflicts: { name: string; set: string }[] = []
-  for (const name of dateProven) {
-    const set = ctx.strong.get(name)
-    if (set !== undefined) conflicts.push({ name, set })
-  }
-  return conflicts
+  return intersectIndex(dateProven, ctx.strong)
 }
+
+/**
+ * 日付証明と weak（DMC/DMX/DMD 由来）の交差。weak は再録を排除できないため、
+ * 交差自体は異常ではない（＝失敗にしない）。実測 KNOWN_WEAK_OVERLAP 件から
+ * 増えた場合だけ、再録以外の原因（索引の過剰登録・照合漏れ）を疑う材料として警告する。
+ */
+export function findDateProvenWeakOverlaps(
+  dateProven: Set<string>,
+  ctx: ScopeContext
+): { name: string; set: string }[] {
+  return intersectIndex(dateProven, ctx.weak)
+}
+
+/** dateProven ∩ weak の実測値。再録由来で正常な交差の基準線 */
+export const KNOWN_WEAK_OVERLAP = 20
 
 export function classifyAll(recipes: PoolScopeRecipe[], ctx: ScopeContext): ClassifyAllResult {
   const dateProven = buildDateProvenNames(recipes, ctx)
@@ -209,6 +234,7 @@ export function classifyAll(recipes: PoolScopeRecipe[], ctx: ScopeContext): Clas
     unknownYearIds,
     dateProvenCount: dateProven.size,
     dateProvenStrongConflicts: findDateProvenStrongConflicts(dateProven, ctx),
+    dateProvenWeakOverlaps: findDateProvenWeakOverlaps(dateProven, ctx),
   }
 }
 
@@ -265,8 +291,14 @@ async function main() {
 
   const ctx = await loadScopeContext()
   const recipes = await loadRecipes()
-  const { counts, unknownYearIds, dateProvenCount, dateProvenStrongConflicts, results } =
-    classifyAll(recipes, ctx)
+  const {
+    counts,
+    unknownYearIds,
+    dateProvenCount,
+    dateProvenStrongConflicts,
+    dateProvenWeakOverlaps,
+    results,
+  } = classifyAll(recipes, ctx)
 
   const total = counts.IN + counts.OUT_STRONG + counts.OUT_WEAK + counts.UNDECIDED
   console.log(`  IN         : ${counts.IN}`)
@@ -277,6 +309,12 @@ async function main() {
   console.log(`  TOTAL      : ${total} / recipes.json ${recipes.length} 件`)
   console.log(`\n  日付証明でスコープ内と確定した未マッチ名: ${dateProvenCount}`)
   console.log(`  strong インデックス: ${ctx.strong.size} 名 / weak インデックス: ${ctx.weak.size} 名`)
+
+  // 層2（日付証明）は層3（インデックス）を上書きする設計なので、両者の交差を必ず可視化する。
+  // 黙って上書きすると、索引の誤りが「INが増える」形で吸収されて気付けない
+  console.log(`\n  層2 ∩ 層3 の交差:`)
+  console.log(`    dateProven ∩ strong : ${dateProvenStrongConflicts.length} 件（期待 0 / >0 は失敗）`)
+  console.log(`    dateProven ∩ weak   : ${dateProvenWeakOverlaps.length} 件（既知 ${KNOWN_WEAK_OVERLAP} / 再録のため正常）`)
 
   let failures = 0
 
@@ -299,6 +337,14 @@ async function main() {
     console.error('    ≤2008 のスナップショットに実在するカードが DM-31以降 初出と登録されています。どちらかが誤りです。')
     for (const c of dateProvenStrongConflicts.slice(0, 10)) {
       console.error(`      ${c.name} [${c.set}]`)
+    }
+  }
+  // weak は再録を排除できないため交差しても失敗にしない。既知値からの増加だけ知らせる
+  if (dateProvenWeakOverlaps.length > KNOWN_WEAK_OVERLAP) {
+    console.warn(`\n  ! 警告: 日付証明済みの名前と weak インデックスの交差が ${dateProvenWeakOverlaps.length} 件で、既知値 ${KNOWN_WEAK_OVERLAP} 件から増えています`)
+    console.warn('    再録なら正常ですが、weak への過剰登録や照合漏れの可能性もあります。増分を確認してください。')
+    for (const o of dateProvenWeakOverlaps.slice(0, 10)) {
+      console.warn(`      ${o.name} [${o.set}]`)
     }
   }
   if (unknownYearIds.length) {

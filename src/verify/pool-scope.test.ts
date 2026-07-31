@@ -8,6 +8,10 @@ import {
   classifyRecipe,
   classifyAll,
   buildScopeContext,
+  findDateProvenStrongConflicts,
+  findDateProvenWeakOverlaps,
+  ARCHIVE_MIN_YEAR,
+  KNOWN_WEAK_OVERLAP,
   SCOPE_CUTOFF_YEAR,
   type PoolScopeRecipe,
 } from './pool-scope.js'
@@ -36,6 +40,24 @@ test('archiveYear: web.archive.org のスナップショット年を取り出す
 test('archiveYear: アーカイブURLでなければ null（黙って年を捏造しない）', () => {
   assert.equal(archiveYear('http://dmvault.ath.cx/deck/1234'), null)
   assert.equal(archiveYear(''), null)
+})
+
+test('archiveYear: 妥当域外の年は null にする（≤2008判定をすり抜けて無条件INになるのを防ぐ）', () => {
+  // 実データに現れる壊れたURL。数値としては ≤2008 なので、素通しすると
+  // 「日付証明でIN」という最も緩い判定に落ちてしまう（フェイルセーフの向きが逆）
+  assert.equal(archiveYear('https://web.archive.org/web/0000/http://x/y'), null)
+  assert.equal(archiveYear('https://web.archive.org/web/1969/http://x/y'), null)
+  assert.equal(archiveYear(`https://web.archive.org/web/${ARCHIVE_MIN_YEAR - 1}0401/http://x/y`), null)
+})
+
+test('archiveYear: 妥当域の境界は通す（1996 と 現在年）', () => {
+  assert.equal(archiveYear(`https://web.archive.org/web/${ARCHIVE_MIN_YEAR}0401/http://x/y`), ARCHIVE_MIN_YEAR)
+  const thisYear = new Date().getFullYear()
+  assert.equal(archiveYear(`https://web.archive.org/web/${thisYear}0401/http://x/y`), thisYear)
+})
+
+test('archiveYear: 未来年は null（アーカイブに存在し得ないのでURLの破損とみなす）', () => {
+  assert.equal(archiveYear(`https://web.archive.org/web/${new Date().getFullYear() + 1}0401/http://x/y`), null)
 })
 
 // --- 層1: cards.json 照合 ---------------------------------------------------
@@ -125,6 +147,46 @@ test('classifyRecipe: どのインデックスにも当たらない未解決名�
   const res = classifyRecipe(recipe('r1', 2012, 'Unmatched cards: 得体の知れないカード(1)'), ctx, new Set())
   assert.equal(res.klass, 'UNDECIDED')
   assert.deepEqual(res.unresolved, ['得体の知れないカード'])
+})
+
+// --- 層2 と 層3 の矛盾検出（tripwire） --------------------------------------
+
+test('findDateProvenStrongConflicts: 交差が無ければ空（健全な状態）', () => {
+  const ctx = buildScopeContext(CARDS, { '超銀河弾 HELL': 'DM31' }, {})
+  assert.deepEqual(findDateProvenStrongConflicts(new Set([ctx.canon('謎のカードA')]), ctx), [])
+})
+
+test('findDateProvenStrongConflicts: 日付証明済みの名前が strong にもあれば矛盾として返す', () => {
+  // ≤2008 のスナップショットに実在するカードが「DM-31以降が初出」と登録されている状態。
+  // 索引かデータのどちらかが誤っているので、握りつぶさず表面化させる
+  const ctx = buildScopeContext(CARDS, { '超銀河弾 HELL': 'DM31' }, {})
+  const conflicts = findDateProvenStrongConflicts(new Set([ctx.canon('超銀河弾 HELL')]), ctx)
+  assert.deepEqual(conflicts, [{ name: ctx.canon('超銀河弾 HELL'), set: 'DM31' }])
+})
+
+test('findDateProvenWeakOverlaps: 日付証明と weak の交差は「異常」ではなく計測対象として返す', () => {
+  // weak（DMC/DMX/DMD）は再録が多く、≤2008 に実在すること自体は矛盾しない。
+  // よって失敗にはせず、件数の増加を監視するために返す
+  const ctx = buildScopeContext(CARDS, {}, { '聖霊王アルカディアス': 'DMC47', '別のカード': 'DMX01' })
+  const overlaps = findDateProvenWeakOverlaps(new Set([ctx.canon('聖霊王アルカディアス')]), ctx)
+  assert.deepEqual(overlaps, [{ name: ctx.canon('聖霊王アルカディアス'), set: 'DMC47' }])
+})
+
+test('findDateProvenWeakOverlaps: 交差が無ければ空', () => {
+  const ctx = buildScopeContext(CARDS, {}, { '聖霊王アルカディアス': 'DMC47' })
+  assert.deepEqual(findDateProvenWeakOverlaps(new Set([ctx.canon('無関係')]), ctx), [])
+})
+
+test('KNOWN_WEAK_OVERLAP: 既知値は実測の20件（増えたら再録以外の原因を疑う基準）', () => {
+  assert.equal(KNOWN_WEAK_OVERLAP, 20)
+})
+
+test('classifyAll: strong の矛盾と weak の交差を両方集計して返す', () => {
+  const ctx = buildScopeContext(CARDS, { 'S1': 'DM31' }, { 'W1': 'DMC47' })
+  // 2007年のスナップショットに S1 と W1 が実在する = 日付証明される
+  const result = classifyAll([recipe('a', 2007, 'Unmatched cards: S1(1), W1(1)')], ctx)
+  assert.deepEqual(result.dateProvenStrongConflicts, [{ name: ctx.canon('S1'), set: 'DM31' }])
+  assert.deepEqual(result.dateProvenWeakOverlaps, [{ name: ctx.canon('W1'), set: 'DMC47' }])
 })
 
 // --- 集計 -------------------------------------------------------------------

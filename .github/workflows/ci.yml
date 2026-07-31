@@ -1,0 +1,55 @@
+name: CI
+
+# 検証を「作ったが動いていない」状態にしないためのゲート。
+# deploy.yml は push(main) にしか反応しないため、PR 時点では従来どこにも検証が無かった。
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      # data/raw/ は .gitignore 対象でリポジトリに存在しない（生HTMLは再取得可能なため
+      # コミットしない方針）。無条件に実行すると全30セットが「未取得」となり CI が常に
+      # 失敗するので、存在するときだけ実行する。存在しない場合もサイレントに飛ばさず、
+      # ジョブサマリと警告アノテーションに「スキップした」と明記する。
+      - name: Set completeness (requires data/raw)
+        run: |
+          if [ -d data/raw ]; then
+            echo "data/raw を検出。セット完全性検証を実行します。"
+            npm run verify:sets
+            echo 'verify:sets: 実行しました' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=verify:sets skipped::data/raw/ が無いため セット完全性検証をスキップしました。data/raw は .gitignore 対象で CI には存在しません。ローカルで npm run verify:sets を実行して確認してください。"
+            echo 'verify:sets: **スキップ** (data/raw が CI に存在しないため。ローカルで実行が必要)' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # こちらは public/data/recipes.json と data/seeds/ だけを読むため CI で完走する
+      - name: Recipe pool scope
+        run: npm run verify:pool
