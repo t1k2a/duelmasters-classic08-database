@@ -33,6 +33,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # 検証が落ちたらデプロイもさせない（壊れたデータを本番に出さないため）
+      - name: Run tests and verification
+        run: |
+          npm test
+          npm run verify:sets
+          npm run verify:pool
+
       # GA4測定IDを public/js/analytics-config.js に注入する（IDはリポジトリ変数から）。
       # 未設定でもビルドは通り、空値（計測ノーオペ）になる。
       - name: Build analytics config

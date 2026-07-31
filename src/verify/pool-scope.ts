@@ -74,10 +74,20 @@ export function buildScopeContext(
   }
 }
 
-/** web.archive.org のスナップショット年。アーカイブURLでなければ null（年を捏造しない） */
+/** Internet Archive の最初期スナップショット。これより前の「年」は壊れたURL由来とみなす */
+export const ARCHIVE_MIN_YEAR = 1996
+
+/**
+ * web.archive.org のスナップショット年。アーカイブURLでなければ null（年を捏造しない）。
+ * `/web/0000/` のような異常値も null にする。数値として ≤2008 なので、そのまま通すと
+ * 「日付証明でIN」という最も緩い判定に落ちてしまい、フェイルセーフの向きが逆になるため。
+ */
 export function archiveYear(url: string): number | null {
   const m = url.match(/web\.archive\.org\/web\/(\d{4})/)
-  return m ? parseInt(m[1]!, 10) : null
+  if (!m) return null
+  const year = parseInt(m[1]!, 10)
+  if (year < ARCHIVE_MIN_YEAR || year > new Date().getFullYear()) return null
+  return year
 }
 
 /** validationNote の未マッチ名のうち、cards.json で解決できないものだけを返す（層1） */
@@ -162,6 +172,24 @@ export interface ClassifyAllResult {
   unknownYearIds: string[]
   /** 日付証明でスコープ内と確定した未マッチ名の数 */
   dateProvenCount: number
+  /** 日付証明された名前のうち strong にも載っているもの（本来は空。>0 はどちらかが誤り） */
+  dateProvenStrongConflicts: { name: string; set: string }[]
+}
+
+/**
+ * 日付証明（≤2008 のスナップショットに実在）と strong（DM-31以降が初出）は本来両立しない。
+ * 実測0件なので、1件でも出たら strong インデックスへの誤り混入とみなして落とす。
+ */
+export function findDateProvenStrongConflicts(
+  dateProven: Set<string>,
+  ctx: ScopeContext
+): { name: string; set: string }[] {
+  const conflicts: { name: string; set: string }[] = []
+  for (const name of dateProven) {
+    const set = ctx.strong.get(name)
+    if (set !== undefined) conflicts.push({ name, set })
+  }
+  return conflicts
 }
 
 export function classifyAll(recipes: PoolScopeRecipe[], ctx: ScopeContext): ClassifyAllResult {
@@ -175,7 +203,13 @@ export function classifyAll(recipes: PoolScopeRecipe[], ctx: ScopeContext): Clas
     counts[c.klass]++
     results.push(c)
   }
-  return { results, counts, unknownYearIds, dateProvenCount: dateProven.size }
+  return {
+    results,
+    counts,
+    unknownYearIds,
+    dateProvenCount: dateProven.size,
+    dateProvenStrongConflicts: findDateProvenStrongConflicts(dateProven, ctx),
+  }
 }
 
 /** 判定根拠を人が読める1行にする（recipes.json の poolNote 用） */
@@ -231,7 +265,8 @@ async function main() {
 
   const ctx = await loadScopeContext()
   const recipes = await loadRecipes()
-  const { counts, unknownYearIds, dateProvenCount, results } = classifyAll(recipes, ctx)
+  const { counts, unknownYearIds, dateProvenCount, dateProvenStrongConflicts, results } =
+    classifyAll(recipes, ctx)
 
   const total = counts.IN + counts.OUT_STRONG + counts.OUT_WEAK + counts.UNDECIDED
   console.log(`  IN         : ${counts.IN}`)
@@ -257,6 +292,14 @@ async function main() {
     failures++
     console.error(`\n  ✗ recipes.json が ${recipes.length} 件で、期待値 ${EXPECTED_TOTAL} 件と異なります`)
     console.error('    データが更新された場合は EXPECTED_TOTAL を意図的に更新してください。')
+  }
+  if (dateProvenStrongConflicts.length) {
+    failures++
+    console.error(`\n  ✗ 日付証明済みの名前が strong インデックスにも ${dateProvenStrongConflicts.length} 件あります（本来0件）`)
+    console.error('    ≤2008 のスナップショットに実在するカードが DM-31以降 初出と登録されています。どちらかが誤りです。')
+    for (const c of dateProvenStrongConflicts.slice(0, 10)) {
+      console.error(`      ${c.name} [${c.set}]`)
+    }
   }
   if (unknownYearIds.length) {
     failures++
