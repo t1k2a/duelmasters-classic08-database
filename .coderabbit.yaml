@@ -15,11 +15,13 @@ reviews:
   # 生成物はレビュー対象外にする。レビューすべきは生成ロジックであって出力ではない。
   # recipes.json は poolStatus 付与で 1 ファイル 18 万行の差分になり、
   # レートリミットでレビューが打ち切られた実績がある（PR #43）。
+  #
+  # data/seeds/out_of_pool_*.json は除外しない。生成物ではなく、pool-scope.ts が
+  # 分類の入力として読む判定基準そのもので、変更が分類結果を直接動かすため。
   path_filters:
     - "!public/data/recipes.json"
     - "!public/cards.json"
     - "!public/card/**"
     - "!public/sitemap.xml"
-    - "!data/seeds/out_of_pool_*.json"
     - "!data/raw/**"
     - "!package-lock.json"

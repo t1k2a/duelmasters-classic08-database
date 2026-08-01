@@ -19,7 +19,12 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
+      # pull_request では PR のコードが実行される。checkout は既定で GITHUB_TOKEN を
+      # Git の認証情報として .git/config に残すため、permissions を絞っても
+      # トークン自体は読み取れてしまう。push も行わないので保持させない。
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:

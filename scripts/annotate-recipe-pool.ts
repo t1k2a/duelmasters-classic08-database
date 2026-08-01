@@ -33,7 +33,7 @@ async function main() {
   if (!recipes.length) throw new Error(`${RECIPES_PATH} が空です`)
 
   const ctx = await loadScopeContext()
-  const { results, counts, unknownYearIds } = classifyAll(recipes, ctx)
+  const { results, counts, unknownYearIds, dateProvenStrongConflicts } = classifyAll(recipes, ctx)
 
   const total = counts.IN + counts.OUT_STRONG + counts.OUT_WEAK + counts.UNDECIDED
   if (results.length !== recipes.length || total !== recipes.length) {
@@ -42,6 +42,16 @@ async function main() {
   if (unknownYearIds.length) {
     // 日付論法が効いていないレシピがあるまま黙って書き込まない
     throw new Error(`アーカイブ年を取り出せない source.url が ${unknownYearIds.length} 件あります: ${unknownYearIds.slice(0, 5).join(', ')}`)
+  }
+  // 日付証明と strong インデックスの矛盾は、索引かデータの誤りを意味する。
+  // verify:pool 側だけで失敗にしても、npm run build はこのスクリプトを直接呼ぶため
+  // 矛盾したまま poolStatus:'in' が書き込まれてしまう。書き込み前にここでも止める。
+  if (dateProvenStrongConflicts.length) {
+    const sample = dateProvenStrongConflicts.slice(0, 5).map(c => `${c.name}[${c.set}]`).join(', ')
+    throw new Error(
+      `日付証明済みの名前が strong インデックスにも ${dateProvenStrongConflicts.length} 件あります（本来0件）: ${sample}\n` +
+        `索引かレシピデータの誤りの可能性があります。npm run verify:pool で詳細を確認してください。`
+    )
   }
 
   const annotated = recipes.map((recipe, i) => {
