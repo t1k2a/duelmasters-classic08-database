@@ -480,7 +480,7 @@ function hofBadge(name) {
   const status = HOF_MAP.get(name);
   if (!status) return '';
   if (status === 'restricted') return `<span title="制限カード（クラシック08：各1枚まで）">🏅</span>`;
-  if (status === 'banned') return `<span title="プレミアム殿堂（クラシック08：使用禁止）">🚫</span>`;
+  if (status === 'banned') return `<span title="使用禁止（クラシック08）">🚫</span>`;
   if (status === 'helper') return `<span title="お助けカード（クラシック08：12種のうち合計1枚のみ）">🎴</span>`;
   return '';
 }
