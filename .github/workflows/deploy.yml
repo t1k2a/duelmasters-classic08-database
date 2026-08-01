@@ -33,6 +33,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # 検証が落ちたらデプロイもさせない（壊れたデータを本番に出さないため）。
+      # verify:sets はここでは実行しない: data/raw/ が .gitignore 対象で CI に存在せず、
+      # 全セット「未取得」となって必ず失敗するため。生HTMLに依存しない verify:pool と
+      # ユニットテストのみをデプロイ条件にする（verify:sets の扱いは ci.yml 側を参照）。
+      - name: Run tests and verification
+        run: |
+          npm test
+          npx tsc --noEmit
+          npm run verify:pool
+
       # GA4測定IDを public/js/analytics-config.js に注入する（IDはリポジトリ変数から）。
       # 未設定でもビルドは通り、空値（計測ノーオペ）になる。
       - name: Build analytics config
