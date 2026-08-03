@@ -180,6 +180,23 @@ try {
   await ctx.close();
 } catch (e) { rec(4, '通常質問は deck無し・≤8枚（回帰）', false, 'EXC: ' + e.message); }
 
+// ===== #5 禁止コンビ同時投入でデッキパネルに違反警告が表示される =====
+try {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await setupRoutes(page, { abortImages: true });
+  await page.goto(BASE + '/index.html');
+  await page.waitForFunction(() => window.isHofReady && window.isHofReady(), { timeout: 8000 });
+  // 母なる大地 + 龍仙ロマネスク（禁止コンビ）をデッキに追加
+  await page.evaluate(() => { addToDeck('dm10-036'); addToDeck('dm25-s04'); });
+  await page.locator('#deckFab').click();
+  await page.waitForTimeout(200);
+  const legalityText = await page.locator('#deckLegality').textContent();
+  const pass = /母なる大地/.test(legalityText) && /龍仙ロマネスク/.test(legalityText) && /同時に投入|同時投入/.test(legalityText);
+  rec(5, '禁止コンビ同時投入でデッキパネルに違反警告', pass, `legalityText="${legalityText.trim().slice(0, 120)}"`);
+  await ctx.close();
+} catch (e) { rec(5, '禁止コンビ同時投入でデッキパネルに違反警告', false, 'EXC: ' + e.message); }
+
 await browser.close();
 server.close();
 const passed = results.filter(r => r.pass).length;

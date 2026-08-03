@@ -258,6 +258,7 @@
         <button onclick="closeDeckPanel()" class="text-gray-400 text-xl leading-none shrink-0">&times;</button>
       </div>
       <div id="deckCivBars" class="space-y-1 mb-3"></div>
+      <div id="deckLegality" class="mb-3"></div>
       <div id="deckCardList" class="divide-y divide-gray-100 mb-4"></div>
       <div class="flex gap-2">
         <button onclick="shareDeck()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg py-2 font-medium">デッキを共有</button>
@@ -314,6 +315,7 @@
   </div>
 </div>
 
+<script src="js/deck-legality.js"></script>
 <script>
 let CHAT_API_BASE = 'https://api.dm-classic08.org'; // AWS EC2 + Cloudflare Tunnel(Groq駆動)。ローカル確認は ?chatApi=http://localhost:8788 で上書き可
 // ?chatApi= で一時的に上書き可能（差し替え前の動作確認・E2E用）
@@ -421,9 +423,11 @@ fetch('cards.json')
 // クラシック08 は公式の殿堂レギュレーションとは別の独自制限リストを持つ。
 // 公式でプレミアム殿堂（使用禁止）のカードでも、本フォーマットでは制限（1枚まで）や
 // お助け枠として使えるものがあるため、公式殿堂リストを表示すると誤情報になる。
+let REG = null; // 制限リスト元データ全体（banned/restricted/helper/bannedCombos/helperPickLimit）。デッキ合法性判定・詳細ページ表示に使う
 fetch('data/classic08-restrictions.json')
   .then(r => r.json())
   .then(reg => {
+    REG = reg;
     HOF_MAP = new Map();
     for (const e of reg.banned) HOF_MAP.set(e.name, 'banned');
     for (const e of reg.restricted) HOF_MAP.set(e.name, 'restricted');
@@ -435,9 +439,11 @@ fetch('data/classic08-restrictions.json')
         const c = CARDS.find(x => x.id === selectedCard);
         if (c && !document.getElementById('mobileDetail').classList.contains('hidden')) {
           document.getElementById('detailName').innerHTML = detailNameHTML(c);
+          document.getElementById('detailBody').innerHTML = detailHTML(c);
         }
       }
     }
+    if (!document.getElementById('deckPanel').classList.contains('hidden')) renderDeckPanel();
   })
   .catch(() => { /* 制限リストが無くてもカード検索は動作する */ });
 
@@ -807,6 +813,19 @@ function relatedCardsHTML(c) {
     </div>`;
 }
 
+// c.name を含む禁止コンビがあれば、相方カード名の配列を返す（無ければ空配列）
+function bannedComboPartners(c) {
+  if (!REG || !Array.isArray(REG.bannedCombos)) return [];
+  const partners = [];
+  for (const combo of REG.bannedCombos) {
+    const names = combo.cards.map(x => x.name);
+    if (names.includes(c.name)) {
+      for (const n of names) if (n !== c.name) partners.push(n);
+    }
+  }
+  return partners;
+}
+
 function detailHTML(c) {
   const dmPrintings = c.printings.map(pr =>
     `<span class="inline-block bg-gray-100 text-gray-600 text-xs rounded px-2 py-0.5">${pr.setCode} ${pr.cardNumber} <span class="${rarityClass(pr.rarity)}">${pr.rarity ?? ''}</span></span>`
@@ -819,6 +838,13 @@ function detailHTML(c) {
       return `<span class="inline-block bg-purple-50 border border-purple-200 text-purple-700 text-xs rounded px-2 py-0.5">${code}</span>`;
     }).join(' ');
 
+  const comboPartners = bannedComboPartners(c);
+  const comboHTML = comboPartners.length ? `
+    <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">
+      <div class="font-semibold mb-1">⚠️ このカードと同時に投入できないカード（クラシック08）</div>
+      ${comboPartners.map(n => `<div>《${escapeHtml(n)}》</div>`).join('')}
+    </div>` : '';
+
   return `
     <div class="space-y-4">
       <div class="flex justify-center">
@@ -829,6 +855,7 @@ function detailHTML(c) {
           class="rounded-lg shadow-md max-w-[200px] w-full">
       </div>
       <div class="flex flex-wrap gap-1">${civBadge(c.civilizations)}</div>
+      ${comboHTML}
       <button onclick="addToDeck('${c.id}')"
         class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg py-2 font-medium">
         ＋ デッキに追加
@@ -1106,6 +1133,20 @@ function renderDeckPanel() {
       <span class="w-6 text-right text-gray-500">${n}</span>
     </div>
   `).join('');
+
+  const legalityEl = document.getElementById('deckLegality');
+  if (legalityEl) {
+    if (REG && typeof checkDeckLegality === 'function') {
+      const { legal, violations } = checkDeckLegality(deck, REG);
+      legalityEl.innerHTML = legal ? '' : `
+        <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700 space-y-1">
+          <div class="font-semibold">⚠️ クラシック08のルール違反があります</div>
+          ${violations.map(v => `<div>・${escapeHtml(v.message)}</div>`).join('')}
+        </div>`;
+    } else {
+      legalityEl.innerHTML = '';
+    }
+  }
 
   const listEl = document.getElementById('deckCardList');
   if (!deck.length) {
