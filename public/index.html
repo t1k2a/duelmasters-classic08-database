@@ -418,10 +418,16 @@ fetch('cards.json')
     document.getElementById('loadingMsg').textContent = '読み込みに失敗しました。';
   });
 
-fetch('data/hall-of-fame.json')
+// クラシック08 は公式の殿堂レギュレーションとは別の独自制限リストを持つ。
+// 公式でプレミアム殿堂（使用禁止）のカードでも、本フォーマットでは制限（1枚まで）や
+// お助け枠として使えるものがあるため、公式殿堂リストを表示すると誤情報になる。
+fetch('data/classic08-restrictions.json')
   .then(r => r.json())
-  .then(list => {
-    HOF_MAP = new Map(list.map(e => [e.name, e.status]));
+  .then(reg => {
+    HOF_MAP = new Map();
+    for (const e of reg.banned) HOF_MAP.set(e.name, 'banned');
+    for (const e of reg.restricted) HOF_MAP.set(e.name, 'restricted');
+    for (const e of reg.helper) HOF_MAP.set(e.name, 'helper');
     hofLoaded = true;
     if (CARDS.length) {
       renderList();
@@ -433,7 +439,7 @@ fetch('data/hall-of-fame.json')
       }
     }
   })
-  .catch(() => { /* 殿堂データが無くてもカード検索は動作する */ });
+  .catch(() => { /* 制限リストが無くてもカード検索は動作する */ });
 
 function isHofReady() {
   return hofLoaded && HOF_MAP.size > 0;
@@ -473,8 +479,9 @@ function highlight(escapedHtml, term) {
 function hofBadge(name) {
   const status = HOF_MAP.get(name);
   if (!status) return '';
-  if (status === '殿堂') return `<span title="殿堂入り（1枚制限）">🏅</span>`;
-  if (status === 'プレ殿') return `<span title="プレミアム殿堂（使用禁止）">🚫</span>`;
+  if (status === 'restricted') return `<span title="制限カード（クラシック08：各1枚まで）">🏅</span>`;
+  if (status === 'banned') return `<span title="使用禁止（クラシック08）">🚫</span>`;
+  if (status === 'helper') return `<span title="お助けカード（クラシック08：12種のうち合計1枚のみ）">🎴</span>`;
   return '';
 }
 
@@ -708,7 +715,7 @@ function recipeCardHTML(r, highlightId) {
     .map(rc => { const card = cardById(rc.id); return card ? hofBadge(card.name) : ''; })
     .filter(Boolean);
   const hofLine = hofMarks.length
-    ? `<div class="text-xs text-gray-400 mt-1">殿堂カード: ${hofMarks.join(' ')}</div>` : '';
+    ? `<div class="text-xs text-gray-400 mt-1">制限カード: ${hofMarks.join(' ')}</div>` : '';
   const adopt = usedCount
     ? `<span class="text-xs text-emerald-700 bg-emerald-50 rounded px-1.5 py-0.5 shrink-0">採用 ${usedCount}枚</span>` : '';
   const srcLink = r.source && r.source.url
