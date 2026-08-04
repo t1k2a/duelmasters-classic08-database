@@ -12,3 +12,10 @@ public/js/analytics-config.js
 docs/marketing/*.md
 docs/marketing/*.ics
 docs/marketing/scripts/
+
+# ルート直下の一時レポート・作業ファイル（誤コミット防止）
+/completion-report.html
+/growth-report.html
+/today-report.html
+/verification-guide.html
+/e.txt
