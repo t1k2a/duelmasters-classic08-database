@@ -119,7 +119,10 @@ function shareCard() {
   var url = ${scriptJson(shareUrl)};
   var title = ${scriptJson(shareTitle)};
   if (navigator.share) {
-    navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    navigator.share({ title: title, text: title, url: url })
+      .catch(function (error) {
+        if (error.name !== 'AbortError') showToast('共有に失敗しました');
+      });
     return;
   }
   if (!navigator.clipboard) {
@@ -223,7 +226,7 @@ ${jsonLdEscape(jsonLd)}
       </div>
     </div>
   </main>
-  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
   ${shareScript(title, url)}
 ${PAGE_FOOTER}
 </body>
@@ -352,7 +355,7 @@ ${jsonLdEscape(jsonLd)}
     ${cardList}
     <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
   </main>
-  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
   ${shareScript(title, url)}
 ${PAGE_FOOTER}
 </body>
@@ -483,7 +486,7 @@ ${jsonLdEscape(jsonLd)}
     ${cardList}
     <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
   </main>
-  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
   ${shareScript(title, url)}
 ${PAGE_FOOTER}
 </body>

@@ -50,13 +50,16 @@
       </div>
     </div>
   </main>
-  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
   <script>
 function shareCard() {
   var url = "https://t1k2a.github.io/duelmasters-classic08-database/card/dm17-004/";
   var title = "エクスプロード・カタストロフィー - デュエルマスターズ クラシック08";
   if (navigator.share) {
-    navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    navigator.share({ title: title, text: title, url: url })
+      .catch(function (error) {
+        if (error.name !== 'AbortError') showToast('共有に失敗しました');
+      });
     return;
   }
   if (!navigator.clipboard) {
