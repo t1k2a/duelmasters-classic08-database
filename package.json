@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsx scripts/build-analytics-config.ts && tsx scripts/build-json.ts && tsx scripts/annotate-recipe-pool.ts && tsx scripts/build-restrictions.ts && tsx scripts/build-card-pages.ts",
+    "build": "tsx scripts/build-analytics-config.ts && tsx scripts/build-json.ts && tsx scripts/annotate-recipe-pool.ts && tsx scripts/build-restrictions.ts && tsx scripts/build-deck-legality-js.ts && tsx scripts/build-card-pages.ts",
     "build:analytics-config": "tsx scripts/build-analytics-config.ts",
     "build:card-pages": "tsx scripts/build-card-pages.ts",
     "build:recipe-pool": "tsx scripts/annotate-recipe-pool.ts",
@@ -33,7 +33,8 @@
     "chat": "tsx src/chat/server.ts",
     "test:chat": "tsx --test src/chat/*.test.ts",
     "test": "tsx --test src/chat/*.test.ts src/scraper/*.test.ts src/verify/*.test.ts",
-    "build:restrictions": "tsx scripts/build-restrictions.ts"
+    "build:restrictions": "tsx scripts/build-restrictions.ts",
+    "build:deck-legality-js": "tsx scripts/build-deck-legality-js.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

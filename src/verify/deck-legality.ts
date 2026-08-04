@@ -1,8 +1,8 @@
 // クラシック08 独自制限リストに基づくデッキ合法性判定。
 //
-// 重要: このファイルは public/js/deck-legality.js と1:1で対応させる（ロジックの手動移植）。
-// バンドラが無いためブラウザ側は手書きプレーンJSになっている。
-// このファイルを変更したら public/js/deck-legality.js も必ず同様に直すこと。
+// このファイルが正本。public/js/deck-legality.js は
+// `npx tsx scripts/build-deck-legality-js.ts` で型を除去して自動生成する
+// （手動で public/js/deck-legality.js を編集しないこと）。
 
 import { RestrictionList } from './restrictions.js'
 

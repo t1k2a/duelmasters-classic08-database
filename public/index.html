@@ -330,8 +330,8 @@ let renderOffset = 0;
 let lastResults = [];
 let CARDS = [];
 let DM_SET_MAP = new Map();
-let HOF_MAP = new Map();
-let hofLoaded = false;
+let RESTRICTION_MAP = new Map();
+let restrictionsLoaded = false;
 let RECIPES = [];
 const CIV_COLORS = {光:'civ-光',水:'civ-水',闇:'civ-闇',火:'civ-火',自然:'civ-自然'};
 let selectedCard = null;
@@ -428,11 +428,11 @@ fetch('data/classic08-restrictions.json')
   .then(r => r.json())
   .then(reg => {
     REG = reg;
-    HOF_MAP = new Map();
-    for (const e of reg.banned) HOF_MAP.set(e.name, 'banned');
-    for (const e of reg.restricted) HOF_MAP.set(e.name, 'restricted');
-    for (const e of reg.helper) HOF_MAP.set(e.name, 'helper');
-    hofLoaded = true;
+    RESTRICTION_MAP = new Map();
+    for (const e of reg.banned) RESTRICTION_MAP.set(e.name, 'banned');
+    for (const e of reg.restricted) RESTRICTION_MAP.set(e.name, 'restricted');
+    for (const e of reg.helper) RESTRICTION_MAP.set(e.name, 'helper');
+    restrictionsLoaded = true;
     if (CARDS.length) {
       renderList();
       if (selectedCard) {
@@ -447,8 +447,8 @@ fetch('data/classic08-restrictions.json')
   })
   .catch(() => { /* 制限リストが無くてもカード検索は動作する */ });
 
-function isHofReady() {
-  return hofLoaded && HOF_MAP.size > 0;
+function isRestrictionsReady() {
+  return restrictionsLoaded && RESTRICTION_MAP.size > 0;
 }
 
 fetch('data/recipes.json')
@@ -483,7 +483,7 @@ function highlight(escapedHtml, term) {
 }
 
 function hofBadge(name) {
-  const status = HOF_MAP.get(name);
+  const status = RESTRICTION_MAP.get(name);
   if (!status) return '';
   if (status === 'restricted') return `<span title="制限カード（クラシック08：各1枚まで）">🏅</span>`;
   if (status === 'banned') return `<span title="使用禁止（クラシック08）">🚫</span>`;
@@ -1368,7 +1368,7 @@ function copyRecipeURL(recipeId) {
 }
 
 function loadRecipe(recipeId) {
-  if (!isHofReady()) { showToast('読込中... 少し待ってからお試しください'); return; }
+  if (!isRestrictionsReady()) { showToast('読込中... 少し待ってからお試しください'); return; }
   const recipe = RECIPES.find(r => r.id === recipeId);
   if (!recipe) { showToast('レシピが見つかりません'); return; }
   if (deck.length && !confirm('現在のデッキを上書きしますか？')) return;
