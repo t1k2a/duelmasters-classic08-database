@@ -105,13 +105,17 @@
   </ul>
     <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
   </main>
-  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true" class="opacity-0 pointer-events-none transition-opacity fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
   <script>
 function shareCard() {
   var url = "https://t1k2a.github.io/duelmasters-classic08-database/recipe/rcp-6030/";
   var title = "マッハ紫電！ — デッキレシピ | デュエマ クラシック08";
   if (navigator.share) {
-    navigator.share({ title: title, text: title, url: url }).catch(function () {});
+    navigator.share({ title: title, text: title, url: url })
+      .then(function () { showToast('共有しました'); })
+      .catch(function (error) {
+        if (error.name !== 'AbortError') showToast('共有に失敗しました');
+      });
     return;
   }
   if (!navigator.clipboard) {
@@ -125,9 +129,11 @@ function shareCard() {
 function showToast(msg) {
   var t = document.getElementById('toast');
   if (!t) return;
+  // display:none だとライブリージョンがアクセシビリティツリーから外れ、
+  // textContent の更新が支援技術に通知されない。opacity で視覚的にのみ隠す。
+  t.classList.remove('opacity-0', 'pointer-events-none');
   t.textContent = msg;
-  t.classList.remove('hidden');
-  setTimeout(function () { t.classList.add('hidden'); }, 2000);
+  setTimeout(function () { t.classList.add('opacity-0', 'pointer-events-none'); }, 2000);
 }
 </script>
   <footer class="max-w-3xl mx-auto mt-8 pb-8 px-4 text-center text-xs text-gray-400">

@@ -140,7 +140,7 @@ try {
   await setupRoutes(page, { abortImages: true });
   await gotoAndAsk(page);
   // loadRecipe は殿堂(hof)ロード完了が前提。準備できるまで待つ
-  await page.waitForFunction(() => window.isHofReady && window.isHofReady(), { timeout: 8000 }).catch(() => {});
+  await page.waitForFunction(() => window.isRestrictionsReady && window.isRestrictionsReady(), { timeout: 8000 }).catch(() => {});
   await page.locator('#chatLog button:has-text("デッキに読み込む")').click();
   await page.waitForTimeout(400);
   // deck状態はDOMバッジ/合計表示で確認（deck変数はスクリプトスコープでwindow非公開）
@@ -181,21 +181,24 @@ try {
 } catch (e) { rec(4, '通常質問は deck無し・≤8枚（回帰）', false, 'EXC: ' + e.message); }
 
 // ===== #5 禁止コンビ同時投入でデッキパネルに違反警告が表示される =====
-try {
-  const ctx = await browser.newContext();
-  const page = await ctx.newPage();
-  await setupRoutes(page, { abortImages: true });
-  await page.goto(BASE + '/index.html');
-  await page.waitForFunction(() => window.isHofReady && window.isHofReady(), { timeout: 8000 });
-  // 母なる大地 + 龍仙ロマネスク（禁止コンビ）をデッキに追加
-  await page.evaluate(() => { addToDeck('dm10-036'); addToDeck('dm25-s04'); });
-  await page.locator('#deckFab').click();
-  await page.waitForTimeout(200);
-  const legalityText = await page.locator('#deckLegality').textContent();
-  const pass = /母なる大地/.test(legalityText) && /龍仙ロマネスク/.test(legalityText) && /同時に投入|同時投入/.test(legalityText);
-  rec(5, '禁止コンビ同時投入でデッキパネルに違反警告', pass, `legalityText="${legalityText.trim().slice(0, 120)}"`);
-  await ctx.close();
-} catch (e) { rec(5, '禁止コンビ同時投入でデッキパネルに違反警告', false, 'EXC: ' + e.message); }
+{
+  let ctx;
+  try {
+    ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await setupRoutes(page, { abortImages: true });
+    await page.goto(BASE + '/index.html');
+    await page.waitForFunction(() => window.isRestrictionsReady && window.isRestrictionsReady(), { timeout: 8000 });
+    // 母なる大地 + 龍仙ロマネスク（禁止コンビ）をデッキに追加
+    await page.evaluate(() => { addToDeck('dm10-036'); addToDeck('dm25-s04'); });
+    await page.locator('#deckFab').click();
+    await page.waitForTimeout(200);
+    const legalityText = await page.locator('#deckLegality').textContent();
+    const pass = /母なる大地/.test(legalityText) && /龍仙ロマネスク/.test(legalityText) && /同時に投入|同時投入/.test(legalityText);
+    rec(5, '禁止コンビ同時投入でデッキパネルに違反警告', pass, `legalityText="${legalityText.trim().slice(0, 120)}"`);
+  } catch (e) { rec(5, '禁止コンビ同時投入でデッキパネルに違反警告', false, 'EXC: ' + e.message); }
+  finally { if (ctx) await ctx.close(); }
+}
 
 await browser.close();
 server.close();
