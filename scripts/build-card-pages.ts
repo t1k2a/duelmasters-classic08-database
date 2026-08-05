@@ -211,7 +211,7 @@ function cardPageHtml(card: CardJson): string {
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(desc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/tailwind.css">
   <style>${PAGE_STYLE}</style>
   <script type="application/ld+json">
 ${jsonLdEscape(jsonLd)}
@@ -345,7 +345,7 @@ function deckPageHtml(opts: {
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(desc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/tailwind.css">
   <style>${PAGE_STYLE}</style>
   <script type="application/ld+json">
 ${jsonLdEscape(jsonLd)}
@@ -476,7 +476,7 @@ async function main() {
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(desc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/tailwind.css">
   <style>${PAGE_STYLE}</style>
   <script type="application/ld+json">
 ${jsonLdEscape(jsonLd)}
