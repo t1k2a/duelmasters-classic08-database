@@ -262,6 +262,7 @@
       <div id="deckCardList" class="divide-y divide-gray-100 mb-4"></div>
       <div class="flex gap-2">
         <button onclick="shareDeck()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg py-2 font-medium">デッキを共有</button>
+        <button onclick="shareDeckX()" class="flex-1 bg-black hover:bg-gray-800 text-white text-sm rounded-lg py-2 font-medium">Xで共有</button>
         <button onclick="clearDeck()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm rounded-lg py-2 px-4">クリア</button>
       </div>
     </div>
@@ -1282,11 +1283,16 @@ function buildDeckURL() {
   return `${location.origin}${location.pathname}?d=${encoded}`;
 }
 
+// 共有テキストに付与するハッシュタグ（表示用テンプレート文言）
+const SHARE_HASHTAG_TEXT = '#デュエマ #デュエマクラシック08';
+// X投稿intentの hashtags パラメータ（カンマ区切り、#なし）
+const SHARE_HASHTAGS_PARAM = 'デュエマ,デュエマクラシック08';
+
 function shareDeck() {
   if (!deck.length) { showToast('デッキが空です'); return; }
   const url = buildDeckURL();
   const summary = deckSummaryText(deck);
-  const text = `${summary}\nデッキのURL: ${url}`;
+  const text = `${summary}\nデッキのURL: ${url}\n${SHARE_HASHTAG_TEXT}`;
   if (navigator.share) {
     navigator.share({ title: `${summary} | デュエマ クラシック08`, text: summary, url })
       .catch(() => {/* ユーザーがキャンセルした等は無視 */});
@@ -1295,6 +1301,14 @@ function shareDeck() {
   navigator.clipboard.writeText(text)
     .then(() => showToast('共有テキストをコピーしました'))
     .catch(() => showToast('コピーに失敗しました'));
+}
+
+function shareDeckX() {
+  if (!deck.length) { showToast('デッキが空です'); return; }
+  const url = buildDeckURL();
+  const summary = deckSummaryText(deck);
+  const intentURL = `https://twitter.com/intent/tweet?text=${encodeURIComponent(summary)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent(SHARE_HASHTAGS_PARAM)}`;
+  window.open(intentURL, '_blank', 'noopener');
 }
 
 // deck/recipe をブラウザで開いたとき document.title を動的に更新する。

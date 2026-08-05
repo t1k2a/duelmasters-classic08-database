@@ -112,6 +112,14 @@ function scriptJson(value: string): string {
   return JSON.stringify(value).replace(/</g, '\\u003c')
 }
 
+// X投稿intentリンクを組み立てる（public/index.html shareDeckX() と同方式）。
+// hashtags パラメータはカンマ区切り・#なし。
+const SHARE_HASHTAGS_PARAM = 'デュエマ,デュエマクラシック08'
+
+function xIntentUrl(shareTitle: string, shareUrl: string): string {
+  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(shareUrl)}&hashtags=${encodeURIComponent(SHARE_HASHTAGS_PARAM)}`
+}
+
 // navigator.share + クリップボード fallback（public/index.html:1231 shareDeck() と同方式）。
 function shareScript(shareTitle: string, shareUrl: string): string {
   return `<script>
@@ -224,6 +232,8 @@ ${jsonLdEscape(jsonLd)}
              class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">アプリで開く（検索・デッキ構築）</a>
           <button type="button" onclick="shareCard()"
              class="inline-block border border-gray-300 hover:bg-gray-100 text-sm font-medium rounded-lg px-4 py-2">共有</button>
+          <a href="${escapeHtml(xIntentUrl(title, url))}" target="_blank" rel="noopener"
+             class="inline-block bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg px-4 py-2">Xで共有</a>
         </div>
         <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
       </div>
@@ -353,6 +363,8 @@ ${jsonLdEscape(jsonLd)}
          class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">アプリで開く（デッキ構築）</a>
       <button type="button" onclick="shareCard()"
          class="inline-block border border-gray-300 hover:bg-gray-100 text-sm font-medium rounded-lg px-4 py-2">共有</button>
+      <a href="${escapeHtml(xIntentUrl(title, url))}" target="_blank" rel="noopener"
+         class="inline-block bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg px-4 py-2">Xで共有</a>
     </div>
     <h2 class="text-lg font-semibold mt-8">カードリスト</h2>
     ${cardList}
@@ -484,6 +496,8 @@ ${jsonLdEscape(jsonLd)}
          class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">アプリで開く（デッキ構築）</a>
       <button type="button" onclick="shareCard()"
          class="inline-block border border-gray-300 hover:bg-gray-100 text-sm font-medium rounded-lg px-4 py-2">共有</button>
+      <a href="${escapeHtml(xIntentUrl(title, url))}" target="_blank" rel="noopener"
+         class="inline-block bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg px-4 py-2">Xで共有</a>
     </div>
     <h2 class="text-lg font-semibold mt-8">カードリスト</h2>
     ${cardList}
