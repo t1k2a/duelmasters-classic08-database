@@ -35,7 +35,8 @@
     "test:chat": "tsx --test src/chat/*.test.ts",
     "test": "tsx --test src/chat/*.test.ts src/scraper/*.test.ts src/verify/*.test.ts",
     "build:restrictions": "tsx scripts/build-restrictions.ts",
-    "build:deck-legality-js": "tsx scripts/build-deck-legality-js.ts"
+    "build:deck-legality-js": "tsx scripts/build-deck-legality-js.ts",
+    "x:post": "tsx scripts/x-post.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
