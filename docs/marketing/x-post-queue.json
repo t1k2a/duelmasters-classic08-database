@@ -26,7 +26,7 @@
   },
   {
     "id": "day05-civilization-balance",
-    "text": "クラシック08のカードプール、全2,196枚の文明内訳です。\n\n闇504／光492／自然489／火484／水478\n\n意外と偏りが少なく、ほぼ均等に近い分布になっています。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
+    "text": "クラシック08のカードプール(全2,196枚)の文明別カード数です(複数文明カードは各文明で計上、延べ2,447)。\n\n闇504／光492／自然489／火484／水478\n\n意外と偏りが少なく、ほぼ均等に近い分布になっています。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
     "postedAt": null
   },
   {
@@ -36,7 +36,7 @@
   },
   {
     "id": "day08-archetype-top10",
-    "text": "収録レシピ4,517件から集計した、クラシック08アーキタイプ使用率TOP10をnoteにまとめました。\n\n①ヘヴィメタル6.8%②キングロック5.1%③速攻4.7%…\n\n続きはnoteで。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
+    "text": "収録レシピ4,517件から集計した、クラシック08アーキタイプ使用率TOP10です。\n\n①ヘヴィメタル6.8%②キングロック5.1%③速攻4.7%…\n\n全ランキングはDBで確認できます。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
     "postedAt": null
   },
   {
@@ -96,7 +96,7 @@
   },
   {
     "id": "day25-archetype-rank2-3",
-    "text": "使用率ランキング2位キングロック(5.1%)、3位速攻(4.7%)は、収録レシピの中でも代表例が多いアーキタイプです。\n\nキングロック代表: 王アルカ\n速攻代表: 水単風速攻デッキ「速攻アスティマ！」\n\n詳しい集計はnote記事にまとめています。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
+    "text": "使用率ランキング2位キングロック(5.1%)、3位速攻(4.7%)は、収録レシピの中でも代表例が多いアーキタイプです。\n\nキングロック代表: 王アルカ\n速攻代表: 水単風速攻デッキ「速攻アスティマ！」\n\n詳しい集計はDBで確認できます。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
     "postedAt": null
   },
   {
