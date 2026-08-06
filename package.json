@@ -36,7 +36,7 @@
     "test": "tsx --test src/chat/*.test.ts src/scraper/*.test.ts src/verify/*.test.ts",
     "build:restrictions": "tsx scripts/build-restrictions.ts",
     "build:deck-legality-js": "tsx scripts/build-deck-legality-js.ts",
-    "x:post": "tsx scripts/x-post.ts"
+    "x:post": "tsx --env-file=.env scripts/x-post.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -45,10 +45,12 @@
     "@hono/node-server": "^2.0.4",
     "@prisma/client": "^5.22.0",
     "hono": "^4.12.23",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "twitter-text": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/twitter-text": "^3.1.10",
     "cheerio": "^1.0.0",
     "playwright": "^1.48.0",
     "prisma": "^5.22.0",

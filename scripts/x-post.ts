@@ -8,6 +8,8 @@
 // Consumer Keys（API Key/Secret）と Access Token/Secret を発行して設定する。
 
 import { createHmac, randomBytes } from "node:crypto";
+import twitterText from "twitter-text";
+const { parseTweet } = twitterText;
 
 const ENDPOINT = "https://api.x.com/2/tweets";
 
@@ -42,7 +44,7 @@ function buildOAuthHeader(method: string, url: string, consumerKey: string, cons
   const signingKey = `${percentEncode(consumerSecret)}&${percentEncode(accessSecret)}`;
   const signature = createHmac("sha1", signingKey).update(signatureBase).digest("base64");
 
-  const headerParams = { ...oauthParams, oauth_signature: signature };
+  const headerParams: Record<string, string> = { ...oauthParams, oauth_signature: signature };
   const header = Object.keys(headerParams)
     .sort()
     .map((k) => `${percentEncode(k)}="${percentEncode(headerParams[k])}"`)
@@ -52,8 +54,9 @@ function buildOAuthHeader(method: string, url: string, consumerKey: string, cons
 }
 
 async function postTweet(text: string): Promise<void> {
-  if (text.length === 0 || text.length > 280) {
-    throw new Error(`投稿本文が不正です（0〜280文字である必要があります。現在: ${text.length}文字）`);
+  const parsed = parseTweet(text);
+  if (!parsed.valid) {
+    throw new Error(`投稿本文が不正です（Xの重み付き文字数で0〜280以内である必要があります。現在: ${parsed.weightedLength}）`);
   }
 
   const consumerKey = requireEnv("X_API_KEY");
@@ -70,6 +73,7 @@ async function postTweet(text: string): Promise<void> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ text }),
+    signal: AbortSignal.timeout(30_000),
   });
 
   const body = await res.text();
