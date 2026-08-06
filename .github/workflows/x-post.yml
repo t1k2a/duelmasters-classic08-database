@@ -21,6 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # workflow_dispatch を既定ブランチ以外から手動実行した場合、指定なしだと
+          # その ref を checkout してしまい、postedAt の更新が既定ブランチに反映されず
+          # 翌日の定期実行（常に既定ブランチを読む）が同じ投稿を重複送信する。
+          ref: ${{ github.event.repository.default_branch }}
 
       - uses: actions/setup-node@v4
         with:

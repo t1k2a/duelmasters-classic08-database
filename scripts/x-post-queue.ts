@@ -27,6 +27,11 @@ async function main(): Promise<void> {
     return;
   }
 
+  // 既知の限界: postTweet 成功後に writeFileSync/git push が失敗すると、
+  // 次回実行時に同じ項目が再投稿される可能性がある（投稿IDの記録・照合による
+  // 完全な冪等性は未実装）。1日1件という低頻度の運用規模に対しては、
+  // push失敗がジョブの可視的な失敗として現れる（サイレントに握りつぶさない）ことで
+  // 実用上十分と判断し、フル対応は見送っている。
   await postTweet(next.text);
   next.postedAt = new Date().toISOString();
 
