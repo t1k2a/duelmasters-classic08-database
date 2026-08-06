@@ -36,7 +36,8 @@
     "test": "tsx --test src/chat/*.test.ts src/scraper/*.test.ts src/verify/*.test.ts",
     "build:restrictions": "tsx scripts/build-restrictions.ts",
     "build:deck-legality-js": "tsx scripts/build-deck-legality-js.ts",
-    "x:post": "tsx --env-file=.env scripts/x-post.ts"
+    "x:post": "tsx --env-file=.env scripts/x-post.ts",
+    "x:post-queue": "tsx scripts/x-post-queue.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
