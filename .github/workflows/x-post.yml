@@ -1,0 +1,56 @@
+name: X Auto Post
+
+# docs/marketing/x-post-queue.json の未投稿分を1日1件だけ自動投稿する（Issue #9）。
+# 投稿対象はリポジトリにコミット済みの事前承認済み文面のみ。AIが即興で文章を生成して
+# 投稿することはしない（誤爆・スパム判定リスクを避けるため）。
+on:
+  schedule:
+    # 毎日09:00 JST (00:00 UTC)
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: x-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # workflow_dispatch を既定ブランチ以外から手動実行した場合、指定なしだと
+          # その ref を checkout してしまい、postedAt の更新が既定ブランチに反映されず
+          # 翌日の定期実行（常に既定ブランチを読む）が同じ投稿を重複送信する。
+          ref: ${{ github.event.repository.default_branch }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Post next queued item
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+        run: npm run x:post-queue
+
+      - name: Commit updated queue (postedAt)
+        run: |
+          if git diff --quiet -- docs/marketing/x-post-queue.json; then
+            echo "投稿対象がなかったため差分なし。コミットをスキップします。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/marketing/x-post-queue.json
+          git commit -m "chore: X投稿キューのpostedAtを更新（自動投稿, Issue #9）"
+          git push
