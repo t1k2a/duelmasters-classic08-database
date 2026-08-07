@@ -62,7 +62,12 @@ export function retrieve(corpus: Corpus, question: string): RetrievalResult {
     try {
       const o = JSON.parse(m)
       if (!o?.name) continue
-      const candidates = [o.name, headTerm(o.name), ...(Array.isArray(o.tags) ? o.tags : [])]
+      const candidates = [
+        o.name,
+        headTerm(o.name),
+        ...(Array.isArray(o.aliases) ? o.aliases : []),
+        ...(Array.isArray(o.tags) ? o.tags : []),
+      ]
       const matched = candidates.some(t => mutualIncludes(qn, normalizeKana(String(t))))
       if (matched) metaHits.push({ json: m, cardRefs: Array.isArray(o.cards) ? o.cards : [] })
     } catch { /* 不正JSONは無視 */ }

@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsx scripts/build-analytics-config.ts && tsx scripts/build-json.ts && tsx scripts/annotate-recipe-pool.ts && tsx scripts/build-restrictions.ts && tsx scripts/build-deck-legality-js.ts && npm run build:css && tsx scripts/build-card-pages.ts",
+    "build": "tsx scripts/build-analytics-config.ts && tsx scripts/build-json.ts && tsx scripts/annotate-recipe-pool.ts && tsx scripts/build-meta-decks.ts && tsx scripts/build-restrictions.ts && tsx scripts/build-deck-legality-js.ts && npm run build:css && tsx scripts/build-card-pages.ts",
     "build:analytics-config": "tsx scripts/build-analytics-config.ts",
     "build:css": "tailwindcss -i scripts/tailwind-input.css -o public/css/tailwind.css --minify",
     "build:card-pages": "tsx scripts/build-card-pages.ts",
     "build:recipe-pool": "tsx scripts/annotate-recipe-pool.ts",
+    "build:meta-decks": "tsx scripts/build-meta-decks.ts",
     "serve": "npx serve public",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",

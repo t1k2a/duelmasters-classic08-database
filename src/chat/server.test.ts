@@ -240,8 +240,10 @@ test('chat: デッキ構築時 LLM に渡る messages に40枚リストが入る
   }))
   const user = captured[captured.length - 1]?.content ?? ''
   assert.match(user, /## 提示デッキ（合計40枚）/)
-  // 40枚ぶんの《...》×n 行が入っている（ユニーク種で最低でも複数行）
-  const lines = (user.match(/《[^》]+》×\d+/g) ?? [])
+  // 40枚ぶんの《...》×n 行が入っている（ユニーク種で最低でも複数行）。
+  // 「## メタデッキ」節にも《...》×n 表記があるため、提示デッキ節だけを切り出して数える。
+  const deckSection = user.split('## 提示デッキ')[1]?.split(/\n## /)[0] ?? ''
+  const lines = (deckSection.match(/《[^》]+》×\d+/g) ?? [])
   const sum = lines.reduce((s: number, l: string) => s + Number(l.match(/×(\d+)/)![1]), 0)
   assert.equal(sum, 40)
 })
