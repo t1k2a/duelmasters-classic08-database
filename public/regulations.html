@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>レギュレーション | デュエマ クラシック08</title>
+  <title>レギュレーション | デュエマ クラシック08・クラシック05</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-300 min-h-screen">
@@ -87,7 +87,10 @@ function sectionCard(title, ruleText, bodyHTML) {
 }
 
 fetch('data/classic08-restrictions.json')
-  .then(r => r.json())
+  .then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  })
   .then(data => {
     document.getElementById('c08Loading')?.remove();
     const meta = data.meta || {};
@@ -112,7 +115,10 @@ fetch('data/classic08-restrictions.json')
   });
 
 fetch('data/classic05-pool.json')
-  .then(r => r.json())
+  .then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  })
   .then(data => {
     document.getElementById('c05Loading')?.remove();
     const meta = data.meta || {};
