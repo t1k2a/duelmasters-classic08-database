@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>レギュレーション | デュエマ クラシック08</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-300 min-h-screen">
+
+<!-- ヘッダー（全幅） -->
+<header class="bg-indigo-700 text-white px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-20">
+  <span class="text-lg font-bold tracking-wide">📜 レギュレーション</span>
+  <a href="meta.html" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">メタデッキ</a>
+  <a href="index.html" class="text-indigo-100 hover:text-white text-sm underline underline-offset-2">カード検索</a>
+</header>
+
+<!-- LP ラッパー: SP幅を中央に配置 -->
+<div class="flex justify-center min-h-[calc(100vh-52px)]">
+  <div class="w-full max-w-[430px] md:max-w-4xl lg:max-w-6xl bg-gray-50 flex flex-col shadow-2xl min-h-[calc(100vh-52px)]">
+    <div class="px-4 pb-8">
+
+      <!-- クラシック08 -->
+      <section class="pt-4">
+        <h1 class="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2">クラシック08 レギュレーション</h1>
+        <div id="c08Body" class="mt-3">
+          <div id="c08Loading" class="py-8 text-center text-gray-400 text-sm">読み込み中...</div>
+        </div>
+      </section>
+
+      <!-- クラシック05 -->
+      <section class="pt-8">
+        <h1 class="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2">クラシック05 レギュレーション</h1>
+        <div id="c05Body" class="mt-3">
+          <div id="c05Loading" class="py-8 text-center text-gray-400 text-sm">読み込み中...</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- フッター -->
+<footer class="mt-8 pb-24 px-4 text-center text-xs text-gray-400">
+  <a href="index.html" class="hover:underline">カード検索</a>
+  ・
+  <a href="privacy/" class="hover:underline">プライバシーポリシー</a>
+</footer>
+
+<script>
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function cardListHTML(cards) {
+  if (!Array.isArray(cards) || !cards.length) {
+    return `<p class="text-xs text-gray-400 py-1">該当なし</p>`;
+  }
+  return `<ul class="divide-y divide-gray-50">${
+    cards.map(c => `<li class="py-1.5 px-2 text-sm text-gray-800">${escapeHtml(c.name)}</li>`).join('')
+  }</ul>`;
+}
+
+function bannedCombosHTML(combos) {
+  if (!Array.isArray(combos) || !combos.length) {
+    return `<p class="text-xs text-gray-400 py-1">該当なし</p>`;
+  }
+  return `<ul class="space-y-1">${
+    combos.map(combo => {
+      const names = (combo.cards || []).map(c => escapeHtml(c.name)).join(' ＋ ');
+      return `<li class="py-1.5 px-2 text-sm text-gray-800 bg-red-50 rounded">${names}</li>`;
+    }).join('')
+  }</ul>`;
+}
+
+function sectionCard(title, ruleText, bodyHTML) {
+  return `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-3">
+      <div class="px-4 py-2 border-b border-gray-100 bg-gray-50">
+        <h2 class="font-bold text-sm text-gray-900">${escapeHtml(title)}</h2>
+        ${ruleText ? `<p class="text-xs text-gray-500 mt-0.5">${escapeHtml(ruleText)}</p>` : ''}
+      </div>
+      <div class="px-2 py-1">${bodyHTML}</div>
+    </div>`;
+}
+
+fetch('data/classic08-restrictions.json')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('c08Loading')?.remove();
+    const meta = data.meta || {};
+    const rules = meta.rules || {};
+    const html = `
+      <p class="text-xs text-gray-600 leading-relaxed mb-3">${escapeHtml(meta.description || '')}</p>
+      ${meta.cardPool ? `<p class="text-xs text-gray-500 mb-3">使用可能カードプール: ${escapeHtml(meta.cardPool)}</p>` : ''}
+      ${sectionCard('使用禁止カード', rules.banned, cardListHTML(data.banned))}
+      ${sectionCard('制限カード', rules.restricted, cardListHTML(data.restricted))}
+      ${sectionCard('お助けカード', rules.helper, cardListHTML(data.helper))}
+      ${sectionCard('プレミアム殿堂コンビ（同時投入禁止）', rules.bannedCombo, bannedCombosHTML(data.bannedCombos))}
+      <p class="text-xs text-gray-400 mt-3">
+        出典:
+        ${meta.source ? `<a href="${meta.source}" class="underline hover:text-gray-600" target="_blank" rel="noopener noreferrer">${escapeHtml(meta.sourceName || meta.source)}</a>` : escapeHtml(meta.sourceName || '不明')}
+        ${meta.asOf ? `（${escapeHtml(meta.asOf)} 時点）` : ''}
+      </p>`;
+    document.getElementById('c08Body').innerHTML = html;
+  })
+  .catch(() => {
+    document.getElementById('c08Body').innerHTML =
+      `<div class="py-8 text-center text-gray-400 text-sm">読み込みに失敗しました。</div>`;
+  });
+
+fetch('data/classic05-pool.json')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('c05Loading')?.remove();
+    const meta = data.meta || {};
+    const html = `
+      <p class="text-xs text-gray-600 leading-relaxed mb-3">${escapeHtml(meta.description || '')}</p>
+      ${meta.cardPool ? `<p class="text-xs text-gray-500 mb-3">使用可能カードプール: ${escapeHtml(meta.cardPool)}</p>` : ''}
+      <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 leading-relaxed">
+        ⚠️ 制限カード・お助けカードのリストは一次ソースが確認できておらず、現時点では未掲載です。
+      </p>`;
+    document.getElementById('c05Body').innerHTML = html;
+  })
+  .catch(() => {
+    document.getElementById('c05Body').innerHTML =
+      `<div class="py-8 text-center text-gray-400 text-sm">読み込みに失敗しました。</div>`;
+  });
+</script>
+</body>
+</html>
