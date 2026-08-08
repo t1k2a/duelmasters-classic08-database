@@ -61,13 +61,13 @@ test('HTTPエラー時は null', async () => {
 test('DM関連語が無い質問はクエリ先頭に「デュエル・マスターズ」を付与', async () => {
   const { impl, calls } = recordingFetch([tavilyResponse([{ title: 'T', url: 'https://dmwiki.net/x', content: '本文' }])])
   await webSearch('イラストレーターは？', { apiKey: 'k', fetchImpl: impl as any })
-  assert.equal(calls[0]!.body.query, 'デュエル・マスターズ イラストレーターは？')
+  assert.equal(calls[0]!.body.query, 'デュエル・マスターズ イラストレーターは？ クラシック 2008年以前')
 })
 
-test('DM関連語を含む質問はクエリを変更しない', async () => {
+test('DM関連語を含む質問は先頭に「デュエル・マスターズ」を付けず、時代限定語のみ末尾に付与', async () => {
   const { impl, calls } = recordingFetch([tavilyResponse([{ title: 'T', url: 'https://dmwiki.net/x', content: '本文' }])])
   await webSearch('デュエマの殿堂は？', { apiKey: 'k', fetchImpl: impl as any })
-  assert.equal(calls[0]!.body.query, 'デュエマの殿堂は？')
+  assert.equal(calls[0]!.body.query, 'デュエマの殿堂は？ クラシック 2008年以前')
 })
 
 test('信頼ドメイン検索が0件なら include_domains なしで再検索し結果を返す', async () => {

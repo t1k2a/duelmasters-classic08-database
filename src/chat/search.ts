@@ -13,6 +13,9 @@ const DEFAULT_MAX = parseInt(process.env['SEARCH_MAX_RESULTS'] ?? '5', 10)
 export const DEFAULT_INCLUDE_DOMAINS = ['dmwiki.net', 'dm.takaratomy.co.jp', 'ja.wikipedia.org']
 // クエリにこのいずれも含まれなければ「デュエル・マスターズ」を付与し、無関係サイトの混入を防ぐ。
 const DM_KEYWORDS = ['デュエル・マスターズ', 'デュエルマスターズ', 'デュエマ']
+// クエリの末尾に付与する時代限定語。現行環境の新カード・ルールがヒットしないよう、
+// クラシック08/05（DM-01〜DM-30、2002〜2008年）の対象期間に検索を絞り込む。
+const ERA_SCOPE = 'クラシック 2008年以前'
 
 export interface WebSearchResult {
   sources: { title: string; url: string }[]
@@ -32,8 +35,10 @@ function includeDomains(): string[] {
 }
 
 // DM関連語を含まない質問はクエリ先頭に「デュエル・マスターズ」を付ける。
+// さらに、時代を絞る語（ERA_SCOPE）を末尾に付与し、現行環境の情報がヒットしにくいクエリにする。
 function augmentQuery(query: string): string {
-  return DM_KEYWORDS.some(k => query.includes(k)) ? query : `デュエル・マスターズ ${query}`
+  const withDm = DM_KEYWORDS.some(k => query.includes(k)) ? query : `デュエル・マスターズ ${query}`
+  return `${withDm} ${ERA_SCOPE}`
 }
 
 // Tavily を1回叩いて結果を整形する。エラー・0件は null（呼び出し側で再検索/フォールバック判断）。
