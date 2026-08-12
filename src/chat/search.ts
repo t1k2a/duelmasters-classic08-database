@@ -31,11 +31,16 @@ interface TavilyResultLike {
 // クラシック08/05の対象期間（2002〜2008年、DM-01〜DM-30）。
 const ERA_MIN_YEAR = 2002
 const ERA_MAX_YEAR = 2008
-// title/content 中の西暦表記（例: 「2024年」）。
-const YEAR_PATTERN = /20\d{2}(?=年)/g
+// title/content 中の西暦表記（例: 「2024年」「1999年」）。ERA_MIN_YEAR未満・ERA_MAX_YEAR超過の
+// 両方向を検出できるよう、20XXに限定せず4桁年全体にマッチさせる。
+const YEAR_PATTERN = /\d{4}(?=年)/g
 // DM-31以降（2009年以降）で使われ始めた2桁年プレフィックス型番（例: dm24rp4, dm26ex1）。
 // DM-01〜DM-30時代の単純な dm-?\d{2}(-\d+)? 型番とは異なる命名規則。
 const NEW_CARD_NUMBER_PATTERN = /dm\d{2}(rp|ex|sd|bd|gp|cs)\d*/i
+// dm-31-001 のように、新命名規則へ移行する前後で旧形式の連番のまま発行された弾（DM-31以降）を
+// 型番から検出する。DM-01〜DM-30が対象期間内の上限のため、それを超える番号は対象期間外とみなす。
+const DASH_STYLE_SET_PATTERN = /dm-?(\d{2,3})-\d+/i
+const LAST_IN_ERA_SET_NUMBER = 30
 
 // Tavily検索結果が「対象期間外（2009年以降 or 2001年以前の話題）」と判定できるかを機械的にチェックする。
 // 判定材料が無い場合は対象期間外と断定しない（過剰フィルタでdmwiki.net等の正当な情報が消えるのを避ける）。
@@ -49,7 +54,11 @@ export function isOutOfEraResult(result: TavilyResultLike): boolean {
     })
     if (hasOutOfEraYear) return true
   }
-  if (result.url && NEW_CARD_NUMBER_PATTERN.test(result.url)) return true
+  if (result.url) {
+    if (NEW_CARD_NUMBER_PATTERN.test(result.url)) return true
+    const dashMatch = DASH_STYLE_SET_PATTERN.exec(result.url)
+    if (dashMatch && parseInt(dashMatch[1]!, 10) > LAST_IN_ERA_SET_NUMBER) return true
+  }
   return false
 }
 

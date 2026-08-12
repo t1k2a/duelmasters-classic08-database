@@ -111,12 +111,24 @@ test('isOutOfEraResult: 境界値 — 2002年・2008年は対象期間内、2001
   assert.equal(isOutOfEraResult({ content: '2009年発売のカード' }), true)
 })
 
+test('isOutOfEraResult: 1999年のような2000年以前の西暦も対象期間外', () => {
+  assert.equal(isOutOfEraResult({ content: '1999年に発売されたTCG' }), true)
+})
+
 test('isOutOfEraResult: dm24rp4のような新型番URLは対象期間外', () => {
   assert.equal(isOutOfEraResult({ url: 'https://dm.takaratomy.co.jp/card/dm24rp4/001' }), true)
 })
 
+test('isOutOfEraResult: dm-31-001のような旧形式のまま続いたDM-31以降の型番も対象期間外', () => {
+  assert.equal(isOutOfEraResult({ url: 'https://dm.takaratomy.co.jp/card/dm-31-001' }), true)
+})
+
 test('isOutOfEraResult: dm-01-001のような旧型番URLは除外しない', () => {
   assert.equal(isOutOfEraResult({ url: 'https://dm.takaratomy.co.jp/card/dm-01-001' }), false)
+})
+
+test('isOutOfEraResult: dm-30-001のような対象期間内の最終セットは除外しない', () => {
+  assert.equal(isOutOfEraResult({ url: 'https://dm.takaratomy.co.jp/card/dm-30-001' }), false)
 })
 
 test('isOutOfEraResult: 年代表記も新型番も無いページは除外しない', () => {
