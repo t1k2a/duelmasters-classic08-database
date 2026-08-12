@@ -1,7 +1,7 @@
 // src/chat/search.test.ts
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { webSearch, searchEnabled, DEFAULT_INCLUDE_DOMAINS } from './search.js'
+import { webSearch, searchEnabled, isOutOfEraResult, DEFAULT_INCLUDE_DOMAINS } from './search.js'
 
 function tavilyResponse(results: object[], answer?: string): Response {
   return new Response(JSON.stringify({ results, answer }), { status: 200, headers: { 'content-type': 'application/json' } })
@@ -89,6 +89,69 @@ test('信頼ドメインでヒットしたら二段目検索は呼ばない', as
   const r = await webSearch('イラストレーターは？', { apiKey: 'k', fetchImpl: impl as any })
   assert.equal(calls.length, 1)
   assert.ok(r)
+})
+
+test('isOutOfEraResult: 2024年を含む結果は対象期間外', () => {
+  assert.equal(isOutOfEraResult({ title: '新弾情報', content: '2024年5月に発売された新弾' }), true)
+})
+
+test('isOutOfEraResult: 2026年を含む結果は対象期間外', () => {
+  assert.equal(isOutOfEraResult({ title: '2026年4月の新弾' }), true)
+})
+
+test('isOutOfEraResult: 2008年・2005年を含む結果は対象期間内なので除外しない', () => {
+  assert.equal(isOutOfEraResult({ content: '2008年に発売されたDM-30' }), false)
+  assert.equal(isOutOfEraResult({ content: '2005年発売のカード' }), false)
+})
+
+test('isOutOfEraResult: 境界値 — 2002年・2008年は対象期間内、2001年・2009年は対象期間外', () => {
+  assert.equal(isOutOfEraResult({ content: '2002年発売のカード' }), false)
+  assert.equal(isOutOfEraResult({ content: '2008年発売のカード' }), false)
+  assert.equal(isOutOfEraResult({ content: '2001年発売のカード' }), true)
+  assert.equal(isOutOfEraResult({ content: '2009年発売のカード' }), true)
+})
+
+test('isOutOfEraResult: dm24rp4のような新型番URLは対象期間外', () => {
+  assert.equal(isOutOfEraResult({ url: 'https://dm.takaratomy.co.jp/card/dm24rp4/001' }), true)
+})
+
+test('isOutOfEraResult: dm-01-001のような旧型番URLは除外しない', () => {
+  assert.equal(isOutOfEraResult({ url: 'https://dm.takaratomy.co.jp/card/dm-01-001' }), false)
+})
+
+test('isOutOfEraResult: 年代表記も新型番も無いページは除外しない', () => {
+  assert.equal(isOutOfEraResult({ title: 'ボルバルザーク・ドラゴン', url: 'https://dmwiki.net/ボルバルザーク', content: 'カードの能力説明' }), false)
+})
+
+test('isOutOfEraResult: 実際のTavilyレスポンス例（2024年5月27日に発売）は対象期間外', () => {
+  assert.equal(isOutOfEraResult({
+    title: 'デュエル・マスターズ 新弾情報',
+    url: 'https://dm.takaratomy.co.jp/card/dm24rp4/',
+    content: '最新弾は2024年5月27日に発売されました。',
+  }), true)
+})
+
+test('webSearch: answerが対象期間外の情報を要約している場合、answerはcontextに含めない', async () => {
+  const fake = async () => tavilyResponse(
+    [{ title: 'ジョリー・ザ・ジョニー', url: 'https://dmwiki.net/jolly', content: 'DM-01のカード' }],
+    'デュエル・マスターズの2024年新弾は2024年5月27日に発売されました。',
+  )
+  const r = await webSearch('ジョリー・ザ・ジョニー', { apiKey: 'k', fetchImpl: fake as any })
+  assert.ok(r)
+  assert.doesNotMatch(r!.context, /検索エンジンによる要約/)
+  assert.doesNotMatch(r!.context, /2024年/)
+  assert.match(r!.context, /DM-01のカード/)
+})
+
+test('webSearch: 対象期間外の結果はフィルタされ、期間内の結果のみ返す', async () => {
+  const fake = async () => tavilyResponse([
+    { title: '新弾情報', url: 'https://dmwiki.net/new', content: '2024年5月に発売された新弾' },
+    { title: 'ジョリー・ザ・ジョニー', url: 'https://dmwiki.net/jolly', content: 'DM-01のカード' },
+  ])
+  const r = await webSearch('ジョリー・ザ・ジョニー', { apiKey: 'k', fetchImpl: fake as any })
+  assert.ok(r)
+  assert.equal(r!.sources.length, 1)
+  assert.equal(r!.sources[0]!.url, 'https://dmwiki.net/jolly')
 })
 
 test('SEARCH_INCLUDE_DOMAINS で信頼ドメインを上書きできる', async () => {
