@@ -22,6 +22,51 @@ export interface WebSearchResult {
   context: string
 }
 
+interface TavilyResultLike {
+  title?: string
+  url?: string
+  content?: string
+}
+
+// クラシック08/05の対象期間（2002〜2008年、DM-01〜DM-30）。
+const ERA_MIN_YEAR = 2002
+const ERA_MAX_YEAR = 2008
+// title/content 中の西暦表記（例: 「2024年」「1999年」）。ERA_MIN_YEAR未満・ERA_MAX_YEAR超過の
+// 両方向を検出できるよう、20XXに限定せず4桁年全体にマッチさせる。
+const YEAR_PATTERN = /\d{4}(?=年)/g
+// DM-31以降（2009年以降）で使われ始めた2桁年プレフィックス型番（例: dm24rp4, dm26ex1）。
+// DM-01〜DM-30時代の単純な dm-?\d{2}(-\d+)? 型番とは異なる命名規則。
+const NEW_CARD_NUMBER_PATTERN = /dm\d{2}(rp|ex|sd|bd|gp|cs)\d*/i
+// dm-31-001 のように、新命名規則へ移行する前後で旧形式の連番のまま発行された弾（DM-31以降）を
+// 型番から検出する。DM-01〜DM-30が対象期間内の上限のため、それを超える番号は対象期間外とみなす。
+const DASH_STYLE_SET_PATTERN = /dm-?(\d{2,3})-\d+/i
+const LAST_IN_ERA_SET_NUMBER = 30
+
+// Tavily検索結果が「対象期間外（2009年以降 or 2001年以前の話題）」と判定できるかを機械的にチェックする。
+// 判定材料が無い場合は対象期間外と断定しない（過剰フィルタでdmwiki.net等の正当な情報が消えるのを避ける）。
+export function isOutOfEraResult(result: TavilyResultLike): boolean {
+  const text = `${result.title ?? ''}\n${result.content ?? ''}`
+  const years = text.match(YEAR_PATTERN)
+  if (years) {
+    const hasOutOfEraYear = years.some(y => {
+      const year = parseInt(y, 10)
+      return year < ERA_MIN_YEAR || year > ERA_MAX_YEAR
+    })
+    if (hasOutOfEraYear) return true
+  }
+  if (result.url) {
+    if (NEW_CARD_NUMBER_PATTERN.test(result.url)) return true
+    const dashMatch = DASH_STYLE_SET_PATTERN.exec(result.url)
+    if (dashMatch && parseInt(dashMatch[1]!, 10) > LAST_IN_ERA_SET_NUMBER) return true
+  }
+  return false
+}
+
+// 対象期間外と判定された結果を除外する。
+function filterEraResults<T extends TavilyResultLike>(results: T[]): T[] {
+  return results.filter(r => !isOutOfEraResult(r))
+}
+
 // 検索フォールバックが有効か（APIキーが設定されているか）。
 export function searchEnabled(apiKey: string = API_KEY): boolean {
   return Boolean(apiKey)
@@ -66,7 +111,8 @@ async function runSearch(
     })
     if (!res.ok) return null
     const j = await res.json() as { answer?: string; results?: { title?: string; url?: string; content?: string }[] }
-    const results = Array.isArray(j.results) ? j.results : []
+    const rawResults = Array.isArray(j.results) ? j.results : []
+    const results = filterEraResults(rawResults)
     const sources = results
       .map(r => ({ title: String(r.title ?? r.url ?? ''), url: String(r.url ?? '') }))
       .filter(s => s.url)
@@ -74,7 +120,10 @@ async function runSearch(
     const snippets = results
       .map((r, i) => `[${i + 1}] ${r.title ?? ''}\n${r.content ?? ''}\n出典: ${r.url ?? ''}`)
       .join('\n\n')
-    const answer = typeof j.answer === 'string' ? j.answer.trim() : ''
+    const rawAnswer = typeof j.answer === 'string' ? j.answer.trim() : ''
+    // Tavily の要約（answer）は個別 results とは別に横断生成されるため、results側のフィルタが
+    // 効かない独立した混入経路になる。同じ年代判定をかけて対象期間外なら使わない。
+    const answer = rawAnswer && !isOutOfEraResult({ content: rawAnswer }) ? rawAnswer : ''
     // Tavily の要約を先頭に置くと、薄いスニペットでもモデルが要点を拾いやすい。
     const context = (answer ? `検索エンジンによる要約:\n${answer}\n\n---\n` : '') + snippets
     return { sources, context }
