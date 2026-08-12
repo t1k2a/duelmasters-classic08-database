@@ -40,6 +40,11 @@
     "postedAt": "2026-08-12T01:20:02.848Z"
   },
   {
+    "id": "deck-feature-volmeteus",
+    "text": "クラシック08メタデッキ紹介: ボルメテウス\n\n環境で使用率上位に入るアーキタイプの一つです。採用カードや動きの解説をDBのメタデッキページにまとめています。\nそのまま見れます👇\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/recipe/meta-2/",
+    "postedAt": null
+  },
+  {
     "id": "day10-usage-vs-tier",
     "text": "使用率1位はヘヴィメタル(6.8%)ですが、直近の大会「晴れる屋3 第1回クラシック08太陽王決定戦」のTier1はシノビドルゲーザ・黒緑速攻でした。\n\n「人気度」と「大会での勝率」、見ている対象の違いです。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
     "postedAt": null
@@ -67,6 +72,11 @@
   {
     "id": "day17-rarity-unset",
     "text": "クラシック08カードプール(全2,196枚)のうち23枚は、レアリティが「-」表記になっています。\n\nこれはDMC構築済みデッキ収録カードなど、通常のパック流通レアリティを持たないカード群です。\n見かけたら珍しい1枚かもしれません。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
+    "postedAt": null
+  },
+  {
+    "id": "deck-feature-heavens-gate",
+    "text": "クラシック08メタデッキ紹介: ヘブンズゲート\n\n安定した展開力で環境に根を張るアーキタイプです。採用カードや動きの要点をDBのメタデッキページにまとめています。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/recipe/meta-4/",
     "postedAt": null
   },
   {
@@ -102,6 +112,11 @@
   {
     "id": "day26-cards-rank20",
     "text": "クラシック08 定番カード採用率ランキング(収録レシピ4,517件)、これで20位まで紹介しました。\n\n⑳ナチュラル・トラップ(自然) 11.8%\n\n1位から20位まで、いろいろなカードを見てきました。全ランキングはDBで検索できます。ここで一区切りです。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
+    "postedAt": null
+  },
+  {
+    "id": "deck-feature-romanov",
+    "text": "クラシック08メタデッキ紹介: ロマノフ\n\n個性的な動きを持つアーキタイプの一つです。採用カードの中身はDBのメタデッキページで見られます。\n#クラシック08 #旧弾デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/recipe/meta-11/",
     "postedAt": null
   },
   {
