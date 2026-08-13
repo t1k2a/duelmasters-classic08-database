@@ -566,9 +566,25 @@ function filterCards() {
 
 const RARITY_ORDER = { SR: 0, VR: 1, R: 2, U: 3, C: 4 };
 
+// ページを開いた時点で1度だけ抽選する初期ソート。リロードごとに変わる。
+// sortKey が空（＝「デフォルト」）のときは常にこの値が使われるため、
+// ユーザーがソートを切り替えたあと「デフォルト」に戻すと、開いた時点の並び順に復帰する。
+// （この画面には popstate 等の「戻る」導線が無く、select の「デフォルト」選択が唯一の「戻す」操作）
+const INITIAL_SORT = (() => {
+  const keys = [...document.querySelectorAll('#sortKey option')]
+    .map(o => o.value)
+    .filter(Boolean);
+  return { key: keys[Math.floor(Math.random() * keys.length)], desc: false };
+})();
+
 function sortCards(cards) {
-  const key = document.getElementById('sortKey').value;
-  const desc = document.getElementById('sortDir').value === 'desc';
+  let key = document.getElementById('sortKey').value;
+  let desc = document.getElementById('sortDir').value === 'desc';
+  if (!key) {
+    key = INITIAL_SORT.key;
+    desc = INITIAL_SORT.desc;
+    document.getElementById('sortDir').value = desc ? 'desc' : 'asc';
+  }
   if (!key) return cards;
   return [...cards].sort((a, b) => {
     let av, bv;
@@ -975,7 +991,8 @@ function applyURLParams() {
   if (params.has('rarity')) document.getElementById('rarityFilter').value = params.get('rarity');
   if (params.has('ability')) document.getElementById('abilityFilter').value = params.get('ability');
   if (params.get('c05') === '1') document.getElementById('classic05Filter').checked = true;
-  if (params.has('sortKey')) document.getElementById('sortKey').value = params.get('sortKey');
+  // URL でソート指定が無ければ、抽選した初期ソートを選択状態にする
+  document.getElementById('sortKey').value = params.has('sortKey') ? params.get('sortKey') : INITIAL_SORT.key;
   if (params.has('sortDir')) document.getElementById('sortDir').value = params.get('sortDir') === 'desc' ? 'desc' : 'asc';
   if (params.has('civs')) {
     const wanted = new Set(params.get('civs').split(',').filter(Boolean));
