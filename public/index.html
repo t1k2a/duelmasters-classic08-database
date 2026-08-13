@@ -580,7 +580,11 @@ const INITIAL_SORT = (() => {
 function sortCards(cards) {
   let key = document.getElementById('sortKey').value;
   let desc = document.getElementById('sortDir').value === 'desc';
-  if (!key) { key = INITIAL_SORT.key; desc = INITIAL_SORT.desc; }
+  if (!key) {
+    key = INITIAL_SORT.key;
+    desc = INITIAL_SORT.desc;
+    document.getElementById('sortDir').value = desc ? 'desc' : 'asc';
+  }
   if (!key) return cards;
   return [...cards].sort((a, b) => {
     let av, bv;
