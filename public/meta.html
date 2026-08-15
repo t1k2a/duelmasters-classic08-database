@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>メタデッキ紹介 | デュエマ クラシック08</title>
   <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
+    body { font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif; }
+    .font-outfit { font-family: 'Outfit', sans-serif; }
     .civ-光  { background:#fef9c3; border-color:#ca8a04; color:#713f12; }
     .civ-水  { background:#dbeafe; border-color:#3b82f6; color:#1e3a8a; }
     .civ-闇  { background:#f3e8ff; border-color:#9333ea; color:#581c87; }
@@ -13,18 +18,20 @@
     .civ-自然 { background:#dcfce7; border-color:#22c55e; color:#14532d; }
   </style>
 </head>
-<body class="bg-gray-300 min-h-screen">
+<body class="bg-slate-950 min-h-screen flex flex-col items-center">
 
-<!-- ヘッダー（全幅） -->
-<header class="bg-indigo-700 text-white px-4 py-3 flex items-center gap-3 shadow-md sticky top-0 z-20">
+<!-- ヘッダー -->
+<header class="w-full bg-indigo-700 text-white shadow-md sticky top-0 z-20 flex justify-center">
+  <div class="w-full max-w-[430px] px-4 py-3 flex items-center gap-3">
   <span class="text-lg font-bold tracking-wide">🃏 メタデッキ紹介</span>
   <a href="regulations.html" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">レギュレーション</a>
   <a href="index.html" class="text-indigo-100 hover:text-white text-sm underline underline-offset-2">カード検索</a>
+  </div>
 </header>
 
 <!-- LP ラッパー: SP幅を中央に配置 -->
-<div class="flex justify-center min-h-[calc(100vh-52px)]">
-  <div class="w-full max-w-[430px] md:max-w-4xl lg:max-w-6xl bg-gray-50 flex flex-col shadow-2xl min-h-[calc(100vh-52px)]">
+<div class="flex justify-center w-full min-h-[calc(100vh-52px)]">
+  <div class="w-full max-w-[430px] bg-gray-50 flex flex-col shadow-2xl md:border-x md:border-slate-800 min-h-[calc(100vh-52px)]">
     <div class="px-4 py-3">
       <p class="text-xs text-gray-500 leading-relaxed">
         クラシック08環境（2008年12月時点）の代表的なメタデッキです。カード名をタップするとカード検索で詳細を確認できます。
