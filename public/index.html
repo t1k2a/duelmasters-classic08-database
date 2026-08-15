@@ -1957,24 +1957,36 @@ if ('serviceWorker' in navigator) {
 // ===== テーマ切り替え & スクロールトップ (Phase 3) =====
 function initTheme() {
   const saved = localStorage.getItem('dm_theme');
-  const isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+  const isDark = saved ? saved === 'dark' : prefersDark.matches;
   applyTheme(isDark);
+
+  // OSテーマの動的変更を監視（ユーザーの手動保存がない場合）
+  prefersDark.addEventListener('change', e => {
+    if (!localStorage.getItem('dm_theme')) {
+      applyTheme(e.matches);
+    }
+  });
 }
+
 function applyTheme(isDark) {
   document.documentElement.classList.toggle('dark', isDark);
-  localStorage.setItem('dm_theme', isDark ? 'dark' : 'light');
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.textContent = isDark ? '☀️' : '🌙';
 }
+
 function toggleTheme() {
-  const isDark = document.documentElement.classList.contains('dark');
-  applyTheme(!isDark);
+  const isDark = !document.documentElement.classList.contains('dark');
+  applyTheme(isDark);
+  localStorage.setItem('dm_theme', isDark ? 'dark' : 'light');
 }
+
 function scrollToTop() {
   const listEl = document.getElementById('cardList');
   if (listEl) listEl.scrollTo({ top: 0, behavior: 'smooth' });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   const listEl = document.getElementById('cardList');
@@ -1987,8 +1999,13 @@ document.addEventListener('DOMContentLoaded', () => {
       scrollBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
     }
   };
+
   if (listEl) listEl.addEventListener('scroll', () => checkScroll(listEl.scrollTop));
   window.addEventListener('scroll', () => checkScroll(window.scrollY));
+
+  // 初期スクロール位置を判定してFAB表示を設定
+  const initialScroll = Math.max(listEl ? listEl.scrollTop : 0, window.scrollY || 0);
+  checkScroll(initialScroll);
 });
 initTheme();
 </script>
