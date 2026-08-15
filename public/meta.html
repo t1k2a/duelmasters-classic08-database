@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>メタデッキ紹介 | デュエマ クラシック08</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: "class" };</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -31,7 +32,7 @@
 
 <!-- LP ラッパー: SP幅を中央に配置 -->
 <div class="flex justify-center w-full min-h-[calc(100vh-52px)]">
-  <div class="w-full max-w-[430px] bg-gray-50 flex flex-col shadow-2xl md:border-x md:border-slate-800 min-h-[calc(100vh-52px)]">
+  <div class="w-full max-w-[430px] bg-gray-50 dark:bg-slate-900 dark:text-slate-100 flex flex-col shadow-2xl md:border-x md:border-slate-800 min-h-[calc(100vh-52px)] transition-colors duration-200">
     <div class="px-4 py-3">
       <p class="text-xs text-gray-500 leading-relaxed">
         クラシック08環境（2008年12月時点）の代表的なメタデッキです。カード名をタップするとカード検索で詳細を確認できます。
@@ -112,3 +113,43 @@ fetch('data/meta-decks.json')
 </script>
 </body>
 </html>
+
+<script>
+// ===== テーマ切り替え & スクロールトップ (Phase 3) =====
+function initTheme() {
+  const saved = localStorage.getItem('dm_theme');
+  const isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  applyTheme(isDark);
+}
+function applyTheme(isDark) {
+  document.documentElement.classList.toggle('dark', isDark);
+  localStorage.setItem('dm_theme', isDark ? 'dark' : 'light');
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const isDark = document.documentElement.classList.contains('dark');
+  applyTheme(!isDark);
+}
+function scrollToTop() {
+  const listEl = document.getElementById('cardList');
+  if (listEl) listEl.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  const listEl = document.getElementById('cardList');
+  const scrollBtn = document.getElementById('scrollTopBtn');
+  const checkScroll = (st) => {
+    if (!scrollBtn) return;
+    if (st > 250) {
+      scrollBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+    } else {
+      scrollBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+    }
+  };
+  if (listEl) listEl.addEventListener('scroll', () => checkScroll(listEl.scrollTop));
+  window.addEventListener('scroll', () => checkScroll(window.scrollY));
+});
+initTheme();
+</script>

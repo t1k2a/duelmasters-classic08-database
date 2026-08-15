@@ -16,6 +16,7 @@
   <meta name="twitter:description" content="デュエル・マスターズ クラシック08環境の全カード検索・デッキビルダー。全2134枚収録。">
   <meta name="twitter:image" content="https://t1k2a.github.io/duelmasters-classic08-database/ogp.png">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: "class" };</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -38,6 +39,15 @@
     @media (max-width: 640px) {
       #textSearch, #chatInput { font-size: 16px; }
     }
+      /* ダークモード & インタラクション */
+    .dark .card-row:hover { background: #1e293b; }
+    .dark .card-row.selected { background: #1e293b; border-left: 3px solid #6366f1; }
+    .dark .civ-光  { background:#422006; border-color:#ca8a04; color:#fef08a; }
+    .dark .civ-水  { background:#172554; border-color:#3b82f6; color:#bfdbfe; }
+    .dark .civ-闇  { background:#3b0764; border-color:#9333ea; color:#f3e8ff; }
+    .dark .civ-火  { background:#450a0a; border-color:#ef4444; color:#fecaca; }
+    .dark .civ-自然 { background:#052e16; border-color:#22c55e; color:#bbf7d0; }
+    .smooth-transition { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
   </style>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#4338ca">
@@ -52,13 +62,14 @@
   <button id="pwaInstallBtn" onclick="pwaInstall()" class="hidden bg-white/15 hover:bg-white/25 text-white text-sm rounded px-2 py-1 leading-none">📲 インストール</button>
   <a href="meta.html" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">メタデッキ</a>
   <a href="regulations.html" class="text-indigo-100 hover:text-white text-sm underline underline-offset-2">レギュレーション</a>
+  <button id="themeToggleBtn" onclick="toggleTheme()" title="テーマ切り替え" class="bg-white/10 hover:bg-white/20 text-white text-sm rounded-full w-7 h-7 flex items-center justify-center transition-transform active:scale-95 leading-none">🌙</button>
   <span id="cardCountBadge" class="text-indigo-200 text-sm"></span>
   </div>
 </header>
 
 <!-- LP ラッパー: SP幅を中央に配置 -->
 <div class="flex justify-center w-full min-h-[calc(100vh-52px)]">
-  <div class="w-full max-w-[430px] bg-gray-50 flex flex-col shadow-2xl md:border-x md:border-slate-800" style="height:calc(100vh - 52px); overflow:hidden;">
+  <div class="w-full max-w-[430px] bg-gray-50 dark:bg-slate-900 dark:text-slate-100 flex flex-col shadow-2xl md:border-x md:border-slate-800 transition-colors duration-200" style="height:calc(100vh - 52px); overflow:hidden;">
 
     <!-- 今日の1枚バナー -->
     <div id="todayPick" class="hidden flex-shrink-0 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-100 px-4 py-2">
@@ -73,18 +84,18 @@
     </div>
 
     <!-- 検索バー + フィルター -->
-    <div class="bg-white border-b border-gray-200 flex-shrink-0">
+    <div class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex-shrink-0 transition-colors">
       <!-- トグルヘッダー（常時表示） -->
       <button onclick="toggleFilterPanel()" id="filterPanelToggle"
-        class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50">
-        <span class="text-sm font-semibold text-gray-700">🔍 検索・絞り込み</span>
+        class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-800/60">
+        <span class="text-sm font-semibold text-gray-700 dark:text-slate-200">🔍 検索・絞り込み</span>
         <span id="filterPanelChevron" class="text-gray-400 text-sm leading-none">▼</span>
       </button>
 
       <!-- 開閉本体（初期は折りたたみ） -->
       <div id="filterPanelBody" class="hidden px-4 pb-3">
       <input id="textSearch" type="text" placeholder="カード名・テキストで検索..."
-        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
 
       <div class="mt-3 space-y-2">
         <!-- 絞り込み セクション -->
@@ -1941,3 +1952,43 @@ if ('serviceWorker' in navigator) {
 <script src="js/analytics.js"></script>
 </body>
 </html>
+
+<script>
+// ===== テーマ切り替え & スクロールトップ (Phase 3) =====
+function initTheme() {
+  const saved = localStorage.getItem('dm_theme');
+  const isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  applyTheme(isDark);
+}
+function applyTheme(isDark) {
+  document.documentElement.classList.toggle('dark', isDark);
+  localStorage.setItem('dm_theme', isDark ? 'dark' : 'light');
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const isDark = document.documentElement.classList.contains('dark');
+  applyTheme(!isDark);
+}
+function scrollToTop() {
+  const listEl = document.getElementById('cardList');
+  if (listEl) listEl.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  const listEl = document.getElementById('cardList');
+  const scrollBtn = document.getElementById('scrollTopBtn');
+  const checkScroll = (st) => {
+    if (!scrollBtn) return;
+    if (st > 250) {
+      scrollBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+    } else {
+      scrollBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+    }
+  };
+  if (listEl) listEl.addEventListener('scroll', () => checkScroll(listEl.scrollTop));
+  window.addEventListener('scroll', () => checkScroll(window.scrollY));
+});
+initTheme();
+</script>
