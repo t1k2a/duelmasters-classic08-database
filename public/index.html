@@ -260,9 +260,30 @@
   <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
     <div class="w-full max-w-[430px] bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
       <div class="flex justify-between items-center gap-3 mb-3">
-        <h2 class="font-bold text-base">マイデッキ <span id="deckTotal" class="text-sm font-normal text-gray-500">0 / 40</span></h2>
+        <h2 class="font-bold text-base flex items-center gap-2">
+          マイデッキ <span id="deckTotal" class="text-sm font-normal text-gray-500">0 / 40</span>
+        </h2>
         <button onclick="closeDeckPanel()" class="text-gray-400 text-xl leading-none shrink-0">&times;</button>
       </div>
+
+      <!-- マナカーブ & 文明比率ビジュアル分析 -->
+      <div id="deckAnalytics" class="hidden mb-4 bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-semibold text-slate-700 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>マナカーブ
+          </span>
+          <span id="deckAvgMana" class="font-mono text-slate-500 font-medium">Avg: 0.0</span>
+        </div>
+        <div id="deckManaCurve" class="flex items-end justify-between gap-1.5 h-14 pt-2 px-1"></div>
+        <div class="space-y-1 pt-1 border-t border-slate-200/60">
+          <div class="flex justify-between text-[10px] text-slate-500 font-medium">
+            <span>文明比率</span>
+            <span id="deckCivSummary"></span>
+          </div>
+          <div id="deckCivSegmentBar" class="w-full h-2 rounded-full overflow-hidden flex bg-gray-200"></div>
+        </div>
+      </div>
+
       <div id="deckCivBars" class="space-y-1 mb-3"></div>
       <div id="deckLegality" class="mb-3"></div>
       <div id="deckCardList" class="divide-y divide-gray-100 mb-4"></div>
@@ -1147,9 +1168,67 @@ function civCounts() {
   return counts;
 }
 
+function manaCurveData() {
+  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 };
+  let totalCost = 0;
+  let totalCards = 0;
+  for (const e of deck) {
+    const card = CARDS.find(c => c.id === e.id);
+    if (!card) continue;
+    const cost = card.cost || 0;
+    const bucket = cost <= 1 ? 1 : cost >= 8 ? 8 : cost;
+    counts[bucket] = (counts[bucket] || 0) + e.count;
+    totalCost += cost * e.count;
+    totalCards += e.count;
+  }
+  const avg = totalCards > 0 ? (totalCost / totalCards).toFixed(1) : '0.0';
+  return { counts, avg };
+}
+
 function renderDeckPanel() {
   const total = deckTotalCount();
   document.getElementById('deckTotal').textContent = `${total} / ${DECK_MAX}`;
+
+  const analyticsEl = document.getElementById('deckAnalytics');
+  if (deck.length > 0) {
+    if (analyticsEl) analyticsEl.classList.remove('hidden');
+
+    // マナカーブ描画
+    const { counts: manaCounts, avg } = manaCurveData();
+    const avgEl = document.getElementById('deckAvgMana');
+    if (avgEl) avgEl.textContent = `Avg: ${avg} コスト`;
+
+    const maxManaCount = Math.max(1, ...Object.values(manaCounts));
+    const manaLabels = { 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8+' };
+    const curveEl = document.getElementById('deckManaCurve');
+    if (curveEl) {
+      curveEl.innerHTML = Object.entries(manaCounts).map(([cost, count]) => {
+        const heightPct = count > 0 ? Math.max(15, (count / maxManaCount) * 100) : 0;
+        return `
+          <div class="flex-1 flex flex-col items-center justify-end h-full">
+            <span class="text-[9px] font-mono leading-none mb-1 ${count > 0 ? 'text-indigo-600 font-bold' : 'text-transparent'}">${count || 0}</span>
+            <div class="w-full max-w-[20px] bg-indigo-100 rounded-t overflow-hidden flex items-end h-8">
+              <div class="w-full bg-indigo-600 transition-all duration-300 rounded-t" style="height:${heightPct}%"></div>
+            </div>
+            <span class="text-[9px] text-slate-500 font-mono mt-1">${manaLabels[cost]}</span>
+          </div>`;
+      }).join('');
+    }
+
+    // 5文明セグメントバー描画
+    const counts = civCounts();
+    const civTotal = Object.values(counts).reduce((a, b) => a + b, 0);
+    const civColorsHex = { 光: '#eab308', 水: '#3b82f6', 闇: '#a855f7', 火: '#ef4444', 自然: '#22c55e' };
+    const segmentEl = document.getElementById('deckCivSegmentBar');
+    if (segmentEl) {
+      segmentEl.innerHTML = Object.entries(counts).filter(([_, n]) => n > 0).map(([civ, n]) => {
+        const pct = (n / civTotal) * 100;
+        return `<div class="h-full transition-all duration-300" style="width:${pct}%; background-color:${civColorsHex[civ]};" title="${civ}: ${n}枚 (${Math.round(pct)}%)"></div>`;
+      }).join('');
+    }
+  } else {
+    if (analyticsEl) analyticsEl.classList.add('hidden');
+  }
 
   const counts = civCounts();
   const maxCiv = Math.max(1, ...Object.values(counts));
