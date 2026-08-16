@@ -6,13 +6,17 @@ import path from 'path';
 
 const ROOT = process.cwd();
 const CARDS_PATH = path.join(ROOT, 'public/cards.json');
-const META_PATH = path.join(ROOT, 'public/data/meta-decks.json');
 const QUEUE_PATH = path.join(ROOT, 'docs/marketing/x-post-queue.json');
 
-const cards = JSON.parse(fs.readFileSync(CARDS_PATH, 'utf-8'));
-const metaDecks = JSON.parse(fs.readFileSync(META_PATH, 'utf-8'));
+interface QueueEntry {
+  id: string;
+  text: string;
+  postedAt: string | null;
+}
 
-let queue: { id: string; scheduledAt: string; text: string; status: string }[] = [];
+const cards = JSON.parse(fs.readFileSync(CARDS_PATH, 'utf-8'));
+
+let queue: QueueEntry[] = [];
 try {
   queue = JSON.parse(fs.readFileSync(QUEUE_PATH, 'utf-8'));
 } catch {
@@ -34,7 +38,7 @@ const keyCards = [
   '光輪の精霊 ピカリエ',
 ];
 
-const newPosts: { id: string; scheduledAt: string; text: string; status: string }[] = [];
+const newPosts: QueueEntry[] = [];
 
 for (const cardName of keyCards) {
   const card = cards.find((c: any) => c.name === cardName);
@@ -56,15 +60,14 @@ https://t1k2a.github.io/duelmasters-classic08-database/
 
   newPosts.push({
     id: postId,
-    scheduledAt: new Date(Date.now() + newPosts.length * 86400000).toISOString(),
     text,
-    status: 'pending',
+    postedAt: null,
   });
 }
 
 if (newPosts.length > 0) {
   queue = [...queue, ...newPosts];
-  fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf-8');
+  fs.writeFileSync(QUEUE_PATH, `${JSON.stringify(queue, null, 2)}\n`, 'utf-8');
   console.log(`Added ${newPosts.length} new posts to X post queue.`);
 } else {
   console.log('X post queue is already well-stocked.');
