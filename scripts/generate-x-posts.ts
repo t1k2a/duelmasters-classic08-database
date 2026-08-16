@@ -56,7 +56,7 @@ ${(card.text ?? '').slice(0, 70)}...
 
 カード検索 & デッキ構築はこちら👇
 https://t1k2a.github.io/duelmasters-classic08-database/
-#デュエマクラシック08 #デュエマ #デュエルマスターズ`;
+#デュエマクラシック #デュエマクラシック08 #デュエマ`;
 
   newPosts.push({
     id: postId,
