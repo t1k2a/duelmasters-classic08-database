@@ -4,6 +4,9 @@ import type { RetrievalResult, ChatTurn } from './types.js'
 // searchAvailable=true のとき、<context>に答えが無いケースは「情報がありません」ではなく
 // [[WEB]] センチネルだけを出力させる（サーバがこれを検知してWeb検索へ切り替える）。
 const UNKNOWN_RULE_DEFAULT = '分からなければ「このDBには情報がありません」と答える'
+const UNKNOWN_CONTEXT_RULE_SEARCH = '- <context>が「(参考情報なし)」の場合は、推測せず [[WEB]] とだけ出力する。'
+const UNKNOWN_CONTEXT_RULE_DEFAULT = '- <context>が「(参考情報なし)」の場合は「クラシック08環境（DM-01〜DM-30）の対象カードや基本ルールからお調べできます。カードの正式名称や効果、デッキ構築についてお気軽にお尋ねください。」と答え、可能な範囲でクラシック08の対象範囲（2002〜2008年）について親切に案内する。'
+
 const UNKNOWN_RULE_SEARCH = '<context>に質問への答えが無い場合は、本文を一切書かず `[[WEB]]` とだけ出力する（説明・謝罪・前置き禁止）'
 
 const SYSTEM = `あなたはデュエル・マスターズ「クラシック08環境」専用の対話アシスタントです。
@@ -19,7 +22,7 @@ const SYSTEM = `あなたはデュエル・マスターズ「クラシック08�
 - どのカードを指しているか曖昧なときは、候補を挙げて聞き返す。
 - 過去の会話と食い違う場合は今回の<context>を優先する。
 - <context>に「提示デッキ」がある場合は、そのデッキ名・軸となるカード2〜3枚・動きの要点を解説する。40枚のリスト全文は本文に再掲しない（UI側で画像表示されるため）。提示デッキに含まれないカードを勧めない。
-- <context>が「(参考情報なし)」の場合は「クラシック08環境（DM-01〜DM-30）の対象カードや基本ルールからお調べできます。カードの正式名称や効果、デッキ構築についてお気軽にお尋ねください。」と答え、可能な範囲でクラシック08の対象範囲（2002〜2008年）について親切に案内する。
+{{UNKNOWN_CONTEXT_RULE}}
 - 日本語で**簡潔に**。前置き・繰り返し・過剰な丁寧表現を避け、要点を絞る（厳守: 最大8行・1行80字以内）。
 - デッキ相談は「軸となるキーカード」と「動きの要点」を短い箇条書きでまとめ、長文化しない。
 
@@ -79,7 +82,8 @@ function renderContext(r: RetrievalResult, deck?: DeckContext): string {
 
 export function buildMessages(input: { question: string; retrieval: RetrievalResult; history: ChatTurn[]; deck?: DeckContext; searchAvailable?: boolean }) {
   const recent = input.history.slice(-6)
-  const system = SYSTEM.replace('{{UNKNOWN_RULE}}', input.searchAvailable ? UNKNOWN_RULE_SEARCH : UNKNOWN_RULE_DEFAULT)
+  let system = SYSTEM.replace('{{UNKNOWN_RULE}}', input.searchAvailable ? UNKNOWN_RULE_SEARCH : UNKNOWN_RULE_DEFAULT)
+  system = system.replace('{{UNKNOWN_CONTEXT_RULE}}', input.searchAvailable ? UNKNOWN_CONTEXT_RULE_SEARCH : UNKNOWN_CONTEXT_RULE_DEFAULT)
   return [
     { role: 'system', content: system },
     ...recent.map(t => ({ role: t.role, content: t.content })),
