@@ -1,7 +1,9 @@
-// 定番略称・俗称から正式名称・キーワードへのマッピング
-const ALIAS_MAP: Record<string, string[]> = {
+// 定番略称・俗称から正式名称・キーワードへのマッピング（knowledge/card-aliases.md と同期）
+export const ALIAS_MAP: Record<string, string[]> = {
   'ボルコン': ['ボルメテウス・ホワイト・ドラゴン', 'ボルメテウス・コントロール'],
+  'ボルメテウス': ['ボルメテウス・ホワイト・ドラゴン'],
   'ボルメ': ['ボルメテウス・ホワイト・ドラゴン'],
+  'ボルサファ': ['ボルメテウス・サファイア・ドラゴン'],
   '天門': ['ヘブンズ・ゲート', '悪魔聖霊バルホルス', '血風聖霊ザーディア'],
   'ハルカス': ['アクア・ハルカス'],
   '青銅': ['青銅の鎧'],
@@ -9,14 +11,21 @@ const ALIAS_MAP: Record<string, string[]> = {
   'スクラッパー': ['地獄スクラッパー'],
   'サーファー': ['アクア・サーファー'],
   'バイケン': ['斬隠蒼頭龍バイケン'],
+  'ハヤブサマル': ['光牙忍ハヤブサマル'],
   'ロマノフ': ['邪眼皇ロマノフI世', 'インフェルノ・サイン'],
   'キング': ['聖鎧亜キング・アルカディアス'],
   'クイーン': ['聖鎧亜クイーン・アルカディアス'],
   '母なる': ['母なる大地'],
   'ナスオ': ['ダンディ・ナスオ'],
   'クルト': ['予言者クルト'],
+  'ペト': ['光器ペトローバ'],
+  'パクリオ': ['パクリオ'],
+  '解体': ['解体人形ジェニー'],
+  'トリプルマウス': ['腐敗無頼トリプルマウス'],
   'バジュラ': ['超竜バジュラ'],
-  '速攻': ['赤緑速攻', '凶戦士ブレイズ・クロー', '解体屋ピーカプ'],
+  '赤緑速攻': ['赤緑速攻', '凶戦士ブレイズ・クロー', '解体屋ピーカプ'],
+  '青単速攻': ['青単速攻', 'クリスタル・ランサー', 'マリン・フラワー'],
+  '黒緑速攻': ['黒緑速攻', '死神術士デスマーチ', '孤独の影ロンリー・ウォーカー'],
 };
 
 // src/chat/retriever.ts
@@ -55,9 +64,11 @@ function bigramCoverage(qn: string, tn: string): number {
 }
 
 export function retrieve(corpus: Corpus, question: string): RetrievalResult {
-  let expandedQn = normalizeKana(question)
+  const baseQn = normalizeKana(question)
+  let expandedQn = baseQn
   for (const [alias, targets] of Object.entries(ALIAS_MAP)) {
-    if (question.includes(alias)) {
+    const normAlias = normalizeKana(alias)
+    if (baseQn.includes(normAlias)) {
       expandedQn += ' ' + targets.map(t => normalizeKana(t)).join(' ')
     }
   }

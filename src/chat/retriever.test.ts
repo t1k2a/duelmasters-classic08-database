@@ -42,3 +42,22 @@ test('略記された質問（クラシック05と08の違い）でも環境know
   const r = retrieve(c, 'クラシック05と08の違いは？')
   assert.ok(r.knowledge.some(k => k.includes('クラシック05')), '環境の違いを抽出（バイグラム照合）')
 })
+
+test('略称・俗称（ALIAS_MAP）から正式名称カードを正確に抽出', async () => {
+  const c = await loadCorpus()
+  const cases = [
+    { query: 'ハヤブサマルの能力は？', expected: 'ハヤブサマル' },
+    { query: 'パクリオの使い方', expected: 'パクリオ' },
+    { query: 'ボルコンのキーカードは？', expected: 'ボルメテウス' },
+    { query: 'デモハンは何マナ？', expected: 'デーモン・ハンド' },
+    { query: '青単速攻のキーカード', expected: 'クリスタル' },
+    { query: 'バイケンの使い方', expected: 'バイケン' },
+  ]
+  for (const { query, expected } of cases) {
+    const r = retrieve(c, query)
+    assert.ok(
+      r.cards.some(card => card.name.includes(expected)) || r.knowledge.some(k => k.includes(expected)),
+      `クエリ "${query}" で "${expected}" が抽出されること`
+    )
+  }
+})
