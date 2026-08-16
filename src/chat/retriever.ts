@@ -1,3 +1,24 @@
+// 定番略称・俗称から正式名称・キーワードへのマッピング
+const ALIAS_MAP: Record<string, string[]> = {
+  'ボルコン': ['ボルメテウス・ホワイト・ドラゴン', 'ボルメテウス・コントロール'],
+  'ボルメ': ['ボルメテウス・ホワイト・ドラゴン'],
+  '天門': ['ヘブンズ・ゲート', '悪魔聖霊バルホルス', '血風聖霊ザーディア'],
+  'ハルカス': ['アクア・ハルカス'],
+  '青銅': ['青銅の鎧'],
+  'デモハン': ['デーモン・ハンド'],
+  'スクラッパー': ['地獄スクラッパー'],
+  'サーファー': ['アクア・サーファー'],
+  'バイケン': ['斬隠蒼頭龍バイケン'],
+  'ロマノフ': ['邪眼皇ロマノフI世', 'インフェルノ・サイン'],
+  'キング': ['聖鎧亜キング・アルカディアス'],
+  'クイーン': ['聖鎧亜クイーン・アルカディアス'],
+  '母なる': ['母なる大地'],
+  'ナスオ': ['ダンディ・ナスオ'],
+  'クルト': ['予言者クルト'],
+  'バジュラ': ['超竜バジュラ'],
+  '速攻': ['赤緑速攻', '凶戦士ブレイズ・クロー', '解体屋ピーカプ'],
+};
+
 // src/chat/retriever.ts
 import type { Corpus } from './corpus.js'
 import type { RetrievalResult, CardData } from './types.js'
@@ -34,7 +55,13 @@ function bigramCoverage(qn: string, tn: string): number {
 }
 
 export function retrieve(corpus: Corpus, question: string): RetrievalResult {
-  const qn = normalizeKana(question)
+  let expandedQn = normalizeKana(question)
+  for (const [alias, targets] of Object.entries(ALIAS_MAP)) {
+    if (question.includes(alias)) {
+      expandedQn += ' ' + targets.map(t => normalizeKana(t)).join(' ')
+    }
+  }
+  const qn = expandedQn
   // (a) カード名一致
   const named: CardData[] = []
   for (const card of corpus.cards) {

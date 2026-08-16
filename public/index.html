@@ -52,6 +52,22 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#4338ca">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "デュエマ クラシック08 カード検索・デッキビルダー",
+    "url": "https://t1k2a.github.io/duelmasters-classic08-database/",
+    "description": "デュエル・マスターズ クラシック08環境（DM-01〜DM-30）の全カード検索、デッキ構築、マナカーブ分析、メタデッキTier表ツール。",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "All",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "JPY"
+    }
+  }
+  </script>
 </head>
 <body class="bg-slate-950 min-h-screen flex flex-col items-center">
 
@@ -1331,11 +1347,15 @@ function topRarityCard(deckEntries) {
 function deckSummaryText(deckEntries) {
   const total = deckEntries.reduce((s, e) => s + (e.count || 0), 0);
   const top = topRarityCard(deckEntries);
+  const counts = civCounts();
+  const civSummary = Object.entries(counts).filter(([_, n]) => n > 0).map(([civ]) => civ).join('');
+  const { avg } = manaCurveData();
+  const metaInfo = civSummary ? `（${total}枚 / ${civSummary} / 平均${avg}マナ）` : `（${total}枚）`;
+
   if (top) {
-    const rarity = top.rarity ? `【${top.rarity}】` : '';
-    return `${rarity}${top.name}入りデッキ（${total}枚）`;
+    return `《${top.name}》入りデッキ ${metaInfo}`;
   }
-  return `デッキ（${total}枚）`;
+  return `デッキ ${metaInfo}`;
 }
 
 // カードID（dm06-008 / dm06-s08）を短縮トークン（6-8 / 6-s8）へ変換する。
