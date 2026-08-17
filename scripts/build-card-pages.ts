@@ -227,6 +227,32 @@ ${jsonLdEscape(jsonLd)}
         <div class="flex flex-wrap gap-1.5 mt-3">${civs} ${specs.join(' ')}</div>
         ${racesRow}
         ${textBlock}
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <p class="text-xs font-semibold text-gray-600 mb-2 flex items-center justify-between">
+            <span>🛒 このカードの価格・在庫を探す</span>
+            <span class="text-[10px] text-gray-400 font-normal">外部ショップ</span>
+          </p>
+          <div class="grid grid-cols-3 gap-2">
+            <a href="https://www.surugaya.jp/search?category=5&search_word=${encodeURIComponent('デュエルマスターズ ' + card.name)}"
+               target="_blank" rel="noopener noreferrer"
+               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${card.id}',card_name:'${escapeHtml(card.name)}',shop:'surugaya'})"
+               class="text-center py-2 px-2 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium transition-colors">
+              駿河屋で探す
+            </a>
+            <a href="https://jp.mercari.com/search?keyword=${encodeURIComponent('デュエルマスターズ ' + card.name)}"
+               target="_blank" rel="noopener noreferrer"
+               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${card.id}',card_name:'${escapeHtml(card.name)}',shop:'mercari'})"
+               class="text-center py-2 px-2 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium transition-colors">
+              メルカリで探す
+            </a>
+            <a href="https://www.ka-nabell.com/?act=sell_search&genre=dm&word=${encodeURIComponent(card.name)}"
+               target="_blank" rel="noopener noreferrer"
+               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${card.id}',card_name:'${escapeHtml(card.name)}',shop:'ka-nabell'})"
+               class="text-center py-2 px-2 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium transition-colors">
+              カーナベルで探す
+            </a>
+          </div>
+        </div>
         <div class="flex flex-wrap gap-3 mt-6">
           <a href="${escapeHtml(appLink)}"
              class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg px-4 py-2">アプリで開く（検索・デッキ構築）</a>
@@ -366,6 +392,26 @@ ${jsonLdEscape(jsonLd)}
       <a href="${escapeHtml(xIntentUrl(title, url))}" target="_blank" rel="noopener"
          class="inline-block bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg px-4 py-2">Xで共有</a>
     </div>
+    <div class="mt-6 pt-6 border-t border-gray-200">
+      <p class="text-xs font-semibold text-gray-600 mb-2 flex items-center justify-between">
+        <span>🛒 このデッキのカードを探す</span>
+        <span class="text-[10px] text-gray-400 font-normal">一括検索</span>
+      </p>
+      <div class="grid grid-cols-2 gap-2">
+        <a href="https://jp.mercari.com/search?keyword=${encodeURIComponent('デュエルマスターズ ' + (deckName || 'クラシック08 デッキ'))}"
+           target="_blank" rel="noopener noreferrer"
+           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'${escapeHtml(deckName || '')}',shop:'mercari'})"
+           class="text-center py-2 px-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium transition-colors">
+          メルカリで探す
+        </a>
+        <a href="https://www.surugaya.jp/search?category=5&search_word=${encodeURIComponent('デュエルマスターズ ' + (deckName || 'クラシック08 デッキ'))}"
+           target="_blank" rel="noopener noreferrer"
+           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'${escapeHtml(deckName || '')}',shop:'surugaya'})"
+           class="text-center py-2 px-3 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium transition-colors">
+          駿河屋で探す
+        </a>
+      </div>
+    </div>
     <h2 class="text-lg font-semibold mt-8">カードリスト</h2>
     ${cardList}
     <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
@@ -498,6 +544,26 @@ ${jsonLdEscape(jsonLd)}
          class="inline-block border border-gray-300 hover:bg-gray-100 text-sm font-medium rounded-lg px-4 py-2">共有</button>
       <a href="${escapeHtml(xIntentUrl(title, url))}" target="_blank" rel="noopener"
          class="inline-block bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg px-4 py-2">Xで共有</a>
+    </div>
+    <div class="mt-6 pt-6 border-t border-gray-200">
+      <p class="text-xs font-semibold text-gray-600 mb-2 flex items-center justify-between">
+        <span>🛒 このメタデッキのカードを探す</span>
+        <span class="text-[10px] text-gray-400 font-normal">一括検索</span>
+      </p>
+      <div class="grid grid-cols-2 gap-2">
+        <a href="https://jp.mercari.com/search?keyword=${encodeURIComponent('デュエルマスターズ ' + deck.name)}"
+           target="_blank" rel="noopener noreferrer"
+           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'${escapeHtml(deck.name)}',shop:'mercari',is_meta:true})"
+           class="text-center py-2 px-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium transition-colors">
+          メルカリで探す
+        </a>
+        <a href="https://www.surugaya.jp/search?category=5&search_word=${encodeURIComponent('デュエルマスターズ ' + deck.name)}"
+           target="_blank" rel="noopener noreferrer"
+           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'${escapeHtml(deck.name)}',shop:'surugaya',is_meta:true})"
+           class="text-center py-2 px-3 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium transition-colors">
+          駿河屋で探す
+        </a>
+      </div>
     </div>
     <h2 class="text-lg font-semibold mt-8">カードリスト</h2>
     ${cardList}
