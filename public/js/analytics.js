@@ -11,6 +11,7 @@
  *   - gtag.js の読み込み・送信は「同意後のみ」。初回は同意バナーを表示し、
  *     選択を localStorage に保存。拒否時は一切トラッキングしない。再訪問時はバナーを出さない。
  *   - IP匿名化など、プライバシー配慮のデフォルトを付与する。
+ *   - window.trackEvent(eventName, params) で安全にカスタムイベントを送信可能。
  *
  * ★測定IDの設定方法: 環境変数 GA_MEASUREMENT_ID を設定して `npm run build:analytics-config`
  *   （build にも組込み済み）を実行すると js/analytics-config.js が生成される。
@@ -25,6 +26,25 @@
   var PLACEHOLDER = 'G-XXXXXXXXXX'
   var CONSENT_KEY = 'ga-consent' // 'granted' | 'denied'
 
+  function getConsent() {
+    try { return localStorage.getItem(CONSENT_KEY) } catch (e) { return null }
+  }
+  function setConsent(v) {
+    try { localStorage.setItem(CONSENT_KEY, v) } catch (e) {}
+  }
+
+  // カスタムイベント送信用のグローバル関数
+  window.trackEvent = function (eventName, params) {
+    try {
+      if (getConsent() !== 'granted' || !MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER) return
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', eventName, params || {})
+      }
+    } catch (e) {
+      console.warn('[Analytics] Failed to track event:', e)
+    }
+  }
+
   // 未設定（空 or プレースホルダ）なら安全側で何もしない。バナーもタグも出さない。
   if (!MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER) return
 
@@ -33,13 +53,6 @@
   var self = document.currentScript
   var base = self ? self.src.replace(/js\/analytics\.js.*$/, '') : ''
   var PRIVACY_URL = base + 'privacy/'
-
-  function getConsent() {
-    try { return localStorage.getItem(CONSENT_KEY) } catch (e) { return null }
-  }
-  function setConsent(v) {
-    try { localStorage.setItem(CONSENT_KEY, v) } catch (e) {}
-  }
 
   // 同意後にのみ gtag.js を読み込んで初期化する。
   function loadGtag() {
