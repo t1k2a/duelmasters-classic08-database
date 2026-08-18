@@ -2,6 +2,33 @@ import fs from 'fs';
 import path from 'path';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 
+// .env ファイルを自動ロード（Node 20.0 等の環境でも安全に動作）
+function loadEnv() {
+  const envPath = path.join(process.cwd(), '.env');
+  if (fs.existsSync(envPath)) {
+    try {
+      const content = fs.readFileSync(envPath, 'utf-8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx !== -1) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (process.env[key] === undefined) {
+            process.env[key] = val;
+          }
+        }
+      }
+    } catch (e) {}
+  }
+}
+loadEnv();
+
+
 // scripts/ga4-analytics.ts
 // Google Analytics 4 (Data API) から実測値を取得・集計し、
 // 売上最大化に向けた自律マーケティング施策レポート（docs/marketing/ga4-action-strategy.md）を出力する。

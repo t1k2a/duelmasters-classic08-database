@@ -360,6 +360,20 @@
         </button>
         <button onclick="clearDeck()" class="bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 text-xs font-medium rounded-lg py-2 px-3 transition-colors">クリア</button>
       </div>
+      <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-slate-800">
+        <div class="text-[11px] font-semibold text-gray-500 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+          <span class="flex items-center gap-1">🛒 <span>このデッキのカードを探す</span></span>
+          <span class="text-[10px] text-gray-400 font-normal">一括検索</span>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="buyDeck('mercari')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-xs font-semibold transition-all shadow-2xs">
+            メルカリで探す
+          </button>
+          <button onclick="buyDeck('surugaya')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold transition-all shadow-2xs">
+            駿河屋で探す
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -2317,7 +2331,7 @@ async function exportDeckImage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    showToast('デッキ画像を保存しました！📸');
+    showToast('デッキ画像を保存しました！📸 Xに添付して #デュエマクラシック08 でシェアしよう！');
   }, 'image/png');
 }
 
