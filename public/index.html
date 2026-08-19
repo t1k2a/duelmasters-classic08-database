@@ -443,6 +443,7 @@ let DM_SET_MAP = new Map();
 let RESTRICTION_MAP = new Map();
 let restrictionsLoaded = false;
 let RECIPES = [];
+let META_DECKS = [];
 const CIV_COLORS = {光:'civ-光',水:'civ-水',闇:'civ-闇',火:'civ-火',自然:'civ-自然'};
 let selectedCard = null;
 let mobileCivFilter = new Set(['光','水','闇','火','自然']);
@@ -572,6 +573,11 @@ fetch('data/recipes.json')
     }
   })
   .catch(() => { RECIPES = []; });
+
+fetch('data/meta-decks.json')
+  .then(r => r.json())
+  .then(data => { META_DECKS = Array.isArray(data) ? data : []; })
+  .catch(() => { META_DECKS = []; });
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, ch => ({
@@ -1579,25 +1585,54 @@ function restoreDeckFromURL() {
   } catch { /* 不正な deck/d param は無視 */ }
 }
 
-// 静的レシピページからのリダイレクト（?recipe=rcp-XXXX）でレシピを開く。
+// 静的レシピページからのリダイレクト（?recipe=rcp-XXXX または ?recipe=meta-X）でレシピを開く。
 function restoreRecipeFromURL(recipeId) {
   const apply = () => {
+    let cards = null;
+    let deckName = '';
+
+    // 1. recipes.json から検索
     const recipe = RECIPES.find(r => r.id === recipeId);
-    if (!recipe) return false;
-    deck = (recipe.cards || [])
+    if (recipe) {
+      cards = recipe.cards || [];
+      deckName = recipe.name || '';
+    } else {
+      // 2. meta-decks.json (meta-1 ~ meta-13 / アーキタイプ名) から検索
+      const metaMatch = String(recipeId).match(/^meta-(\d+)$/i);
+      if (metaMatch) {
+        const idx = parseInt(metaMatch[1], 10) - 1;
+        if (META_DECKS[idx]) {
+          cards = META_DECKS[idx].cards || [];
+          deckName = META_DECKS[idx].name || '';
+        }
+      } else if (META_DECKS.length) {
+        const meta = META_DECKS.find(m => m.name === recipeId);
+        if (meta) {
+          cards = meta.cards || [];
+          deckName = meta.name || '';
+        }
+      }
+    }
+
+    if (!cards || !cards.length) return false;
+
+    deck = cards
       .map(rc => {
-        const card = cardById(rc.id);
+        const card = cardById(rc.id) || (rc.name ? CARDS.find(c => c.name === rc.name) : null);
         if (!card) return null;
-        return { id: rc.id, name: card.name, count: Math.min(CARD_MAX, Math.max(1, rc.count | 0)) };
+        return { id: card.id, name: card.name, count: Math.min(CARD_MAX, Math.max(1, rc.count | 0)) };
       })
       .filter(Boolean);
+
+    if (!deck.length) return false;
+
     saveDeck();
     renderDeckBadge();
     updateDeckTitle(deck);
     openDeckPanel();
     return true;
   };
-  // RECIPES がまだ読み込まれていない場合に備えて遅延リトライ
+  // RECIPES または META_DECKS がまだ読み込まれていない場合に備えて遅延リトライ
   if (!apply()) {
     let tries = 0;
     const timer = setInterval(() => {

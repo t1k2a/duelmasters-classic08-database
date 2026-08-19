@@ -373,6 +373,11 @@ function deckPageHtml(opts: {
   <script type="application/ld+json">
 ${jsonLdEscape(jsonLd)}
   </script>
+  <script>
+    if (!/bot|googlebot|crawler|spider|robot|crawling|facebookexternalhit|slurp|flipboard/i.test(navigator.userAgent)) {
+      window.location.replace('${escapeHtml(appLink)}');
+    }
+  </script>
 </head>
 <body class="bg-gray-50 text-gray-900">
   <main class="max-w-3xl mx-auto px-4 py-8">
@@ -472,11 +477,9 @@ async function main() {
     const dir = join(PUBLIC_DIR, 'recipe', slug)
     const top = topRarityCard(deck.cards || [], byId)
     const matchedRecipeId = recipeByName.get(deck.name)
-    // SPA で開ける recipe があればそこへ、無ければトップへ。
+    // SPA で開ける recipe があればその id、無ければ meta-{n} で直接 SPA のデッキビルダーを開く。
     // recipe/meta-{n}/index.html から SPA トップへは2階層上（相対パス）。
-    const appLink = matchedRecipeId
-      ? `../../?recipe=${encodeURIComponent(matchedRecipeId)}`
-      : '../../'
+    const appLink = `../../?recipe=${encodeURIComponent(matchedRecipeId || slug)}`
     const url = `${SITE}/recipe/${slug}/`
     const total = deckTotal(deck.cards || [])
     const rarityTag = top && top.rarity ? `【${top.rarity}】` : ''
@@ -523,6 +526,11 @@ async function main() {
   <style>${PAGE_STYLE}</style>
   <script type="application/ld+json">
 ${jsonLdEscape(jsonLd)}
+  </script>
+  <script>
+    if (!/bot|googlebot|crawler|spider|robot|crawling|facebookexternalhit|slurp|flipboard/i.test(navigator.userAgent)) {
+      window.location.replace('${escapeHtml(appLink)}');
+    }
   </script>
 </head>
 <body class="bg-gray-50 text-gray-900">
