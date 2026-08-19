@@ -1416,32 +1416,83 @@ function closeDeckPanel(e) {
   }
 }
 
-// デッキ内の最高レアカードを返す。同レアなら採用枚数が多い方、それも同率なら先頭。
-function topRarityCard(deckEntries) {
-  let best = null, bestRank = 99, bestCount = -1;
+// デッキの代表カード（主役・象徴カード）を判定する。
+// 1. デッキ名との一致判定（+1000点）
+// 2. レアリティ重み（SR: 50, VR: 40, R: 30, U: 20, C: 10）
+// 3. 採用枚数（4枚積み=40, 1枚積み=10）
+// 4. 進化 / 大型クリーチャー補正
+function getRepresentativeCard(deckEntries, deckName = '') {
+  let best = null, maxScore = -1;
+  const cleanDeckName = (deckName || '')
+    .toLowerCase()
+    .replace(/[\s・\-_【】『』「」()（）]/g, '');
+
+  const deckKeywords = [];
+  if (cleanDeckName.length >= 2) {
+    for (let len = cleanDeckName.length; len >= 2; len--) {
+      for (let i = 0; i <= cleanDeckName.length - len; i++) {
+        deckKeywords.push(cleanDeckName.substring(i, i + len));
+      }
+    }
+  }
+
   for (const e of deckEntries) {
     const card = cardById(e.id);
     if (!card) continue;
-    const rank = RARITY_ORDER[card.rarity] ?? 9;
-    const count = e.count || 0;
-    if (rank < bestRank || (rank === bestRank && count > bestCount)) {
-      best = card; bestRank = rank; bestCount = count;
+
+    let score = 0;
+    const rawName = card.name || '';
+    const cleanCardName = rawName.toLowerCase().replace(/[\s・\-_]/g, '');
+
+    // 1. デッキ名との一致判定 (+1000点)
+    let matchedKwLen = 0;
+    for (const kw of deckKeywords) {
+      if (cleanCardName.includes(kw)) {
+        if (kw.length > matchedKwLen) matchedKwLen = kw.length;
+      }
+    }
+
+    if (matchedKwLen >= 3 || (cleanDeckName.length <= 2 && matchedKwLen >= 2)) {
+      score += 1000 + matchedKwLen * 10;
+    } else if (matchedKwLen === 2) {
+      score += 500 + matchedKwLen * 10;
+    }
+
+    // 2. レアリティ重み
+    const rarityWeights = { SR: 50, VR: 40, R: 30, U: 20, C: 10 };
+    score += rarityWeights[card.rarity] || 35;
+
+    // 3. 採用枚数
+    score += (e.count || 1) * 10;
+
+    // 4. 進化 / 大型クリーチャー補正
+    if (card.type && card.type.includes('進化')) score += 20;
+    if (card.type && card.type.includes('クリーチャー')) score += 10;
+    const cost = Number(card.cost) || 0;
+    if (cost >= 6) score += 15;
+
+    if (score > maxScore) {
+      maxScore = score;
+      best = card;
     }
   }
   return best;
 }
 
 // デッキの説明文（共有テキスト・タイトル用）を組み立てる。
-function deckSummaryText(deckEntries) {
+function deckSummaryText(deckEntries, deckName = '') {
   const total = deckEntries.reduce((s, e) => s + (e.count || 0), 0);
-  const top = topRarityCard(deckEntries);
+  const rep = getRepresentativeCard(deckEntries, deckName);
   const counts = civCounts();
   const civSummary = Object.entries(counts).filter(([_, n]) => n > 0).map(([civ]) => civ).join('');
   const { avg } = manaCurveData();
   const metaInfo = civSummary ? `（${total}枚 / ${civSummary} / 平均${avg}マナ）` : `（${total}枚）`;
 
-  if (top) {
-    return `《${top.name}》入りデッキ ${metaInfo}`;
+  if (deckName && !deckName.includes('無題')) {
+    return `${deckName} ${metaInfo}`;
+  }
+  if (rep) {
+    return `《${rep.name}》入りデッキ ${metaInfo}`;
   }
   return `デッキ ${metaInfo}`;
 }
@@ -1580,7 +1631,7 @@ function restoreDeckFromURL() {
     deck = restored;
     saveDeck();
     renderDeckBadge();
-    updateDeckTitle(deck);
+    updateDeckTitle(deck, deckName);
     openDeckPanel();
   } catch { /* 不正な deck/d param は無視 */ }
 }
@@ -1628,7 +1679,7 @@ function restoreRecipeFromURL(recipeId) {
 
     saveDeck();
     renderDeckBadge();
-    updateDeckTitle(deck);
+    updateDeckTitle(deck, deckName);
     openDeckPanel();
     return true;
   };
