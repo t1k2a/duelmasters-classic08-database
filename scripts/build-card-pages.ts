@@ -270,22 +270,78 @@ ${PAGE_FOOTER}
 `
 }
 
-// デッキ内の最高レアカードを返す。同レアなら採用枚数が多い方、それも同率なら先頭。
-function topRarityCard(deckCards: DeckCard[], byId: Map<string, CardJson>): CardJson | null {
+/**
+ * デッキの代表カード（主役・象徴カード）を判定する。
+ * 1. デッキ名 / アーキタイプ名との一致判定（+1000点）
+ * 2. レアリティ重み（SR: 50, VR: 40, R: 30, U: 20, C: 10, 特殊/未設定: 35）
+ * 3. 採用枚数重み（4枚積み=40, 3枚=30, 2枚=20, 1枚=10）
+ * 4. フィニッシャー・切り札補正（コスト6以上: +15, 進化: +20, クリーチャー: +10）
+ */
+function getRepresentativeCard(
+  deckCards: DeckCard[],
+  deckName: string = '',
+  byId: Map<string, CardJson>
+): CardJson | null {
   let best: CardJson | null = null
-  let bestRank = 99
-  let bestCount = -1
+  let maxScore = -1
+
+  const cleanDeckName = (deckName || '')
+    .toLowerCase()
+    .replace(/[\s・\-_【】『』「」()（）]/g, '')
+
+  // デッキ名から2文字以上の部分文字列キーワードを抽出
+  const deckKeywords: string[] = []
+  if (cleanDeckName.length >= 2) {
+    for (let len = cleanDeckName.length; len >= 2; len--) {
+      for (let i = 0; i <= cleanDeckName.length - len; i++) {
+        deckKeywords.push(cleanDeckName.substring(i, i + len))
+      }
+    }
+  }
+
   for (const dc of deckCards) {
     const card = byId.get(dc.id)
     if (!card) continue
-    const rank = RARITY_ORDER[card.rarity ?? ''] ?? 9
-    const count = dc.count || 0
-    if (rank < bestRank || (rank === bestRank && count > bestCount)) {
+
+    let score = 0
+    const rawCardName = card.name || ''
+    const cleanCardName = rawCardName.toLowerCase().replace(/[\s・\-_]/g, '')
+
+    // 1. デッキ名との部分一致・最長一致判定
+    let matchedKwLen = 0
+    for (const kw of deckKeywords) {
+      if (cleanCardName.includes(kw)) {
+        if (kw.length > matchedKwLen) matchedKwLen = kw.length
+      }
+    }
+
+    if (matchedKwLen >= 3 || (cleanDeckName.length <= 2 && matchedKwLen >= 2)) {
+      score += 1000 + matchedKwLen * 10
+    } else if (matchedKwLen === 2) {
+      score += 500 + matchedKwLen * 10
+    }
+
+    // 2. レアリティ重み付け
+    const rarity = card.rarity ?? ''
+    const rarityWeights: Record<string, number> = { SR: 50, VR: 40, R: 30, U: 20, C: 10 }
+    score += rarityWeights[rarity] ?? 35
+
+    // 3. 採用枚数
+    score += (dc.count || 1) * 10
+
+    // 4. タイプ・コスト補正
+    const type = card.type ?? ''
+    if (type.includes('進化')) score += 20
+    if (type.includes('クリーチャー')) score += 10
+    const cost = Number(card.cost) || 0
+    if (cost >= 6) score += 15
+
+    if (score > maxScore) {
+      maxScore = score
       best = card
-      bestRank = rank
-      bestCount = count
     }
   }
+
   return best
 }
 
@@ -325,7 +381,7 @@ function deckPageHtml(opts: {
 }): string {
   const { pathSlug, redirectId, deckName, cards, civilizations, byId, extraDesc } = opts
   const url = `${SITE}/recipe/${pathSlug}/`
-  const top = topRarityCard(cards, byId)
+  const top = getRepresentativeCard(cards, deckName, byId)
   const total = deckTotal(cards)
   const image = top ? `${IMG_BASE}/${top.id}.jpg` : `${SITE}/ogp.png`
 
@@ -475,7 +531,7 @@ async function main() {
     const deck = metaDecks[i]
     const slug = `meta-${i + 1}`
     const dir = join(PUBLIC_DIR, 'recipe', slug)
-    const top = topRarityCard(deck.cards || [], byId)
+    const top = getRepresentativeCard(deck.cards || [], deck.name, byId)
     const matchedRecipeId = recipeByName.get(deck.name)
     // SPA で開ける recipe があればその id、無ければ meta-{n} で直接 SPA のデッキビルダーを開く。
     // recipe/meta-{n}/index.html から SPA トップへは2階層上（相対パス）。
