@@ -330,7 +330,7 @@ function getRepresentativeCard(
     score += (dc.count || 1) * 10
 
     // 4. タイプ・コスト補正
-    const type = card.type ?? ''
+    const type = card.cardType ?? ''
     if (type.includes('進化')) score += 20
     if (type.includes('クリーチャー')) score += 10
     const cost = Number(card.cost) || 0
