@@ -90,6 +90,62 @@
     "postedAt": "2026-08-19T00:52:21.570Z"
   },
   {
+    "id": "pair_01_labeil_card_day",
+    "type": "card_feature",
+    "targetTime": "12:00 JST",
+    "text": "✨【注目カード特集】《閃光の求道者ラ・ベイル》\n\n自軍ブロッカー全体のパワーを+3000強化する光文明の要！\nヘブンズ・ゲートから降臨し、鉄壁の要塞を築くクラシック08屈指の制圧クリーチャーです🛡️\n\n採用デッキレシピ・詳細はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm10-001/\n#デュエマクラシック08",
+    "postedAt": null
+  },
+  {
+    "id": "pair_01_labeil_deck_night",
+    "type": "deck_recipe",
+    "targetTime": "21:00 JST",
+    "text": "🛡️【実戦デッキ紹介】ラ・ベイル採用型『白青ヘブンズ・ゲート』（40枚）✨\n\n《閃光の求道者ラ・ベイル》でブロッカーを要塞化し、《天海の精霊シリウス》や《知識の精霊ロードリエス》と合わせて圧倒的な防御力とリソースを誇るコントロール！\n\n🃏 デッキレシピ確認・ビルダーで改造する👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-2497\n#デュエマクラシック08 #デッキレシピ",
+    "postedAt": null
+  },
+  {
+    "id": "pair_02_sword_card_day",
+    "type": "card_feature",
+    "targetTime": "12:00 JST",
+    "text": "⚔️【殿堂級呪文】《英知と追撃の宝剣（エターナル・ソード）》\n\n相手のバトルゾーンとマナゾーンからそれぞれ2枚ずつ手札に戻す、クラシック08屈指のコントロールカード！\n劣勢を一撃でひっくり返す強烈なテンポアドバンテージを誇ります💥\n\n詳細はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm10-022/\n#デュエマクラシック08",
+    "postedAt": null
+  },
+  {
+    "id": "pair_02_sword_deck_night",
+    "type": "deck_recipe",
+    "targetTime": "21:00 JST",
+    "text": "🔥【実戦デッキ紹介】宝剣採用型『5色コントロール（ボルコン）』（40枚）⚔️\n\n《英知と追撃の宝剣》で相手のマナと盤面を同時に削り取り、《ボルメテウス・ホワイト・ドラゴン》で安全にシールドを焼却する極上のコントロールデッキ！\n\n🃏 デッキレシピ確認・ビルダーで改造する👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-0463\n#デュエマクラシック08 #デッキレシピ",
+    "postedAt": null
+  },
+  {
+    "id": "pair_03_paladin_card_day",
+    "type": "card_feature",
+    "targetTime": "12:00 JST",
+    "text": "💎【ブロッカー対策の切り札】《クリスタル・パラディン》\n\nバトルゾーンにあるすべてのブロッカーを手札に戻す進化クリーチャー！\nヘブンズ・ゲートや天門デッキの分厚い壁を一撃で突破してダイレクトアタックを叩き込みます🌊\n\n詳細はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm02-s01/\n#デュエマクラシック08",
+    "postedAt": null
+  },
+  {
+    "id": "pair_03_paladin_deck_night",
+    "type": "deck_recipe",
+    "targetTime": "21:00 JST",
+    "text": "🌊【実戦デッキ紹介】パラディン搭載『青単リキッド・ピープル速攻』（40枚）⚡\n\n序盤から軽量リキッド・ピープルで波状攻撃を仕掛け、相手がブロッカーを展開した返しに《クリスタル・パラディン》で全員バウンスしてトドメ！\n\n🃏 デッキレシピ確認・ビルダーで改造する👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-0010\n#デュエマクラシック08 #デッキレシピ",
+    "postedAt": null
+  },
+  {
+    "id": "pair_04_bolmeteus_card_day",
+    "type": "card_feature",
+    "targetTime": "12:00 JST",
+    "text": "🔥【環境Tier1解説】《ボルメテウス・ホワイト・ドラゴン》\n\nシールドをブレイクする代わりに直接墓地へ送る（焼却）不滅のフィニッシャー！\nS・トリガーを完全に封殺して勝利を掴む、クラシック08の象徴的カードです🐲\n\n詳細はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm06-s08/\n#デュエマクラシック08",
+    "postedAt": null
+  },
+  {
+    "id": "pair_04_bolmeteus_deck_night",
+    "type": "deck_recipe",
+    "targetTime": "21:00 JST",
+    "text": "👑【Tier1デッキ紹介】王道『4Cボルメテウス・コントロール（ボルコン）』（40枚）🛡️\n\n豊富な除去呪文とドローソースで盤面を完全にコントロールし、《ボルメテウス・ホワイト・ドラゴン》で確実に安全勝利を狙う最強アーキタイプ！\n\n🃏 デッキレシピ確認・ビルダーで改造する👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/meta/bolmeteus/\n#デュエマクラシック08 #デッキレシピ",
+    "postedAt": null
+  },
+  {
     "id": "day20-cards-rank16-17",
     "text": "クラシック08 定番カード採用率ランキング(収録レシピ4,517件)、続き。\n\n⑯ストーム・クロウラー(水) 14.1%\n⑰英知と追撃の宝剣(水/闇) 13.7%\n\n英知と追撃の宝剣は制限カード(各1枚まで)です。\n#デュエマクラシック08 #デュエマクラシック\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
     "postedAt": null
@@ -185,11 +241,6 @@
     "postedAt": null
   },
   {
-    "id": "post_bolmeteus_feature_38",
-    "text": "🔥【環境Tier1解説】《ボルメテウス・ホワイト・ドラゴン》\nクラシック08環境の絶対的フィニッシャー！\nシールド焼却によるS・トリガー無効化は、天門や除去コントロールに対して無類の強さを誇ります。\n\n水闇火（クローシス）や4色ボルコンの構築・マナカーブをDBで今すぐチェック！🎴\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #ボルコン",
-    "postedAt": null
-  },
-  {
     "id": "post_deck_image_feature_39",
     "text": "📸【新機能リリース】デッキ画像ジェネレーター登場！\nデッキビルダーで組んだ40枚のデッキを、ワンタップで高精細な1枚の画像（1200×760px）として保存・シェアできるようになりました！\n\nマナカーブや文明比率も一目で分かります✨\nあなたの自慢のデッキを画像でシェアしよう！\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマクラシック #デュエマ",
     "postedAt": null
@@ -197,21 +248,6 @@
   {
     "id": "post_seo_rules_feature_40",
     "text": "📖【デュエマクラシック08 基本ガイド】\n「クラシック08」は、DM-01（第1弾）からDM-30「戦極魂（ウルトラ・デュエル）」までの全カードが使用可能な大人気レギュレーション！\n\n殿堂カードや主要アーキタイプ（ボルコン・天門・速攻・ロマノフ）の全リストをデータベースで完全網羅しています👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/regulations.html\n#デュエマクラシック08 #デュエマクラシック #デュエマ",
-    "postedAt": null
-  },
-  {
-    "id": "post_labeil_feature_41",
-    "text": "✨【注目カード解説】《閃光の求道者ラ・ベイル》\nクラシック08の白単・光水コントロールで大活躍する光文明の守護神！\nタップキル戦術やヘブンズ・ゲート（天門）デッキで圧倒的な盤面制圧力を誇ります。\n\n採用レシピ・マナカーブをDBでチェック👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマクラシック #デュエマ",
-    "postedAt": null
-  },
-  {
-    "id": "post_sword_feature_42",
-    "text": "⚔️【殿堂級呪文】《英知と追撃の宝剣（エターナル・ソード）》\n相手のバトルゾーン2体バウンス＋マナゾーン2枚破壊という破格の制圧力を誇る多色呪文！\nコントロールデッキの必殺技として、ゲーム展開を一気に決定づけます。\n\n採用デッキレシピ一覧はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマクラシック #デュエマ",
-    "postedAt": null
-  },
-  {
-    "id": "post_crystal_paladin_feature_43",
-    "text": "💎【ブロッカー対策の切り札】《クリスタル・パラディン》\nバトルゾーンにあるすべての「ブロッカー」を手札に戻す進化リキッド・ピープル！\n強固な天門や光文明の鉄壁陣形を一瞬で崩壊させてダイレクトアタックを通す劇的フィニッシャー✨\n\nDBでカード詳細を見る👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマクラシック #デュエマ",
     "postedAt": null
   },
   {
