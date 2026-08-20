@@ -108,14 +108,14 @@
     "type": "card_feature",
     "targetTime": "12:00 JST",
     "text": "【今日の注目カード】《英知と追撃の宝剣》\n水/闇 7マナ 呪文 (DM-11 VR)\n\n相手のクリーチャー2体とマナ2枚を手札に戻す最強級コントロール呪文！盤面とリソースを同時に奪う必殺技✨\n\nカード詳細・相性の良いデッキ👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm11-008/\n#デュエマクラシック08 #デュエマ",
-    "postedAt": "2026-08-20T10:29:11.279Z"
+    "postedAt": null
   },
   {
     "id": "pair_02_sword_deck_night",
     "type": "deck_recipe",
     "targetTime": "21:00 JST",
-    "text": "【今夜のデッキレシピ】\n昼に紹介した《英知と追撃の宝剣》採用！\n「5Cコントロール」40枚デッキ✨\n\nマナブーストからエターナルソードを連打し、相手の盤面とマナを完全封殺！\n\nデッキ詳細・購入・マナカーブ👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-11018\n#デュエマクラシック08 #デュエマ",
-    "postedAt": "2026-08-20T12:21:47.552Z"
+    "text": "【今夜のデッキレシピ】\n昼に紹介した《英知と追撃の宝剣》採用！\n「4Cランデス・コントロール」40枚デッキ✨\n\nマナブーストからエターナルソードを連打し、相手の盤面とマナを完全封殺！\n\nデッキ詳細・購入・マナカーブ👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=meta-10\n#デュエマクラシック08 #デュエマ",
+    "postedAt": null
   },
   {
     "id": "pair_03_paladin_card_day",
