@@ -58,3 +58,7 @@ jobs:
       # こちらは public/data/recipes.json と data/seeds/ だけを読むため CI で完走する
       - name: Recipe pool scope
         run: npm run verify:pool
+
+      # X自動投稿キューの文字数・フォーマットを検証
+      - name: X post queue verification
+        run: npm run verify:x-queue

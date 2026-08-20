@@ -100,21 +100,21 @@
     "id": "pair_01_labeil_deck_night",
     "type": "deck_recipe",
     "targetTime": "21:00 JST",
-    "text": "🛡️【実戦デッキ紹介】ラ・ベイル採用型『白青ヘブンズ・ゲート』（40枚）✨\n\n《閃光の求道者ラ・ベイル》でブロッカーを要塞化し、《天海の精霊シリウス》や《知識の精霊ロードリエス》と合わせて圧倒的な防御力とリソースを誇るコントロール！\n\n🃏 デッキレシピ確認・ビルダーで改造する👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-2497\n#デュエマクラシック08 #デッキレシピ",
+    "text": "【今夜のデッキレシピ】\n昼に紹介した《閃光の求道者ラ・ベイル》採用！\n「白青ヘブンズ・ゲート」40枚デッキ✨\n\n天門から大型ブロッカーを展開し、ラ・ベイルで相手をタップキル＆鉄壁防御！\n\nデッキ詳細・購入・マナカーブ👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-2497\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "pair_02_sword_card_day",
     "type": "card_feature",
     "targetTime": "12:00 JST",
-    "text": "⚔️【殿堂級呪文】《英知と追撃の宝剣（エターナル・ソード）》\n\n相手のバトルゾーンとマナゾーンからそれぞれ2枚ずつ手札に戻す、クラシック08屈指のコントロールカード！\n劣勢を一撃でひっくり返す強烈なテンポアドバンテージを誇ります💥\n\n詳細はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm10-022/\n#デュエマクラシック08",
+    "text": "【今日の注目カード】《英知と追撃の宝剣》\n水/闇 7マナ 呪文 (DM-11 VR)\n\n相手のクリーチャー2体とマナ2枚を手札に戻す最強級コントロール呪文！盤面とリソースを同時に奪う必殺技✨\n\nカード詳細・相性の良いデッキ👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm11-008/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "pair_02_sword_deck_night",
     "type": "deck_recipe",
     "targetTime": "21:00 JST",
-    "text": "🔥【実戦デッキ紹介】宝剣採用型『5色コントロール（ボルコン）』（40枚）⚔️\n\n《英知と追撃の宝剣》で相手のマナと盤面を同時に削り取り、《ボルメテウス・ホワイト・ドラゴン》で安全にシールドを焼却する極上のコントロールデッキ！\n\n🃏 デッキレシピ確認・ビルダーで改造する👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-0463\n#デュエマクラシック08 #デッキレシピ",
+    "text": "【今夜のデッキレシピ】\n昼に紹介した《英知と追撃の宝剣》採用！\n「5Cコントロール」40枚デッキ✨\n\nマナブーストからエターナルソードを連打し、相手の盤面とマナを完全封殺！\n\nデッキ詳細・購入・マナカーブ👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-11018\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
@@ -128,7 +128,7 @@
     "id": "pair_03_paladin_deck_night",
     "type": "deck_recipe",
     "targetTime": "21:00 JST",
-    "text": "🌊【実戦デッキ紹介】パラディン搭載『青単リキッド・ピープル速攻』（40枚）⚡\n\n序盤から軽量リキッド・ピープルで波状攻撃を仕掛け、相手がブロッカーを展開した返しに《クリスタル・パラディン》で全員バウンスしてトドメ！\n\n🃏 デッキレシピ確認・ビルダーで改造する👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-0010\n#デュエマクラシック08 #デッキレシピ",
+    "text": "【今夜のデッキレシピ】\n昼に紹介した《クリスタル・パラディン》採用！\n「青単リキッド・ピープル」40枚速攻デッキ✨\n\n敵ブロッカーを全バウンスして一気にダイレクトアタック！\n\nデッキ詳細・購入・マナカーブ👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=rcp-999\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
@@ -142,7 +142,7 @@
     "id": "pair_04_bolmeteus_deck_night",
     "type": "deck_recipe",
     "targetTime": "21:00 JST",
-    "text": "👑【Tier1デッキ紹介】王道『4Cボルメテウス・コントロール（ボルコン）』（40枚）🛡️\n\n豊富な除去呪文とドローソースで盤面を完全にコントロールし、《ボルメテウス・ホワイト・ドラゴン》で確実に安全勝利を狙う最強アーキタイプ！\n\n🃏 デッキレシピ確認・ビルダーで改造する👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/meta/bolmeteus/\n#デュエマクラシック08 #デッキレシピ",
+    "text": "【今夜のデッキレシピ】\n昼に紹介した《ボルメテウス・ホワイト・ドラゴン》主軸！\n「4Cボルコン」40枚デッキ✨\n\nシールド焼却でS・トリガーを封殺し、確実に勝利を掴む王道コントロール！\n\nデッキ詳細・購入・マナカーブ👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/?recipe=meta-2\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
@@ -167,7 +167,7 @@
   },
   {
     "id": "day26-cards-rank20",
-    "text": "クラシック08 定番カード採用率ランキング(収録レシピ4,517件)、これで20位まで紹介しました。\n\n⑳ナチュラル・トラップ(自然) 11.8%\n\n1位から20位まで、いろいろなカードを見てきました。全ランキングはDBで検索できます。ここで一区切りです。\n#デュエマクラシック08 #デュエマクラシック\nhttps://t1k2a.github.io/duelmasters-classic08-database/",
+    "text": "採用率ランキング第20位:《デーモン・ハンド》\n採用率: 17.6% (2,959デッキに採用)\n\n闇文明を代表するS・トリガー呪文！どんな大型クリーチャーも1枚で確定除去する信頼の1枚です。\n#デュエマクラシック08 #デュエマ\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm01-027/",
     "postedAt": null
   },
   {
@@ -187,12 +187,12 @@
   },
   {
     "id": "post-card-dm06-s08",
-    "text": "【今日のクラシック08カード】\n《ボルメテウス・ホワイト・ドラゴン》\n文明: 火 / コスト: 7 / パワー: 7000\n\nW(ダブル)・ブレイカー(シールドを攻撃したとき、このクリーチャーはシールドを２枚ブレイクする)\nこのクリーチャーがシールドをブレイクしたと...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《ボルメテウス・ホワイト・ドラゴン》\n火 7マナ P7000 W・ブレイカー\n\nシールドを墓地へ送る元祖シールド焼却竜！クラシック08の象徴的切り札です✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm06-s08/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post-card-dm16-007",
-    "text": "【今日のクラシック08カード】\n《ヘブンズ・ゲート》\n文明: 光 / コスト: 6 / パワー: —\n\nS・トリガー(この呪文をシールドゾーンから手札に加える時、コストを支払わずにすぐ唱えてもよい)\n進化クリーチャーではない光の「ブロッカー」を...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《ヘブンズ・ゲート》\n光 6マナ 呪文 S・トリガー\n\n手札から光の大型ブロッカーを2体までタダ出し！逆転の代名詞的トリガー呪文です✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm16-007/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
@@ -202,57 +202,57 @@
   },
   {
     "id": "post-card-dm01-027",
-    "text": "【今日のクラシック08カード】\n《デーモン・ハンド》\n文明: 闇 / コスト: 6 / パワー: —\n\nS(シールド)・トリガー(このカードをシールドゾーンから手札に戻すとき、コストを支払わずにすぐ使ってよい。) \nバトルゾーンにある相手のクリ...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《デーモン・ハンド》\n闇 6マナ 呪文 S・トリガー\n\n相手クリーチャーを1体確定破壊！あらゆるデッキで頼れる最強除去トリガーです✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm01-027/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post-card-dm01-106",
-    "text": "【今日のクラシック08カード】\n《青銅の鎧》\n文明: 自然 / コスト: 3 / パワー: 1000\n\nこのクリーチャーがバトルゾーンに出たとき、自分の山札の一番上のカードを表にして自分のマナゾーンに置く。...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《青銅の鎧》\n自然 3マナ P1000 ビーストフォーク\n\n出た時に山札の上からマナ加速！序盤のテンポを取る基本クリーチャーです✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm01-106/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post-card-dm14-034",
-    "text": "【今日のクラシック08カード】\n《地獄スクラッパー》\n文明: 火 / コスト: 7 / パワー: —\n\nS・トリガー(この呪文をシールドゾーンから手札に加える時、コストを支払わずにすぐ唱えてもよい)\n相手のクリーチャーを、パワーの合計が5000...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《地獄スクラッパー》\n火 7マナ 呪文 S・トリガー\n\nパワー合計5000以下になるよう相手クリーチャーを好きな数破壊！速攻対策の要✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm14-034/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post-card-dm05-024",
-    "text": "【今日のクラシック08カード】\n《アクア・サーファー》\n文明: 水 / コスト: 6 / パワー: 2000\n\nS(シールド)・トリガー(このクリーチャーをシールドゾーンから手札に加えるとき、コストを支払わずにすぐ召喚してよい)\nこのクリーチャーがバト...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《アクア・サーファー》\n水 6マナ P2000 S・トリガー\n\n出た時に相手クリーチャー1体をバウンス！打点と防御を兼ね備えた万能トリガー✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm05-024/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post-card-dm10-036",
-    "text": "【今日のクラシック08カード】\n《母なる大地》\n文明: 自然 / コスト: 3 / パワー: —\n\nS・トリガー\nバトルゾーンにあるクリーチャーを１体選び、持ち主のマナゾーンに置いてもよい。そうした場合、そのマナゾーンにあるカードの枚数とコ...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《母なる大地》\n自然 3マナ 呪文 S・トリガー\n\nマナゾーンからクリーチャーを踏み倒す最強の展開呪文！クラシック08殿堂カード✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm10-036/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post-card-dm28-s06",
-    "text": "【今日のクラシック08カード】\n《邪眼皇ロマノフI世》\n文明: 闇 / コスト: 7 / パワー: 8000\n\nこのクリーチャーをバトルゾーンに出した時、自分の山札を見る。その中から闇のカードを１枚選び、自分の墓地に置いてもよい。その後、山札をシャッフ...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《邪眼皇ロマノフI世》\n闇 7マナ P8000 W・ブレイカー\n\n墓地肥やし＆攻撃時に闇呪文を踏み倒す魔弾の帝王！サインロマノフの核となる切り札✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm28-s06/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post-card-dm26-s03",
-    "text": "【今日のクラシック08カード】\n《聖鎧亜キング・アルカディアス》\n文明: 光闇 / コスト: 7 / パワー: 9000\n\nマナゾーンに置く時、このカードはタップして置く。\n進化-自分の多色クリーチャー１体の上に置く。\nW・ブレイカー(このクリーチャーはシールドを...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《聖鎧亜キング・アルカディアス》\n光/闇 7マナ P9000 進化 W・ブレイカー\n\n相手の単色クリーチャーの召喚を完全ロックする究極の制圧竜！\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm26-s03/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post-card-dm29-s02",
-    "text": "【今日のクラシック08カード】\n《斬隠蒼頭龍バイケン》\n文明: 水 / コスト: 6 / パワー: 6000\n\nW・ブレイカー\n相手のターン中にこのクリーチャーが自分の手札から捨てられる時、墓地に置くかわりにバトルゾーンに出してもよい。そうした場合、バ...\n\nカード検索 & デッキ構築はこちら👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ #デュエルマスターズ",
+    "text": "【クラシック08注目カード】\n《斬隠蒼頭龍バイケン》\n水 6マナ P6000 W・ブレイカー\n\nハンデスされると手札からタダ出し＆バウンス！ハンデス対策の最強ドラゴン✨\n\nカード検索・デッキ構築👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/card/dm29-s02/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post_deck_image_feature_39",
-    "text": "📸【新機能リリース】デッキ画像ジェネレーター登場！\nデッキビルダーで組んだ40枚のデッキを、ワンタップで高精細な1枚の画像（1200×760px）として保存・シェアできるようになりました！\n\nマナカーブや文明比率も一目で分かります✨\nあなたの自慢のデッキを画像でシェアしよう！\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマクラシック #デュエマ",
+    "text": "📸【新機能】デッキ画像保存機能！\n組んだ40枚のデッキを、高精細な画像（1200×760px）としてワンタップ保存・シェア可能に！\n\nマナカーブや文明比率も一目で分かります✨\n自慢のデッキを画像でシェアしよう👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post_seo_rules_feature_40",
-    "text": "📖【デュエマクラシック08 基本ガイド】\n「クラシック08」は、DM-01（第1弾）からDM-30「戦極魂（ウルトラ・デュエル）」までの全カードが使用可能な大人気レギュレーション！\n\n殿堂カードや主要アーキタイプ（ボルコン・天門・速攻・ロマノフ）の全リストをデータベースで完全網羅しています👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/regulations.html\n#デュエマクラシック08 #デュエマクラシック #デュエマ",
+    "text": "📖【デュエマクラシック08 ガイド】\nDM-01〜DM-30「戦極魂」までの全カードが使用可能な人気レギュレーション！\n\n殿堂カードや主要アーキタイプ（ボルコン・天門・速攻・ロマノフ）の全情報を網羅中👇\nhttps://t1k2a.github.io/duelmasters-classic08-database/regulations.html\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   },
   {
     "id": "post_ugc_deck_share_44",
-    "text": "🎴【あなたのマイデッキを画像でシェアしよう！】\nデュエマクラシック08 データベースでは、作成したデッキを「マナカーブ・文明比率付き高精細画像（1200×760px）」でワンタップ保存できます📸\n\n画像を添付して「#デュエマクラシック08」で投稿して、自慢の構築をみんなと語り合いましょう！✨\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマクラシック",
+    "text": "🎴【マイデッキを画像でシェア！】\n作成したデッキを「マナカーブ・文明比率付き高精細画像」でワンタップ保存できます📸\n\n画像を添付して #デュエマクラシック08 で投稿し、自慢の構築を語り合いましょう✨\nhttps://t1k2a.github.io/duelmasters-classic08-database/\n#デュエマクラシック08 #デュエマ",
     "postedAt": null
   }
 ]
