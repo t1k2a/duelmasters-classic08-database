@@ -113,7 +113,6 @@
   <button id="pwaInstallBtn" onclick="pwaInstall()" class="hidden bg-white/15 hover:bg-white/25 text-white text-sm rounded px-2 py-1 leading-none">📲 インストール</button>
   <a href="meta.html" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">メタデッキ</a>
   <a href="regulations.html" class="text-indigo-100 hover:text-white text-sm underline underline-offset-2">レギュレーション</a>
-  <button id="themeToggleBtn" onclick="toggleTheme()" title="テーマ切り替え" class="bg-white/10 hover:bg-white/20 text-white text-sm rounded-full w-7 h-7 flex items-center justify-center transition-transform active:scale-95 leading-none">🌙</button>
   <span id="cardCountBadge" class="text-indigo-200 text-sm"></span>
   </div>
 </header>
@@ -2366,33 +2365,7 @@ async function exportDeckImage() {
 </html>
 
 <script>
-// ===== テーマ切り替え & スクロールトップ (Phase 3) =====
-function initTheme() {
-  const saved = localStorage.getItem('dm_theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-  const isDark = saved ? saved === 'dark' : prefersDark.matches;
-  applyTheme(isDark);
-
-  // OSテーマの動的変更を監視（ユーザーの手動保存がない場合）
-  prefersDark.addEventListener('change', e => {
-    if (!localStorage.getItem('dm_theme')) {
-      applyTheme(e.matches);
-    }
-  });
-}
-
-function applyTheme(isDark) {
-  document.documentElement.classList.toggle('dark', isDark);
-  const btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
-}
-
-function toggleTheme() {
-  const isDark = !document.documentElement.classList.contains('dark');
-  applyTheme(isDark);
-  localStorage.setItem('dm_theme', isDark ? 'dark' : 'light');
-}
-
+// ===== スクロールトップ =====
 function scrollToTop() {
   const listEl = document.getElementById('cardList');
   if (listEl) listEl.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2400,7 +2373,6 @@ function scrollToTop() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initTheme();
   const listEl = document.getElementById('cardList');
   const scrollBtn = document.getElementById('scrollTopBtn');
   const checkScroll = (st) => {
@@ -2419,5 +2391,4 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialScroll = Math.max(listEl ? listEl.scrollTop : 0, window.scrollY || 0);
   checkScroll(initialScroll);
 });
-initTheme();
 </script>
