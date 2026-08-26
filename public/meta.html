@@ -126,33 +126,7 @@ fetch('data/meta-decks.json')
 </html>
 
 <script>
-// ===== テーマ切り替え & スクロールトップ (Phase 3) =====
-function initTheme() {
-  const saved = localStorage.getItem('dm_theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-  const isDark = saved ? saved === 'dark' : prefersDark.matches;
-  applyTheme(isDark);
-
-  // OSテーマの動的変更を監視（ユーザーの手動保存がない場合）
-  prefersDark.addEventListener('change', e => {
-    if (!localStorage.getItem('dm_theme')) {
-      applyTheme(e.matches);
-    }
-  });
-}
-
-function applyTheme(isDark) {
-  document.documentElement.classList.toggle('dark', isDark);
-  const btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
-}
-
-function toggleTheme() {
-  const isDark = !document.documentElement.classList.contains('dark');
-  applyTheme(isDark);
-  localStorage.setItem('dm_theme', isDark ? 'dark' : 'light');
-}
-
+// ===== スクロールトップ =====
 function scrollToTop() {
   const listEl = document.getElementById('cardList');
   if (listEl) listEl.scrollTo({ top: 0, behavior: 'smooth' });
@@ -160,7 +134,6 @@ function scrollToTop() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initTheme();
   const listEl = document.getElementById('cardList');
   const scrollBtn = document.getElementById('scrollTopBtn');
   const checkScroll = (st) => {
@@ -179,5 +152,4 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialScroll = Math.max(listEl ? listEl.scrollTop : 0, window.scrollY || 0);
   checkScroll(initialScroll);
 });
-initTheme();
 </script>
