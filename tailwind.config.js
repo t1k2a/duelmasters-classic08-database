@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ['./scripts/build-card-pages.ts'],
+export default {
+  content: ['./scripts/build-card-pages.ts', './public/**/*.html'],
+  safelist: ['grid-cols-3'],
   theme: {
     extend: {},
   },
