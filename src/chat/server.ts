@@ -58,13 +58,13 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
     // 構造化アクセスログ（1行JSON）。CloudWatch Logs Insights でのクエリ用。
     console.log(JSON.stringify({ t: new Date().toISOString(), ev: 'chat', ip, qlen: question.length, q: question }))
     const history = body.history ?? []
-    const retrieval = retrieve(deps.corpus, question)
+    const retrieval = retrieve(deps.corpus, question, history)
     // デッキ構築要求なら既存レシピ（validated&&40枚）から1件選定。
     // 選定できたら、そのレシピをLLM contextの参考レシピ先頭に昇格し、done で deck を返す。
     let deck: DeckPayload | undefined
     let deckContext: DeckContext | undefined
-    if (detectDeckIntent(question)) {
-      const sel = selectDeck(deps.corpus, question, retrieval)
+    if (detectDeckIntent(question, history)) {
+      const sel = selectDeck(deps.corpus, question, retrieval, history)
       if (sel) {
         const r = sel.recipe
         deck = { id: r.id, name: r.name, archetype: typeof r.archetype === 'string' ? r.archetype : undefined, cards: r.cards }

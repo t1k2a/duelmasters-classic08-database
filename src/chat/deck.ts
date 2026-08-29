@@ -10,13 +10,12 @@
 // - 該当なし（低スコア）の場合は無理に提示せず null を返し、AI側の自然文解説に委ねる。
 
 import type { Corpus } from './corpus.js'
-import type { RecipeData, RetrievalResult } from './types.js'
+import type { RecipeData, RetrievalResult, ChatTurn } from './types.js'
 import { normalizeKana } from './normalize.js'
-import { mutualIncludes } from './retriever.js'
-import { ALIAS_MAP } from './retriever.js'
+import { mutualIncludes, ALIAS_MAP } from './retriever.js'
 
 // 「デッキを組んで/教えて」等の構築動詞パターン
-const BUILD_VERBS = /組[んでめみ]|作[ってりる]|教え[てろ]|提案|見せ[てろ]|紹介|レシピ|おすすめ|オススメ|テンプレ|構築|リスト|診断|改造|欲し[いい]|考え[てろ]|知りた[いい]|知りたい/
+const BUILD_VERBS = /組[んでめみ]|作[ってりる]|教え[てろ]|提案|見せ[てろ]|紹介|レシピ|おすすめ|オススメ|テンプレ|構築|リスト|診断|改造|欲し[いい]|考え[てろ]|知りた[いい]|知りたい|共有|送って|出し[てろ]/
 
 // 「〜デッキ」「〜でっき」の形を持たないが、単独で強い構築要求を示す表現。
 // 例: 「ボルメテウス組んで」「天門教えて」「赤緑速攻作って」「ボルコンのテンプレ」
@@ -50,26 +49,41 @@ const TRI_COLOR_ALIASES: Record<string, string[]> = {
 }
 
 // 質問文が「デッキを組んで/教えて」等の構築要求かどうか。
-export function detectDeckIntent(question: string): boolean {
+export function detectDeckIntent(question: string, history: ChatTurn[] = []): boolean {
   if (INFO_QUESTION.test(question)) return false
   if (STRONG_BUILD.test(question)) return true
-  return /デッキ|でっき|構築|レシピ/.test(question) && BUILD_VERBS.test(question)
+  if (/デッキ|でっき|構築|レシピ|リスト/.test(question) && BUILD_VERBS.test(question)) return true
+
+  // 会話履歴があり、今回の質問が文脈依存のレシピ・リスト要求（「レシピを共有して」「リスト見せて」等）の場合
+  if (history.length > 0 && /(?:レシピ|リスト|共有|送って|教えて)/.test(question)) {
+    const lastUser = [...history].reverse().find(h => h.role === 'user')?.content ?? ''
+    if (/デッキ|でっき|構築/.test(lastUser) || detectDeckIntent(lastUser)) return true
+  }
+
+  return false
 }
 
 export interface SelectedDeck { recipe: RecipeData; matchedCards: string[] }
 
 const BUILD_VERBS_G = new RegExp(BUILD_VERBS.source, 'g')
 
-// 質問文から意図語・助詞・記号を取り除き、テーマ語（カード名/アーキタイプ候補）を抽出する。
-function queryKeywords(question: string): string[] {
+// 質問文および履歴からテーマ語（カード名/アーキタイプ候補）を抽出する。
+function queryKeywords(question: string, history: ChatTurn[] = []): string[] {
   let q = question.replace(/デッキ|でっき/g, ' ')
   q = q.replace(BUILD_VERBS_G, ' ')
-  q = q.replace(/(おすすめ|オススメ|でしょうか|ですか|ますか|とは|について|コツ|違い|方法|何|なに|して|する|お願い|おねがい|ください|下さい|please|テンプレ|改造|診断)/gi, ' ')
+  q = q.replace(/(おすすめ|オススメ|でしょうか|ですか|ますか|とは|について|コツ|違い|方法|何|なに|して|する|お願い|おねがい|ください|下さい|please|テンプレ|改造|診断|共有)/gi, ' ')
   q = q.replace(/実用性|実用|最強|強い|ガチ|優勝|大会|環境|勝てる/g, ' ')
-  q = q.replace(/[のをがはでとにへや、。！？!?　s「」『』（）()《》]+/g, ' ')
+  q = q.replace(/[のをがはでとにへや、。！？!?\s「」『』（）()《》]+/g, ' ')
+  
+  // 質問文が短くテーマ語が取れない場合は履歴も参照
+  if (q.trim().length < 2 && history.length > 0) {
+    const past = history.slice(-4).map(h => h.content).join(' ')
+    q += ' ' + past.replace(/[のをがはでとにへや、。！？!?\s「」『』（）()《》]+/g, ' ')
+  }
+
   const seen = new Set<string>()
   const out: string[] = []
-  for (const t of q.split(/s+/)) {
+  for (const t of q.split(/\s+/)) {
     const w = t.trim()
     if (w.length >= 2 && !seen.has(w)) {
       seen.add(w)
@@ -123,33 +137,49 @@ function isFortyCards(r: RecipeData): boolean {
 }
 
 // validated:true かつ合計40枚のレシピから、質問意図に最も合う1件を選定する。
-export function selectDeck(corpus: Corpus, question: string, retrieval: RetrievalResult): SelectedDeck | null {
-  if (!detectDeckIntent(question)) return null
-  const qn = normalizeKana(question)
+export function selectDeck(
+  corpus: Corpus,
+  question: string,
+  retrieval: RetrievalResult,
+  history: ChatTurn[] = []
+): SelectedDeck | null {
+  if (!detectDeckIntent(question, history)) return null
+
+  // 質問単体または履歴を合成したテキスト
+  const combinedQ = history.length > 0 ? `${question} ${history.slice(-2).map(h => h.content).join(' ')}` : question
+  const qn = normalizeKana(combinedQ)
   const retrievalIds = new Set(retrieval.cards.map(c => c.id))
-  const keywords = queryKeywords(question).map(k => ({ raw: k, n: normalizeKana(k) })).filter(k => k.n.length >= 2)
+  const keywords = queryKeywords(question, history).map(k => ({ raw: k, n: normalizeKana(k) })).filter(k => k.n.length >= 2)
 
   // 質問中の文明（単色俗称 & 3色カラー名）
   const civHit = new Set<string>()
   for (const alias of Object.keys(CIV_ALIASES)) {
-    if (question.includes(alias)) civHit.add(CIV_ALIASES[alias]!)
+    if (combinedQ.includes(alias)) civHit.add(CIV_ALIASES[alias]!)
   }
   let triColorRequired: string[] | null = null
   for (const [triName, triCivs] of Object.entries(TRI_COLOR_ALIASES)) {
-    if (question.includes(triName)) {
+    if (combinedQ.includes(triName)) {
       triColorRequired = triCivs
       for (const c of triCivs) civHit.add(c)
     }
   }
 
-  const wantsMono = /単/.test(question)
+  const wantsMono = /単/.test(combinedQ)
   const candidates = corpus.recipes.filter(r => r.validated === true && isFortyCards(r))
+
+  // もし retrieval.recipes にすでに検証済み40枚レシピがあれば優先スコア加算用
+  const topRetrievalRecipeIds = new Set(retrieval.recipes.filter(r => r.validated && isFortyCards(r)).map(r => r.id))
 
   let best: SelectedDeck | null = null
   let bestScore = 0
   for (const r of candidates) {
     let score = 0
     const matched = new Set<string>()
+
+    // (0) retriever で既に上位に上がっているレシピなら大加点
+    if (topRetrievalRecipeIds.has(r.id)) {
+      score += 15
+    }
 
     // (a) retriever が拾った質問関連カードを含む
     for (const rc of r.cards) {
@@ -161,11 +191,11 @@ export function selectDeck(corpus: Corpus, question: string, retrieval: Retrieva
       .filter(Boolean).map(normalizeKana)
     const cardNames = r.cards.map(rc => ({ id: rc.id, n: normalizeKana(corpus.cardById.get(rc.id)?.name ?? '') }))
     
-    if (meta.some(m => mutualIncludes(qn, m))) score += 4
+    if (meta.some(m => mutualIncludes(qn, m))) score += 8
     
     for (const kw of keywords) {
       if (kw.n.length < 3) continue
-      if (meta.some(m => m.includes(kw.n))) { score += 4; continue }
+      if (meta.some(m => m.includes(kw.n))) { score += 6; continue }
       const hit = cardNames.find(c => c.n.length >= 3 && c.n.includes(kw.n))
       if (hit) { score += 3; matched.add(hit.id) }
     }
@@ -191,6 +221,6 @@ export function selectDeck(corpus: Corpus, question: string, retrieval: Retrieva
   }
 
   if (bestScore > 0) return best
-  if (STRENGTH_WORDS.test(question)) return fallbackMetaDeck(corpus, candidates)
+  if (STRENGTH_WORDS.test(combinedQ)) return fallbackMetaDeck(corpus, candidates)
   return null
 }
