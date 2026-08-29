@@ -67,3 +67,40 @@ test('isUp: モデル一覧に対象モデルが存在すればup: true', async 
   const res = await isUp({ apiKey: 'k', model: 'target-model', fetchImpl: fake as any })
   assert.equal(res.up, true)
 })
+
+test('streamChat: 429(レート制限)では候補モデルへ切り替えず即座に例外スロー', async () => {
+  const calls: string[] = []
+  const fake = async (url: string, init?: any) => {
+    const body = JSON.parse(init.body)
+    calls.push(body.model)
+    return new Response(JSON.stringify({ error: { message: 'rate limit reached' } }), { status: 429 })
+  }
+  await assert.rejects(async () => {
+    for await (const _ of streamChat([{ role: 'user', content: 'x' }], {
+      apiKey: 'k',
+      model: 'primary-model',
+      fallbackModels: ['fallback-model'],
+      fetchImpl: fake as any,
+    })) { /* noop */ }
+  }, /Groq HTTP 429/)
+  // 429を受けた時点で即スローし、セカンダリモデルへの追加リクエストは行わない
+  assert.deepEqual(calls, ['primary-model'])
+})
+
+test('isUp: dataがnullの場合はup: false', async () => {
+  const fake = async () => new Response(JSON.stringify({ data: null }), { status: 200 })
+  const res = await isUp({ apiKey: 'k', model: 'target-model', fetchImpl: fake as any })
+  assert.equal(res.up, false)
+})
+
+test('isUp: 空オブジェクトレスポンスの場合はup: false', async () => {
+  const fake = async () => new Response(JSON.stringify({}), { status: 200 })
+  const res = await isUp({ apiKey: 'k', model: 'target-model', fetchImpl: fake as any })
+  assert.equal(res.up, false)
+})
+
+test('isUp: JSONパースエラー時はup: false', async () => {
+  const fake = async () => new Response('invalid json', { status: 200 })
+  const res = await isUp({ apiKey: 'k', model: 'target-model', fetchImpl: fake as any })
+  assert.equal(res.up, false)
+})

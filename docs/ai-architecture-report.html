@@ -372,15 +372,15 @@
           <div class="text-xs font-bold text-cyan-400 font-mono">OPERATIONAL COMMANDS</div>
           <h4 class="text-sm font-bold text-white">本番サーバー運用・再起動コマンド集</h4>
           <div class="bg-slate-950 p-4 rounded-lg font-mono text-xs text-slate-300 space-y-2 overflow-x-auto">
-            <div class="text-slate-500"># 1. EC2へSSH接続</div>
+            <div class="text-slate-400"># 1. EC2へSSH接続</div>
             <div class="text-cyan-300">ssh -i /home/joji/.ssh/dm-chat-key.pem ec2-user@43.206.215.220</div>
-            <div class="text-slate-500 mt-2"># 2. 最新コード取得 & モデル設定</div>
+            <div class="text-slate-400 mt-2"># 2. 最新コード取得 &amp; モデル設定</div>
             <div>cd /home/ec2-user/app &amp;&amp; git pull origin main</div>
             <div>sed -i 's/GROQ_MODEL=.*/GROQ_MODEL="qwen\/qwen3.8-27b"/' .env</div>
-            <div class="text-slate-500 mt-2"># 3. サービス再起動 & ログ確認</div>
+            <div class="text-slate-400 mt-2"># 3. サービス再起動 &amp; ログ確認</div>
             <div class="text-emerald-300">sudo systemctl restart dm-chat.service</div>
             <div>sudo journalctl -u dm-chat.service -n 50 -f</div>
-            <div class="text-slate-500 mt-2"># 4. ヘルスチェック疎通確認</div>
+            <div class="text-slate-400 mt-2"># 4. ヘルスチェック疎通確認</div>
             <div>curl -s https://api.dm-classic08.org/api/health</div>
           </div>
         </div>

@@ -78,7 +78,9 @@ export async function* streamChat(
       lastError = e
       // AbortSignal による中断ならリトライせず即再スロー
       if (opts.signal?.aborted) throw e
-      // 最後の候補でなければフォールバックを試みる
+      // 404 以外の HTTP エラー（例: 429 レート制限等）はフォールバックせず即再スロー
+      if (e.message?.startsWith('Groq HTTP')) throw e
+      // ネットワーク障害などの例外時はフォールバックを試みる
       continue
     }
   }
@@ -119,8 +121,8 @@ export async function isUp(opts: { baseUrl?: string; model?: string; apiKey?: st
     const res = await f(`${opts.baseUrl ?? DEFAULT_BASE}/models`, { headers: { authorization: `Bearer ${apiKey}` } })
     if (!res.ok) return { up: false, model }
     const data: any = await res.json().catch(() => null)
-    // モデル一覧に対象モデルが含まれているか検証（存在しない場合は up: false）
-    const modelExists = Array.isArray(data?.data) ? data.data.some((m: any) => m.id === model) : true
+    // モデル一覧に対象モデルが含まれているか検証（存在しない、または不正データの場合は up: false）
+    const modelExists = Array.isArray(data?.data) ? data.data.some((m: any) => m?.id === model) : false
     return { up: modelExists, model }
   } catch { return { up: false, model } }
 }

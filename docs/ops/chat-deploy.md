@@ -27,8 +27,8 @@ flowchart LR
 
 ### Step 1: EC2 サーバーへ SSH 接続
 ```bash
-ssh -i ~/.ssh/<your-key>.pem ubuntu@<ec2-ip-or-host>
-cd /home/ubuntu/duelmasters-classic08-database  # または配置先パス
+ssh -i ~/.ssh/<your-key>.pem ec2-user@<ec2-ip-or-host>
+cd /home/ec2-user/app
 ```
 
 ### Step 2: 最新コードの取得
