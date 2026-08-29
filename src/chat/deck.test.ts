@@ -41,6 +41,7 @@ test('detectDeckIntent: デッキ構築系プロンプトを検出する', () =>
     'ボルコンのテンプレ教えて',
     'ドロマー天門の構築案',
     '赤緑速攻のおすすめレシピ',
+    'デッキのレシピを共有して',
   ]) {
     assert.equal(detectDeckIntent(q), true, `should be true: ${q}`)
   }
@@ -70,6 +71,15 @@ test('detectDeckIntent: 情報系質問（とは/コツ/違い等）は誤検出
   }
 })
 
+test('detectDeckIntent: 履歴付きの文脈依存レシピ要求を検出する', () => {
+  const history = [
+    { role: 'user' as const, content: 'ブロッカーを主体としたデッキは？' },
+    { role: 'assistant' as const, content: 'ヘブンズ・ゲートを活用した天門デッキなどがあります。' }
+  ]
+  assert.equal(detectDeckIntent('レシピを共有して', history), true)
+  assert.equal(detectDeckIntent('リスト見せて', history), true)
+})
+
 test('selectDeck: 3色カラー名（ドロマー / ネクラ / クローシス）を考慮して選定', async () => {
   const c = await loadCorpus()
   const dromarRes = selectDeck(c, 'ドロマー天門のデッキ組んで', { cards: [], recipes: [], meta: [], knowledge: [] })
@@ -79,4 +89,20 @@ test('selectDeck: 3色カラー名（ドロマー / ネクラ / クローシス�
 
   const bolconRes = selectDeck(c, 'ボルコンのテンプレ教えて', { cards: [], recipes: [], meta: [], knowledge: [] })
   assert.ok(bolconRes != null, 'ボルコンレシピが選定されること')
+})
+
+test('selectDeck: 会話履歴からテーマ（天門/ブロッカー）を解決して40枚レシピを選定', async () => {
+  const c = await loadCorpus()
+  const history = [
+    { role: 'user' as const, content: 'ブロッカーを主体としたデッキは？' },
+    { role: 'assistant' as const, content: 'ヘブンズ・ゲートを活用した天門デッキなどがあります。' }
+  ]
+  const retrieval = retrieve(c, 'デッキのレシピを共有して', history)
+  const res = selectDeck(c, 'デッキのレシピを共有して', retrieval, history)
+  assert.ok(res != null, 'デッキレシピが選定されること')
+  assert.equal(res.recipe.validated, true, 'validatedなレシピであること')
+  assert.ok(
+    (res.recipe.name ?? '').includes('天門') || (res.recipe.name ?? '').includes('ヘブンズ') || (res.recipe.archetype === 'ヘブンズゲート') || (res.recipe.name ?? '').includes('ブロッカー') || (res.recipe.name ?? '').includes('ガーディアン'),
+    'ブロッカー/天門系のレシピが選ばれること'
+  )
 })

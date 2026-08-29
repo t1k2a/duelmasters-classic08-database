@@ -62,8 +62,8 @@ export const ALIAS_MAP: Record<string, string[]> = {
   'サイン': ['インフェルノ・サイン'],
   'インフェルノサイン': ['インフェルノ・サイン'],
   'インフェルノゲート': ['インフェルノ・ゲート'],
-  '天門': ['ヘブンズ・ゲート', '悪魔聖霊バルホルス', '天海の精霊シリウス'],
-  'ヘブンズゲート': ['ヘブンズ・ゲート'],
+  '天門': ['ヘブンズ・ゲート', '悪魔聖霊バルホルス', '天海の精霊シリウス', '奇跡の精霊ミルザム'],
+  'ヘブンズゲート': ['ヘブンズ・ゲート', '悪魔聖霊バルホルス', '天海の精霊シリウス'],
   'バルホルス': ['悪魔聖霊バルホルス'],
   'シリウス': ['天海の精霊シリウス'],
   'ラベイル': ['閃光の求道者ラ・ベイル'],
@@ -93,11 +93,14 @@ export const ALIAS_MAP: Record<string, string[]> = {
   'ネクラキング': ['聖鎧亜キング・アルカディアス', '魔刻の斬将オルゼキア'],
   'サバキ': ['魂と記憶の盾', '不滅の精霊パーフェクト・ギャラクシー'],
   'サバキストライク': ['魂と記憶の盾', '不滅の精霊パーフェクト・ギャラクシー'],
+  'ブロッカーデッキ': ['ヘブンズ・ゲート', '悪魔聖霊バルホルス', '天海の精霊シリウス', '光器ペトローバ'],
+  'ブロッカー主体のデッキ': ['ヘブンズ・ゲート', '悪魔聖霊バルホルス', '天海の精霊シリウス', '光器ペトローバ'],
+  'ブロッカー主体': ['ヘブンズ・ゲート', '悪魔聖霊バルホルス', '天海の精霊シリウス'],
 };
 
 // src/chat/retriever.ts
 import type { Corpus } from './corpus.js'
-import type { RetrievalResult, CardData } from './types.js'
+import type { RetrievalResult, CardData, ChatTurn } from './types.js'
 import { normalizeKana } from './normalize.js'
 
 const CIVS = ['光', '水', '闇', '火', '自然']
@@ -136,6 +139,39 @@ const ROLE_PATTERNS: { name: string; test: (card: CardData) => boolean }[] = [
   { name: 'シノビ', test: c => (c.text ?? '').includes('ニンジャ・ストライク') },
   { name: 'ニンジャ', test: c => (c.text ?? '').includes('ニンジャ・ストライク') },
 ]
+
+export interface PowerFilter {
+  target: number
+  op: 'gte' | 'lte' | 'eq'
+}
+
+export function parsePowerFilter(q: string): PowerFilter | null {
+  const gteMatch = q.match(/パワー\s*(\d+)\s*(?:以上|超え|より大きい)/) ?? q.match(/(\d+)\s*以上.*パワー/)
+  if (gteMatch && gteMatch[1]) {
+    return { target: parseInt(gteMatch[1], 10), op: 'gte' }
+  }
+  const lteMatch = q.match(/パワー\s*(\d+)\s*(?:以下|未満|より小さい)/) ?? q.match(/(\d+)\s*以下.*パワー/)
+  if (lteMatch && lteMatch[1]) {
+    return { target: parseInt(lteMatch[1], 10), op: 'lte' }
+  }
+  const eqMatch = q.match(/パワー\s*(\d+)/)
+  if (eqMatch && eqMatch[1]) {
+    return { target: parseInt(eqMatch[1], 10), op: 'eq' }
+  }
+  if (q.includes('高パワー')) {
+    return { target: 6000, op: 'gte' }
+  }
+  return null
+}
+
+export function checkPowerFilter(card: CardData, filter: PowerFilter | null): boolean {
+  if (!filter) return true
+  if (card.power == null) return false
+  if (filter.op === 'gte') return card.power >= filter.target
+  if (filter.op === 'lte') return card.power <= filter.target
+  if (filter.op === 'eq') return card.power === filter.target
+  return true
+}
 
 function checkCostFilter(card: CardData, q: string): boolean {
   if (/(?:軽量|低コスト|序盤)/.test(q)) return card.cost != null && card.cost <= 3
@@ -180,8 +216,41 @@ function bigramCoverage(qn: string, tn: string): number {
   return inter / tb.size
 }
 
-export function retrieve(corpus: Corpus, question: string): RetrievalResult {
-  const baseQn = normalizeKana(question)
+// 履歴から文脈キーワード（直前のデッキテーマやカード名）を抽出してクエリを補完
+function expandQueryFromHistory(question: string, history: ChatTurn[]): string {
+  if (!history || history.length === 0) return question
+  // 質問文に具体的なテーマ語が薄い（「デッキ」「レシピ」「共有」「教えて」「詳しく」などだけ）の場合に補完発動
+  const isContextDependent = /(?:レシピ|リスト|共有|教えて|詳しく|どう組む|他には|回し方|回しかた|使い方|構築)/.test(question)
+  if (!isContextDependent) return question
+
+  // 直近の会話（最大3ターン）からキーワードを探す
+  const pastTexts = history.slice(-4).map(h => h.content).reverse()
+  const candidateKeywords: string[] = []
+
+  for (const text of pastTexts) {
+    // 俗称辞書にあるキー
+    for (const k of Object.keys(ALIAS_MAP)) {
+      if (text.includes(k) && !candidateKeywords.includes(k)) {
+        candidateKeywords.push(k)
+      }
+    }
+    // 役割キーワード（ブロッカー、速攻等）
+    for (const r of ['ブロッカー', '速攻', '天門', 'コントロール', 'ガーディアン', 'ナイト']) {
+      if (text.includes(r) && !candidateKeywords.includes(r)) {
+        candidateKeywords.push(r)
+      }
+    }
+  }
+
+  if (candidateKeywords.length > 0) {
+    return `${question} ${candidateKeywords.slice(0, 3).join(' ')}`
+  }
+  return question
+}
+
+export function retrieve(corpus: Corpus, question: string, history: ChatTurn[] = []): RetrievalResult {
+  const expandedWithHistory = expandQueryFromHistory(question, history)
+  const baseQn = normalizeKana(expandedWithHistory)
   let expandedQn = baseQn
   for (const [alias, targets] of Object.entries(ALIAS_MAP)) {
     const normAlias = normalizeKana(alias)
@@ -191,17 +260,22 @@ export function retrieve(corpus: Corpus, question: string): RetrievalResult {
   }
   const qn = expandedQn
 
+  const powerFilter = parsePowerFilter(question)
+  const hasPowerFilter = powerFilter != null
+
   // (a) カード名一致
   const named: CardData[] = []
   for (const card of corpus.cards) {
     const nn = normalizeKana(card.name)
     if (nn.length >= 2 && qn.includes(nn)) {
+      // パワーフィルタがある場合は厳格に合致チェック
+      if (hasPowerFilter && !checkPowerFilter(card, powerFilter)) continue
       named.push(card)
       if (named.length >= 8) break
     }
   }
 
-  // (b) 「属性（文明・コスト・タイプ）＋役割」タグ検索リトリーバー
+  // (b) 「属性（文明・コスト・タイプ・パワー）＋役割」タグ検索リトリーバー
   const targetCivs = new Set<string>()
   for (const c of CIVS) {
     if (question.includes(c)) targetCivs.add(c)
@@ -212,17 +286,26 @@ export function retrieve(corpus: Corpus, question: string): RetrievalResult {
     }
   }
 
-  const activeRoles = ROLE_PATTERNS.filter(r => question.includes(r.name))
+  const activeRoles = ROLE_PATTERNS.filter(r => question.includes(r.name) || expandedWithHistory.includes(r.name))
   const hasCostFilter = /(?:軽量|低コスト|序盤|中コスト|中盤|大型|高コスト|フィニッシャー|切り札|\d+マナ|\d+コスト)/.test(question)
   const hasTypeFilter = /(?:呪文|進化|クロスギア|クリーチャー)/.test(question)
 
   const aux: CardData[] = []
-  if ((targetCivs.size > 0 || activeRoles.length > 0 || hasCostFilter || hasTypeFilter) && named.length < 8) {
+  if ((targetCivs.size > 0 || activeRoles.length > 0 || hasCostFilter || hasTypeFilter || hasPowerFilter) && named.length < 8) {
     const scored: { card: CardData; score: number }[] = []
     for (const card of corpus.cards) {
       if (named.includes(card)) continue
 
+      // パワー条件がある場合は、合致しないカードは絶対に除外！
+      if (hasPowerFilter) {
+        if (!checkPowerFilter(card, powerFilter)) continue
+      }
+
       let score = 0
+      if (hasPowerFilter) {
+        score += 4
+      }
+
       if (targetCivs.size > 0) {
         const matchesCiv = card.civilizations.some(c => targetCivs.has(c))
         if (!matchesCiv) continue
@@ -244,7 +327,7 @@ export function retrieve(corpus: Corpus, question: string): RetrievalResult {
         for (const role of activeRoles) {
           if (role.test(card)) roleMatches++
         }
-        if (roleMatches === 0 && (targetCivs.size === 0 || !hasCostFilter)) continue
+        if (roleMatches === 0 && (targetCivs.size === 0 || !hasCostFilter) && !hasPowerFilter) continue
         score += roleMatches * 3
       }
 
@@ -253,7 +336,15 @@ export function retrieve(corpus: Corpus, question: string): RetrievalResult {
       }
     }
 
-    scored.sort((a, b) => b.score - a.score)
+    // パワーフィルタがある場合はパワーの高い順（またはスコア順）にソート
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      if (hasPowerFilter && a.card.power != null && b.card.power != null) {
+        return b.card.power - a.card.power
+      }
+      return 0
+    })
+
     for (const item of scored) {
       aux.push(item.card)
       if (named.length + aux.length >= 8) break
@@ -286,17 +377,55 @@ export function retrieve(corpus: Corpus, question: string): RetrievalResult {
       if (cards.length >= 8) break
       if (!ref?.id || seen.has(ref.id)) continue
       const cd = corpus.cardById.get(ref.id)
-      if (cd) { cards.push(cd); seen.add(cd.id) }
+      if (cd) {
+        // パワーフィルタがある場合は合致チェック
+        if (hasPowerFilter && !checkPowerFilter(cd, powerFilter)) continue
+        cards.push(cd)
+        seen.add(cd.id)
+      }
     }
     if (cards.length >= 8) break
   }
 
-  // (c) 関連レシピ
+  // (c) 関連レシピ（質問キーワードとのマッチング＆検証済み優先）
   const idSet = new Set(cards.map(c => c.id))
-  const recipes = corpus.recipes
-    .filter(r => Array.isArray(r.cards) && r.cards.some(rc => idSet.has(rc.id)))
-    .sort((a, b) => Number(b.validated) - Number(a.validated))
-    .slice(0, 3)
+  const isDeckQuery = /(?:デッキ|でっき|構築|レシピ|主体)/.test(question) || /(?:デッキ|でっき|構築|レシピ)/.test(expandedWithHistory)
+
+  const scoredRecipes: { recipe: any; score: number }[] = []
+  for (const r of corpus.recipes) {
+    if (!Array.isArray(r.cards)) continue
+    let score = 0
+    let nameMatched = false
+    // 抽出カードが含まれる数
+    const matchedCount = r.cards.filter(rc => idSet.has(rc.id)).length
+    score += matchedCount * 2
+
+    // レシピ名・アーキタイプが質問キーワードにヒットする場合の大幅加点
+    const rName = normalizeKana(r.name ?? '')
+    const rArch = normalizeKana(typeof r.archetype === 'string' ? r.archetype : '')
+    if (qn.includes('てんもん') || qn.includes('へぶんず') || qn.includes('ぶろっかー')) {
+      if (rName.includes('天門') || rName.includes('へぶんず') || rArch.includes('へぶんずげーと') || rName.includes('ぶろっかー')) {
+        score += 15
+        nameMatched = true
+      }
+    }
+    if (isDeckQuery) {
+      for (const token of [rName, rArch]) {
+        if (token && mutualIncludes(qn, token)) {
+          score += 8
+          nameMatched = true
+        }
+      }
+    }
+
+    if (matchedCount > 0 || nameMatched) {
+      if (r.validated) score += 5
+      scoredRecipes.push({ recipe: r, score })
+    }
+  }
+
+  scoredRecipes.sort((a, b) => b.score - a.score)
+  const recipes = scoredRecipes.slice(0, 3).map(s => s.recipe)
 
   // (d) knowledge: タイトル全体／タイトル先頭の主要語と質問の相互部分一致（2文字以上）
   const knowledge = corpus.knowledge

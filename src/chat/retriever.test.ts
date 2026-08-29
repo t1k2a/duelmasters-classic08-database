@@ -90,3 +90,37 @@ test('「属性（文明・コスト）＋役割」タグ検索で的確なカ�
     '光のブロッカーカードが抽出されること'
   )
 })
+
+test('パワー条件フィルタ: 「パワー5000以上のブロッカー」で5000未満を含めない', async () => {
+  const c = await loadCorpus()
+  const r = retrieve(c, 'パワー5000以上のブロッカーは？')
+  assert.ok(r.cards.length > 0, 'カードが抽出されること')
+  for (const card of r.cards) {
+    assert.ok(card.power != null && card.power >= 5000, `カード ${card.name} のパワー(${card.power})が5000以上であること`)
+    assert.ok((card.text ?? '').includes('ブロッカー'), `カード ${card.name} がブロッカーを持つこと`)
+  }
+})
+
+test('パワー条件フィルタ: 「パワー10000以上のブロッカー」でシリウス等が正しく抽出される', async () => {
+  const c = await loadCorpus()
+  const r = retrieve(c, 'パワー10000以上のブロッカーは？')
+  assert.ok(r.cards.length > 0, '10000以上のブロッカーが抽出されること')
+  assert.ok(r.cards.some(card => card.name.includes('シリウス') || card.name.includes('ミルザム')), '代表的10000以上ブロッカーが含まれること')
+  for (const card of r.cards) {
+    assert.ok(card.power != null && card.power >= 10000, `カード ${card.name} のパワー(${card.power})が10000以上であること`)
+  }
+})
+
+test('会話履歴連動: 「デッキのレシピを共有して」で直前のブロッカー文脈を引き継ぐ', async () => {
+  const c = await loadCorpus()
+  const history = [
+    { role: 'user' as const, content: 'ブロッカーを主体としたデッキは？' },
+    { role: 'assistant' as const, content: 'ヘブンズ・ゲートを活用した天門デッキやガーディアン軸があります。' }
+  ]
+  const r = retrieve(c, 'デッキのレシピを共有して', history)
+  assert.ok(r.recipes.length > 0 || r.cards.length > 0, '直前のブロッカー/天門文脈を引き継ぎ空にならないこと')
+  assert.ok(
+    r.recipes.some(rc => (rc.name ?? '').includes('天門') || (rc.name ?? '').includes('ヘブンズ') || (rc.name ?? '').includes('ブロッカー') || (rc.name ?? '').includes('ガーディアン')),
+    '天門/ブロッカー/ガーディアンレシピが抽出されること'
+  )
+})
