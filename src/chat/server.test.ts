@@ -299,6 +299,35 @@ test('chat: 空入力で400', async () => {
   assert.equal((await res.json() as any).error, 'BAD_INPUT')
 })
 
+test('chat: 不正なhistoryスキーマで400', async () => {
+  const corpus = await loadCorpus()
+  const app = createApp({ corpus, chatImpl: (() => (async function*(){ yield 'x' })()) as any })
+
+  // (1) history が配列でない場合
+  const r1 = await app.fetch(new Request('http://x/api/chat', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ question: 'テスト', history: 'not-an-array' }),
+  }))
+  assert.equal(r1.status, 400)
+  assert.equal((await r1.json() as any).error, 'BAD_INPUT')
+
+  // (2) history 要素の role が不正な場合
+  const r2 = await app.fetch(new Request('http://x/api/chat', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ question: 'テスト', history: [{ role: 'system', content: 'hello' }] }),
+  }))
+  assert.equal(r2.status, 400)
+  assert.equal((await r2.json() as any).error, 'BAD_INPUT')
+
+  // (3) history 要素の content が非文字列の場合
+  const r3 = await app.fetch(new Request('http://x/api/chat', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ question: 'テスト', history: [{ role: 'user', content: 12345 }] }),
+  }))
+  assert.equal(r3.status, 400)
+  assert.equal((await r3.json() as any).error, 'BAD_INPUT')
+})
+
 test('OPTIONSプリフライトは204', async () => {
   const corpus = await loadCorpus()
   const app = createApp({ corpus, upImpl: async () => ({ up: true, model: 'stub' }) })

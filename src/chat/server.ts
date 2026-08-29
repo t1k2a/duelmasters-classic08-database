@@ -55,6 +55,18 @@ export function createApp(deps: { corpus: Corpus; chatImpl?: typeof streamChat; 
     try { body = await c.req.json() } catch { return c.json({ error: 'BAD_INPUT' }, 400) }
     const question = (body.question ?? '').trim()
     if (!question || question.length > 500) return c.json({ error: 'BAD_INPUT' }, 400)
+
+    // history の実行時スキーマ検証
+    if (body.history !== undefined) {
+      if (!Array.isArray(body.history)) return c.json({ error: 'BAD_INPUT' }, 400)
+      if (body.history.length > 20) return c.json({ error: 'BAD_INPUT' }, 400)
+      for (const turn of body.history) {
+        if (!turn || typeof turn !== 'object') return c.json({ error: 'BAD_INPUT' }, 400)
+        if (turn.role !== 'user' && turn.role !== 'assistant') return c.json({ error: 'BAD_INPUT' }, 400)
+        if (typeof turn.content !== 'string' || turn.content.length > 1000) return c.json({ error: 'BAD_INPUT' }, 400)
+      }
+    }
+
     // 構造化アクセスログ（1行JSON）。CloudWatch Logs Insights でのクエリ用。
     console.log(JSON.stringify({ t: new Date().toISOString(), ev: 'chat', ip, qlen: question.length, q: question }))
     const history = body.history ?? []

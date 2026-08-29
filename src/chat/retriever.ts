@@ -404,7 +404,7 @@ export function retrieve(corpus: Corpus, question: string, history: ChatTurn[] =
     const rName = normalizeKana(r.name ?? '')
     const rArch = normalizeKana(typeof r.archetype === 'string' ? r.archetype : '')
     if (qn.includes('てんもん') || qn.includes('へぶんず') || qn.includes('ぶろっかー')) {
-      if (rName.includes('天門') || rName.includes('ヘブンズ') || rArch.includes('ヘブンズゲート') || rName.includes('ブロッカー')) {
+      if (rName.includes('天門') || rName.includes('へぶんず') || rArch.includes('へぶんずげーと') || rName.includes('ぶろっかー')) {
         score += 15
         nameMatched = true
       }
