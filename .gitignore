@@ -5,10 +5,10 @@ data/raw/
 *.log
 logs/
 
-# GA4測定IDのビルド生成物（env から注入、ソースには追跡しない）
+# GA4測定IDのビルド生成物（Env から注入、ソースには追跡しない）
 public/js/analytics-config.js
 
-# marketing の運用ドキュメントは非公開（画像のみ追跡）
+# marketing の運用ドキュメント（非公開）
 docs/marketing/*.md
 docs/marketing/*.ics
 docs/marketing/scripts/
@@ -20,3 +20,4 @@ docs/marketing/scripts/
 /verification-guide.html
 /e.txt
 /.screenshots.json
+.superpowers/

@@ -471,7 +471,7 @@ function setShortName(setCode) {
   return full.replace(/^DM-\d+\s*/, '');
 }
 
-// クラシック05環境 = 収録セット（printings または setsContaining）のいずれかが DM-01〜DM-16 なら対象（方式B）
+// クラシック05環境 = 収録セット（printings または setsContaining）のいずれかが DM-01〜DM-16 または第1〜3期プロモなら対象（方式B）
 function isClassic05(card) {
   const inRange = code => {
     const m = String(code).match(/^DM-(\d+)$/);
@@ -481,20 +481,38 @@ function isClassic05(card) {
   };
   for (const pr of card.printings) {
     if (pr.setCode && inRange(pr.setCode)) return true;
+    if (pr.setCode && /^PROMO-Y[1-3]$/.test(pr.setCode)) return true;
   }
   for (const s of card.setsContaining) {
     const m = s.match(/^(DM-\d+)/);
     if (m && inRange(m[1])) return true;
+    if (/プロモ限定カード [1-3]期/.test(s)) return true;
   }
   return false;
 }
 
 function populateSetSelects() {
-  const opts = Array.from(DM_SET_MAP.entries())
+  const dmOpts = Array.from(DM_SET_MAP.entries())
     .filter(([c]) => /^DM-\d+$/.test(c))
     .sort((a, b) => parseInt(a[0].slice(3)) - parseInt(b[0].slice(3)))
     .map(([code, name]) => `<option value="${code}">${name}</option>`)
     .join('');
+
+  const dmcOpts = Array.from(DM_SET_MAP.entries())
+    .filter(([c]) => /^DMC-\d+$/.test(c))
+    .sort((a, b) => parseInt(a[0].slice(4)) - parseInt(b[0].slice(4)))
+    .map(([code, name]) => `<option value="${code}">${name}</option>`)
+    .join('');
+
+  const promoOpts = Array.from(DM_SET_MAP.entries())
+    .filter(([c]) => /^PROMO-Y\d+$/.test(c))
+    .sort((a, b) => parseInt(a[0].slice(7)) - parseInt(b[0].slice(7)))
+    .map(([code, name]) => `<option value="${code}">プロモ 第${code.slice(7)}期 (${code})</option>`)
+    .join('');
+
+  let opts = dmOpts;
+  if (dmcOpts) opts += `<optgroup label="構築済みデッキ (DMC)">${dmcOpts}</optgroup>`;
+  if (promoOpts) opts += `<optgroup label="プロモカード (PROMO)">${promoOpts}</optgroup>`;
   document.getElementById('mobileSetFilter').insertAdjacentHTML('beforeend', opts);
 }
 
