@@ -111,7 +111,8 @@
   <div class="w-full max-w-[430px] px-4 py-3 flex items-center gap-3">
   <span class="text-lg font-bold tracking-wide">🎴 デュエマ クラシック08 カード検索</span>
   <button id="pwaInstallBtn" onclick="pwaInstall()" class="hidden bg-white/15 hover:bg-white/25 text-white text-sm rounded px-2 py-1 leading-none">📲 インストール</button>
-  <a href="meta.html" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">メタデッキ</a>
+  <a href="guides/" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">遊び方・デッキ解説</a>
+  <a href="meta.html" class="text-indigo-100 hover:text-white text-sm underline underline-offset-2">メタデッキ</a>
   <a href="regulations.html" class="text-indigo-100 hover:text-white text-sm underline underline-offset-2">レギュレーション</a>
   <span id="cardCountBadge" class="text-indigo-200 text-sm"></span>
   </div>
@@ -237,6 +238,10 @@
             <option value="desc">降順 ↓</option>
           </select>
         </div>
+        <button id="shareSearchBtn" type="button" onclick="shareSearch()"
+          class="w-full border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg px-3 py-2 text-xs font-semibold">
+          🔗 検索条件を共有
+        </button>
       </div>
       </div>
     </div>
@@ -347,6 +352,7 @@
 
       <div id="deckCivBars" class="space-y-1 mb-3"></div>
       <div id="deckLegality" class="mb-3"></div>
+      <div id="deckRelatedGuide" class="hidden mb-3 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-sm"></div>
       <div id="deckCardList" class="divide-y divide-gray-100 mb-4"></div>
       <div class="flex gap-2">
         <button onclick="shareDeckX()" class="flex-1 bg-slate-900 hover:bg-black dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-semibold rounded-lg py-2 px-2 flex items-center justify-center gap-1 transition-all shadow-sm">
@@ -443,6 +449,8 @@ let RESTRICTION_MAP = new Map();
 let restrictionsLoaded = false;
 let RECIPES = [];
 let META_DECKS = [];
+let GROWTH_PAGES = [];
+let restoredRecipeId = '';
 const CIV_COLORS = {光:'civ-光',水:'civ-水',闇:'civ-闇',火:'civ-火',自然:'civ-自然'};
 let selectedCard = null;
 let mobileCivFilter = new Set(['光','水','闇','火','自然']);
@@ -577,6 +585,14 @@ fetch('data/meta-decks.json')
   .then(r => r.json())
   .then(data => { META_DECKS = Array.isArray(data) ? data : []; })
   .catch(() => { META_DECKS = []; });
+
+fetch('data/growth-pages.json')
+  .then(r => r.ok ? r.json() : [])
+  .then(data => {
+    GROWTH_PAGES = Array.isArray(data) ? data : [];
+    if (!document.getElementById('deckPanel').classList.contains('hidden')) renderDeckPanel();
+  })
+  .catch(() => { GROWTH_PAGES = []; });
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, ch => ({
@@ -1066,6 +1082,9 @@ function selectCard(id, fromDeck = false) {
   document.getElementById('detailBody').innerHTML = detailHTML(c);
   document.getElementById('backToDeckBtn').classList.toggle('hidden', !fromDeck);
   document.getElementById('mobileDetail').classList.remove('hidden');
+  if (window.trackGrowthEvent) {
+    window.trackGrowthEvent('view_card_detail', { card_id: c.id });
+  }
 }
 
 function backToDeck() {
@@ -1097,8 +1116,8 @@ function scheduleUpdate() {
   urlTimer = setTimeout(syncURL, 600);
 }
 
-function syncURL() {
-  const params = new URLSearchParams(location.search);
+function currentSearchParams() {
+  const params = new URLSearchParams();
   const set = (k, v) => { if (v) params.set(k, v); else params.delete(k); };
   const text = document.getElementById('textSearch').value.trim();
   const civs = [...mobileCivFilter];
@@ -1116,8 +1135,36 @@ function syncURL() {
   set('c05', document.getElementById('classic05Filter').checked ? '1' : '');
   set('sortKey', document.getElementById('sortKey').value);
   set('sortDir', document.getElementById('sortDir').value === 'asc' ? '' : 'desc');
+  return params;
+}
+
+function buildSearchURL() {
+  const params = currentSearchParams();
+  const qs = params.toString();
+  return `${location.origin}${location.pathname}${qs ? `?${qs}` : ''}`;
+}
+
+function syncURL() {
+  const params = currentSearchParams();
   const qs = params.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+}
+
+async function shareSearch() {
+  const url = buildSearchURL();
+  try {
+    if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') throw new Error('clipboard unavailable');
+    await navigator.clipboard.writeText(url);
+    showToast('検索条件のURLをコピーしました');
+    return;
+  } catch {}
+
+  try {
+    if (typeof navigator.share !== 'function') throw new Error('share unavailable');
+    await navigator.share({ title: 'デュエマ クラシック08 カード検索', url });
+  } catch {
+    showToast('検索条件の共有に失敗しました');
+  }
 }
 
 function applyURLParams() {
@@ -1232,7 +1279,8 @@ function deckTotalCount() {
 function addToDeck(id) {
   const card = CARDS.find(c => c.id === id);
   if (!card) return;
-  if (deckTotalCount() >= DECK_MAX) { showToast('デッキは40枚までです'); return; }
+  const previousTotal = deckTotalCount();
+  if (previousTotal >= DECK_MAX) { showToast('デッキは40枚までです'); return; }
   const entry = deck.find(e => e.id === id);
   if (entry) {
     if (entry.count >= CARD_MAX) { showToast('同じカードは4枚までです'); return; }
@@ -1244,6 +1292,9 @@ function addToDeck(id) {
   renderDeckBadge();
   if (!document.getElementById('deckPanel').classList.contains('hidden')) renderDeckPanel();
   showToast(`${card.name} を追加`);
+  if (previousTotal < DECK_MAX && deckTotalCount() === DECK_MAX && window.trackGrowthEvent) {
+    window.trackGrowthEvent('deck_complete', { card_count: DECK_MAX });
+  }
 }
 
 function removeFromDeck(id) {
@@ -1368,6 +1419,24 @@ function renderDeckPanel() {
     } else {
       legalityEl.innerHTML = '';
     }
+  }
+
+  const relatedGuideEl = document.getElementById('deckRelatedGuide');
+  const relatedGuide = GROWTH_PAGES.find(page => page && page.kind === 'deck-guide' && page.featuredRecipeId === restoredRecipeId);
+  if (relatedGuideEl && relatedGuide && typeof relatedGuide.path === 'string' && typeof relatedGuide.title === 'string') {
+    relatedGuideEl.replaceChildren();
+    const label = document.createElement('div');
+    label.className = 'mb-1 text-xs font-semibold text-indigo-800';
+    label.textContent = 'このデッキの解説';
+    const link = document.createElement('a');
+    link.href = relatedGuide.path;
+    link.className = 'font-semibold text-indigo-700 underline underline-offset-2 hover:text-indigo-900';
+    link.textContent = `${relatedGuide.title}を読む`;
+    relatedGuideEl.append(label, link);
+    relatedGuideEl.classList.remove('hidden');
+  } else if (relatedGuideEl) {
+    relatedGuideEl.replaceChildren();
+    relatedGuideEl.classList.add('hidden');
   }
 
   const listEl = document.getElementById('deckCardList');
@@ -1584,15 +1653,16 @@ function searchDeckShop(shop) {
 }
 
 function shareDeckX() {
-  if (window.trackEvent) {
-    const cardCount = deck.reduce((s, c) => s + c.count, 0);
-    window.trackEvent('share_deck', { method: 'x', card_count: cardCount });
-  }
   if (!deck.length) { showToast('デッキが空です'); return; }
+  const cardCount = deckTotalCount();
+  if (cardCount < 1 || cardCount > DECK_MAX) { showToast('デッキの枚数を確認してください'); return; }
   const url = buildDeckURL();
   const summary = deckSummaryText(deck);
   const intentURL = `https://twitter.com/intent/tweet?text=${encodeURIComponent(summary)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent(SHARE_HASHTAGS_PARAM)}`;
-  window.open(intentURL, '_blank', 'noopener');
+  const intentWindow = window.open(intentURL, '_blank', 'noopener');
+  if (intentWindow && window.trackGrowthEvent) {
+    window.trackGrowthEvent('share_deck', { method: 'x', card_count: cardCount });
+  }
 }
 
 // deck/recipe をブラウザで開いたとき document.title を動的に更新する。
@@ -1676,10 +1746,18 @@ function restoreRecipeFromURL(recipeId) {
 
     if (!deck.length) return false;
 
+    restoredRecipeId = String(recipeId);
+
     saveDeck();
     renderDeckBadge();
     updateDeckTitle(deck, deckName);
     openDeckPanel();
+    if (window.trackEventOnce) {
+      window.trackEventOnce(`copy-deck:${recipeId}`, 'copy_deck', {
+        content_id: String(recipeId),
+        card_count: deckTotalCount(),
+      });
+    }
     return true;
   };
   // RECIPES または META_DECKS がまだ読み込まれていない場合に備えて遅延リトライ
@@ -2101,11 +2179,17 @@ if ('serviceWorker' in navigator) {
     e.preventDefault();
     deferredPrompt = e;
     showBtn();
+    if (window.trackEventOnce) {
+      window.trackEventOnce('pwa-install-prompt', 'pwa_install_prompt');
+    }
   });
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
     hideBtn();
+    if (window.trackEventOnce) {
+      window.trackEventOnce('pwa-install-complete', 'pwa_install');
+    }
   });
 
   function suppressFor7Days() {
@@ -2163,7 +2247,9 @@ if ('serviceWorker' in navigator) {
 
 <!-- Google Analytics 4 + 同意バナー（測定IDは env→build:analytics-config で js/analytics-config.js に注入） -->
 <script src="js/analytics-config.js"></script>
-<script src="js/analytics.js">
+<script src="js/analytics.js"></script>
+<script src="js/vendor/qrcode.js"></script>
+<script>
 // ============================================================
 // 📸 高解像度デッキ画像ジェネレーター (HTML5 Canvas)
 // ============================================================
@@ -2175,13 +2261,45 @@ const CIV_COLOR_MAP = {
   '自然': '#16a34a',
 };
 
-async function exportDeckImage() {
-  if (window.trackEvent) {
-    const cardCount = deck.reduce((s, c) => s + c.count, 0);
-    window.trackEvent('share_deck', { method: 'image_download', card_count: cardCount });
+async function drawDeckQr(ctx, url, x, y, size, preparedQr) {
+  try {
+    if (typeof qrcode !== 'function') return false;
+    const qr = preparedQr || qrcode(0, 'M');
+    if (!preparedQr) {
+      qr.addData(url);
+      qr.make();
+    }
+    const moduleCount = qr.getModuleCount();
+    const quietZone = 4;
+    const cellSize = Math.floor(size / (moduleCount + quietZone * 2));
+    if (cellSize < 3) return false;
+    const qrSize = cellSize * (moduleCount + quietZone * 2);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x, y, qrSize, qrSize);
+    ctx.fillStyle = '#0f172a';
+    for (let row = 0; row < moduleCount; row += 1) {
+      for (let col = 0; col < moduleCount; col += 1) {
+        if (!qr.isDark(row, col)) continue;
+        const left = x + (col + quietZone) * cellSize;
+        const top = y + (row + quietZone) * cellSize;
+        ctx.fillRect(left, top, cellSize, cellSize);
+      }
+    }
+    return true;
+  } catch {
+    return false;
   }
+}
+
+async function exportDeckImage() {
   if (!deck.length) {
     showToast('デッキが空です');
+    return;
+  }
+  const cardCount = deckTotalCount();
+  if (cardCount < 1 || cardCount > DECK_MAX) {
+    showToast('デッキの枚数を確認してください');
     return;
   }
   showToast('デッキ画像を生成中...📸');
@@ -2191,9 +2309,22 @@ async function exportDeckImage() {
   const counts = civCounts();
   const { avg } = manaCurveData();
 
-  // 1200 x 760 の高精細 Canvas
+  const deckURL = buildDeckURL();
+  let preparedQr;
+  try {
+    preparedQr = qrcode(0, 'M');
+    preparedQr.addData(deckURL);
+    preparedQr.make();
+  } catch { preparedQr = undefined; }
+  // 全カード種類と、余白を含めたQRを3px/moduleで収める。
   const width = 1200;
-  const height = 760;
+  const qrSize = preparedQr ? (preparedQr.getModuleCount() + 8) * 3 : 180;
+  const footerHeight = qrSize + 40;
+  const cardEntries = deck
+    .map(entry => ({ ...entry, card: cardById(entry.id) }))
+    .filter(entry => entry.card);
+  const gridBottom = 135 + Math.ceil(cardEntries.length / 5) * 64;
+  const height = Math.max(760, gridBottom + footerHeight + 40);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -2248,7 +2379,6 @@ async function exportDeckImage() {
   }
 
   // カードグリッド描画（デッキ内の各カード種類）
-  const cardEntries = deck.filter(e => e.card);
   // コスト順にソート
   cardEntries.sort((a, b) => (a.card.cost ?? 99) - (b.card.cost ?? 99));
 
@@ -2263,8 +2393,6 @@ async function exportDeckImage() {
     const row = Math.floor(idx / cols);
     const x = paddingX + col * (cellWidth + 16);
     const y = startY + row * (cellHeight + 12);
-
-    if (y + cellHeight > height - 60) return; // 画面内に収める
 
     const card = entry.card;
     const isMulti = card.civilizations && card.civilizations.length > 1;
@@ -2318,20 +2446,21 @@ async function exportDeckImage() {
     ctx.fillText(`×${entry.count}`, x + cellWidth - 23, y + 31);
   });
 
-  // フッター
+  // フッター（QR生成失敗時もテキストは必ず残す）
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+  ctx.fillRect(20, height - footerHeight - 20, width - 40, footerHeight);
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#64748b';
+  ctx.fillStyle = '#cbd5e1';
   ctx.font = '14px sans-serif';
-  ctx.fillText('デュエマ クラシック08 データベース | デッキビルダー & カード検索', 45, height - 30);
-
-  ctx.textAlign = 'right';
+  ctx.fillText('デュエマ クラシック08 データベース', 45, height - footerHeight + 40);
   ctx.fillStyle = '#38bdf8';
-  ctx.font = '14px sans-serif';
-  ctx.fillText('https://t1k2a.github.io/duelmasters-classic08-database/', width - 45, height - 30);
+  ctx.font = '12px sans-serif';
+  ctx.fillText(deckURL, 45, height - footerHeight + 75, width - qrSize - 110);
+  await drawDeckQr(ctx, deckURL, width - qrSize - 40, height - footerHeight, qrSize, preparedQr);
 
   // ダウンロード実行
-  canvas.toBlob(async (blob) => {
-    if (!blob) return;
+  await new Promise(resolve => canvas.toBlob(async (blob) => {
+    if (!blob) { resolve(); return; }
     const filename = `deck-${new Date().toISOString().slice(0, 10)}.png`;
 
     // Web Share API 対応環境（モバイル等）
@@ -2342,6 +2471,10 @@ async function exportDeckImage() {
           text: `【デュエマ クラシック08】マイデッキ画像を作成しました！\n#デュエマクラシック08`,
           files: [new File([blob], filename, { type: 'image/png' })],
         });
+        if (window.trackGrowthEvent) {
+          window.trackGrowthEvent('share_deck', { method: 'web_share', card_count: cardCount });
+        }
+        resolve();
         return;
       } catch (err) {
         /* シェアキャンセル時はダウンロードにフォールバック */
@@ -2356,8 +2489,12 @@ async function exportDeckImage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
+    if (window.trackGrowthEvent) {
+      window.trackGrowthEvent('share_deck', { method: 'image_download', card_count: cardCount });
+    }
     showToast('デッキ画像を保存しました！📸 Xに添付して #デュエマクラシック08 でシェアしよう！');
-  }, 'image/png');
+    resolve();
+  }, 'image/png'));
 }
 
 </script>
