@@ -17,6 +17,7 @@ export interface BuildGrowthPagesOptions {
   recipesFile?: string
   classic05PoolFile?: string
   restrictionsFile?: string
+  onChangedUrls?: (urls: string[]) => Promise<void> | void
 }
 
 export interface GrowthPageManifestEntry {
@@ -64,19 +65,32 @@ export async function buildGrowthPages(options: BuildGrowthPagesOptions = {}): P
     relatedCardIds: page.relatedCardIds,
     ...(page.featuredRecipeId ? { featuredRecipeId: page.featuredRecipeId } : {}),
   }))
+  const changedUrls = new Set<string>()
+  const writeHtmlIfChanged = async (file: string, html: string, url: string): Promise<void> => {
+    const previous = await readFile(file, 'utf8').catch(() => undefined)
+    if (previous === html) return
+    await writeFile(file, html)
+    changedUrls.add(url)
+  }
 
   await mkdir(join(publicDir, 'guides'), { recursive: true })
-  await writeFile(
+  await writeHtmlIfChanged(
     join(publicDir, 'guides/index.html'),
     renderGrowthHub(pages, { ...context, analyticsDepth: '../' }),
+    `${SITE_URL}/guides/`,
   )
   for (const page of pages) {
     const outputDir = join(publicDir, page.kind, page.slug)
     await mkdir(outputDir, { recursive: true })
-    await writeFile(join(outputDir, 'index.html'), renderGrowthPage(page, context))
+    await writeHtmlIfChanged(
+      join(outputDir, 'index.html'),
+      renderGrowthPage(page, context),
+      `${SITE_URL}/${growthPagePath(page)}`,
+    )
   }
   await mkdir(join(publicDir, 'data'), { recursive: true })
   await writeFile(join(publicDir, 'data/growth-pages.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+  await options.onChangedUrls?.([...changedUrls])
 
   return {
     urls: growthSitemapUrls(pages, SITE_URL),
@@ -85,7 +99,9 @@ export async function buildGrowthPages(options: BuildGrowthPagesOptions = {}): P
 }
 
 async function main(): Promise<void> {
-  const result = await buildGrowthPages()
+  const result = await buildGrowthPages({
+    onChangedUrls: urls => writeFile(join(projectRoot, 'public/data/.growth-pages-changes.json'), `${JSON.stringify(urls)}\n`),
+  })
   console.log(`Growth pages: ${result.pages.length}`)
   console.log(`Growth URLs : ${result.urls.length}`)
 }

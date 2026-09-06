@@ -543,14 +543,38 @@ try {
     `panel=${panelVisible}, total=${total}`);
 } catch (e) { rec(27, 'ガイドCTAからデッキを40枚で復元', false, 'EXC: ' + e.message); }
 
+// ---- #28 ガイドCTAは許可リスト経由でコンテンツCTA計測を送る ----
+{
+  let growthCtx;
+  try {
+    const { growthCtx: ctx, growthPage } = await newGrowthPage();
+    growthCtx = ctx;
+    await growthPage.goto(BASE + '/deck-guide/shinobi-dorugeza/');
+    await growthPage.waitForFunction(() => typeof window.trackGrowthEvent === 'function');
+    await growthPage.evaluate(() => {
+      window.__ctaEvents = [];
+      window.trackGrowthEvent = (eventName, params) => window.__ctaEvents.push([eventName, params]);
+      document.addEventListener('click', event => {
+        if (event.target.closest('[data-growth-cta="copy_deck"]')) event.preventDefault();
+      }, true);
+    });
+    await growthPage.locator('[data-growth-cta="copy_deck"]').click();
+    const events = await growthPage.evaluate(() => window.__ctaEvents);
+    const pass = events.length === 1 && events[0][0] === 'content_cta_click' &&
+      events[0][1]?.content_id === 'shinobi-dorugeza' && events[0][1]?.destination_type === 'deck_builder';
+    rec(28, 'ガイドCTAは許可リスト経由でコンテンツCTAを計測', pass, `events=${JSON.stringify(events)}`);
+  } catch (e) { rec(28, 'ガイドCTAは許可リスト経由でコンテンツCTAを計測', false, 'EXC: ' + e.message); }
+  finally { if (growthCtx) await growthCtx.close(); }
+}
+
 // ===========================================================================
 // 後片付け & サマリー
 // ===========================================================================
 await browser.close();
 server.close();
 
-// #1〜#27 の件数のみカウント（補足サブケースは含めない）
-const mainResults = results.filter(r => r.id >= 1 && r.id <= 27);
+// #1〜#28 の件数のみカウント（補足サブケースは含めない）
+const mainResults = results.filter(r => r.id >= 1 && r.id <= 28);
 const passed = mainResults.filter(r => r.pass).length;
 const failed = mainResults.filter(r => !r.pass).length;
 const total = mainResults.length;

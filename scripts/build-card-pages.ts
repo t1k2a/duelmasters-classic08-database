@@ -15,7 +15,7 @@
  * Usage: npm run build:card-pages
  */
 
-import { readFile, writeFile, mkdir } from 'fs/promises'
+import { readFile, writeFile, mkdir, unlink } from 'fs/promises'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -98,6 +98,14 @@ function escapeXml(s: string): string {
 function jsonLdEscape(s: string): string {
   // Escape for embedding inside a <script type="application/ld+json"> block.
   return s.replace(/</g, '\\u003c').replace(/>/g, '\\u003e')
+}
+
+/** Write generated HTML only when its rendered content differs from the prior build. */
+async function writeGeneratedHtml(file: string, html: string): Promise<boolean> {
+  const previous = await readFile(file, 'utf8').catch(() => undefined)
+  if (previous === html) return false
+  await writeFile(file, html)
+  return true
 }
 
 // SPA(public/index.html)と同じ文明カラー。静的ページでも見た目を揃える。
@@ -1318,6 +1326,17 @@ async function main() {
   ])
   const byId = new Map(cards.map(c => [c.id, c]))
   const { pages: growthPages } = validateGrowthPages(growthInput, { cards, recipes })
+  const changedSitemapUrls = new Set<string>()
+  const growthChangeFile = join(PUBLIC_DIR, 'data/.growth-pages-changes.json')
+  const changedGrowthUrls = await readFile(growthChangeFile, 'utf8')
+    .then(value => JSON.parse(value) as unknown)
+    .catch(() => [])
+  if (Array.isArray(changedGrowthUrls)) {
+    for (const url of changedGrowthUrls) {
+      if (typeof url === 'string') changedSitemapUrls.add(url)
+    }
+  }
+  await unlink(growthChangeFile).catch(() => undefined)
   const guidesByCardId = new Map<string, GrowthPage[]>()
   const guideByRecipeId = new Map<string, GrowthPage>()
   for (const page of growthPages) {
@@ -1334,7 +1353,10 @@ async function main() {
   for (const card of cards) {
     const dir = join(PUBLIC_DIR, 'card', card.id)
     await mkdir(dir, { recursive: true })
-    await writeFile(join(dir, 'index.html'), cardPageHtml(card, guidesByCardId.get(card.id)?.slice(0, 3)))
+    const url = `${SITE}/card/${card.id}/`
+    if (await writeGeneratedHtml(join(dir, 'index.html'), cardPageHtml(card, guidesByCardId.get(card.id)?.slice(0, 3)))) {
+      changedSitemapUrls.add(url)
+    }
     cardPages++
   }
 
@@ -1344,7 +1366,8 @@ async function main() {
   for (const recipe of recipes) {
     const dir = join(PUBLIC_DIR, 'recipe', recipe.id)
     await mkdir(dir, { recursive: true })
-    await writeFile(
+    const url = `${SITE}/recipe/${recipe.id}/`
+    if (await writeGeneratedHtml(
       join(dir, 'index.html'),
       deckPageHtml({
         pathSlug: recipe.id,
@@ -1355,9 +1378,11 @@ async function main() {
         byId,
         extraDesc: recipe.archetype ? `アーキタイプ: ${recipe.archetype}。` : undefined,
         relatedGuide: guideByRecipeId.get(recipe.id),
-      })
-    )
-    recipeUrls.push(`${SITE}/recipe/${recipe.id}/`)
+      }),
+    )) {
+      changedSitemapUrls.add(url)
+    }
+    recipeUrls.push(url)
     recipePages++
   }
 
@@ -1479,7 +1504,7 @@ ${PAGE_FOOTER}
 </html>
 `
     await mkdir(dir, { recursive: true })
-    await writeFile(join(dir, 'index.html'), html)
+    if (await writeGeneratedHtml(join(dir, 'index.html'), html)) changedSitemapUrls.add(url)
     metaUrls.push(url)
     metaPages++
   }
@@ -1496,7 +1521,7 @@ Sitemap: ${SITE}/sitemap.xml
   const previousSitemap = await readFile(join(PUBLIC_DIR, 'sitemap.xml'), 'utf8').catch(() => '')
   const previousLastModified = extractSitemapLastModified(previousSitemap)
   const sitemapEntry = (url: string): string =>
-    `  <url><loc>${escapeXml(url)}</loc><lastmod>${previousLastModified.get(url) ?? today}</lastmod></url>`
+    `  <url><loc>${escapeXml(url)}</loc><lastmod>${changedSitemapUrls.has(url) ? today : previousLastModified.get(url) ?? today}</lastmod></url>`
   const urls = [
     sitemapEntry(`${SITE}/`),
     ...cards.map(c => sitemapEntry(`${SITE}/card/${c.id}/`)),

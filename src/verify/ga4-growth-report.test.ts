@@ -3,10 +3,31 @@ import test from 'node:test';
 import type { BetaAnalyticsDataClient } from '@google-analytics/data';
 import {
   aggregateGrowthPeriod,
+  escapeMarkdownReportText,
   fetchGrowthPeriod,
+  generateActionStrategy,
   renderGrowthFunnel,
   renderGrowthPeriodComparison,
 } from '../../scripts/ga4-analytics.js';
+
+test('GA4流入元をMarkdown構文として解釈されない一行の値に変換する', () => {
+  const escaped = escapeMarkdownReportText('bad\n```\n[link](https://example.com)');
+  assert.doesNotMatch(escaped, /[\r\n]/);
+  assert.doesNotMatch(escaped, /(?<!\\)```/);
+  assert.match(escaped, /\\\[link\\\]/);
+
+  const report = generateActionStrategy({
+    period: 'test', totalPv: 0, totalUsers: 0, avgEngagementTime: '0分0秒',
+    trafficSources: [{ source: 'bad\n```\n[link](https://example.com)', users: 1, percentage: 100 }],
+    popularCards: [], buyClicksTotal: 0, buyClicksCards: [], shopShares: [], deckShareEvents: 0, deckBuyEvents: 0,
+    growth: {
+      last7Days: { activeUsers: 0, organicUsers: 0, guideEntrances: 0, viewCardDetail: 0, copyDeck: 0, deckComplete: 0, shareDeck: 0, pwaInstall: 0, contentCtaClick: 0 },
+      last28Days: { activeUsers: 0, organicUsers: 0, guideEntrances: 0, viewCardDetail: 0, copyDeck: 0, deckComplete: 0, shareDeck: 0, pwaInstall: 0, contentCtaClick: 0 },
+    },
+  });
+  assert.doesNotMatch(report, /bad\n/);
+  assert.doesNotMatch(report, /\n```\n\[link\]/);
+});
 
 test('ガイド入口は閲覧ページでなくセッションの最初のページで集計する', async () => {
   type Request = {

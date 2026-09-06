@@ -50,12 +50,14 @@
   var GROWTH_EVENT_PARAMS = {
     view_card_detail: ['card_id'],
     copy_deck: ['content_id', 'card_count'],
+    content_cta_click: ['content_id', 'destination_type'],
     deck_complete: ['card_count'],
     share_deck: ['method', 'card_count'],
     pwa_install_prompt: [],
     pwa_install: [],
   }
-  var GROWTH_SHARE_METHODS = ['x', 'image_download']
+  var GROWTH_SHARE_METHODS = ['x', 'web_share', 'image_download']
+  var GROWTH_DESTINATION_TYPES = ['deck_builder']
 
   function growthEventParams(eventName, params) {
     var allowed = GROWTH_EVENT_PARAMS[eventName]
@@ -69,12 +71,15 @@
         clean[key] = value
       } else if (key === 'method' && GROWTH_SHARE_METHODS.indexOf(value) !== -1) {
         clean[key] = value
+      } else if (key === 'destination_type' && GROWTH_DESTINATION_TYPES.indexOf(value) !== -1) {
+        clean[key] = value
       } else if (key === 'card_count' && Number.isInteger(value) && value >= 1 && value <= 40) {
         clean[key] = value
       }
     }
     if (eventName === 'view_card_detail' && !clean.card_id) return null
     if (eventName === 'copy_deck' && !clean.content_id) return null
+    if (eventName === 'content_cta_click' && (!clean.content_id || !clean.destination_type)) return null
     if (eventName === 'deck_complete' && clean.card_count !== 40) return null
     if (eventName === 'share_deck' && (!clean.method || !clean.card_count)) return null
     return clean

@@ -3,13 +3,14 @@ import { access, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import { buildGrowthPages } from '../../scripts/build-growth-pages.js'
 import { checkDeckLegality } from './deck-legality.js'
 import type { RestrictionList } from './restrictions.js'
 import { extractSitemapLastModified, growthSitemapUrls, validateGrowthPages, type GrowthPage } from '../growth/growth-pages.js'
 
-const root = resolve(import.meta.dirname, '../..')
+const root = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const contentFile = join(root, 'data/content/growth-pages.json')
 const cardsFile = join(root, 'public/cards.json')
 const recipesFile = join(root, 'public/data/recipes.json')

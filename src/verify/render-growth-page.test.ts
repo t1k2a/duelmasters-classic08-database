@@ -67,7 +67,9 @@ test('deck-guideだけにJS不要のコピー編集CTAを出す', () => {
   assert.match(deckHtml, /href="\.\.\/\.\.\/\?recipe=rcp-3828&amp;utm_source=site&amp;utm_medium=guide&amp;utm_campaign=organic_growth"/)
   assert.match(deckHtml, /data-growth-cta="copy_deck"/)
   assert.match(deckHtml, /data-content-id="deck"/)
-  assert.match(deckHtml, /content_cta_click/)
+  assert.match(deckHtml, /trackGrowthEvent\('content_cta_click'/)
+  assert.match(deckHtml, /destination_type:'deck_builder'/)
+  assert.match(deckHtml, /@media\(prefers-color-scheme:dark\).*\.cta\{background:#4f46e5;color:#fff\}/)
   assert.doesNotMatch(renderGrowthPage(guide, context), /data-growth-cta="copy_deck"/)
 })
 

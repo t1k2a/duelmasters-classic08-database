@@ -139,6 +139,20 @@ function isGuidePath(pagePath: string): boolean {
   return /\/(?:guide|deck-guide|guides)(?:\/|$)/.test(pagePath);
 }
 
+/**
+ * Normalize a GA4 dimension before placing it in a Markdown report.
+ *
+ * Dimension values originate outside this repository.  Keeping each value on
+ * one escaped line prevents it from closing the report's code fence or
+ * changing the surrounding Markdown structure in GITHUB_STEP_SUMMARY.
+ */
+export function escapeMarkdownReportText(value: string): string {
+  return String(value)
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/\\/g, '\\\\')
+    .replace(/([`*_{}\[\]<>\(\)#\+\-!|])/g, '\\$1');
+}
+
 export function aggregateGrowthPeriod(input: GrowthPeriodInput): GrowthPeriodMetrics {
   const metrics: GrowthPeriodMetrics = {
     activeUsers: finiteNonNegative(input.activeUsers),
@@ -247,6 +261,12 @@ export function generateActionStrategy(data: AnalyticsSummary): string {
 
   const modeBadge = data.isMock ? '【⚠️ シミュレーション / テストデータ】' : '【🔴 本番実測データ】';
 
+  const trafficSources = data.trafficSources.map(source => ({
+    ...source,
+    source: escapeMarkdownReportText(source.source),
+  }));
+  const topSourceName = escapeMarkdownReportText(topSource.source);
+
   return `# 📊 GA4 売上最大化分析 & 自律グロース戦略レポート ${modeBadge}
 
 **集計期間**: ${data.period}  
@@ -275,10 +295,10 @@ ${renderGrowthPeriodComparison(data.growth)}
 ## 2. 🌐 流入元（トラフィックソース）分析
 
 \`\`\`text
-${data.trafficSources.map(s => `${s.source.padEnd(20)} [${'█'.repeat(Math.round(s.percentage / 4))}${' '.repeat(25 - Math.round(s.percentage / 4))}] ${s.percentage}% (${s.users}人)`).join('\n')}
+${trafficSources.map(s => `${s.source.padEnd(20)} [${'█'.repeat(Math.round(s.percentage / 4))}${' '.repeat(25 - Math.round(s.percentage / 4))}] ${s.percentage}% (${s.users}人)`).join('\n')}
 \`\`\`
 
-- **最大流入元**: **${topSource.source} (${topSource.percentage}%)**
+- **最大流入元**: **${topSourceName} (${topSource.percentage}%)**
   - X（旧Twitter）からの熱狂的なクラシック08プレイヤー層が主軸。
   - Google自然検索（SEO）もカード個別ページ・レシピページのインデックス進展により拡大中。
 
