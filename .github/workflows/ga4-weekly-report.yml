@@ -41,6 +41,11 @@ jobs:
           GA4_MOCK: ${{ secrets.GA4_PROPERTY_ID == '' && 'true' || 'false' }}
         run: npx tsx scripts/ga4-analytics.ts
 
+      - name: Publish report to job summary
+        run: |
+          echo "## Weekly GA4 Analytics & Organic Growth Report" >> "$GITHUB_STEP_SUMMARY"
+          cat docs/marketing/ga4-action-strategy.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Commit and push report
         run: |
           git config --global user.name "github-actions[bot]"

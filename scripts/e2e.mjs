@@ -1,5 +1,5 @@
 /**
- * E2E テスト — 18 ケース
+ * E2E テスト — 27 ケース
  *
  * 実行: node scripts/e2e.mjs
  * 自己完結: 内蔵 HTTP サーバーで public/ を配信 → テスト実行 → サーバー停止
@@ -25,7 +25,15 @@ const MIME = {
 
 const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent(req.url.split('?')[0]);
-  let fp = path.join(ROOT, urlPath === '/' ? '/index.html' : urlPath);
+  // analytics-config.js はGA_MEASUREMENT_IDからビルド時に作られる任意ファイル。
+  // E2Eで未設定時の本番動作（何も送らない）を再現する。
+  if (urlPath === '/js/analytics-config.js') {
+    res.writeHead(200, { 'Content-Type': 'text/javascript' });
+    res.end('window.__GA_ID__ = "";');
+    return;
+  }
+  let fp = path.join(ROOT, urlPath);
+  if (urlPath.endsWith('/')) fp = path.join(fp, 'index.html');
   if (!fp.startsWith(ROOT)) { res.writeHead(403); res.end(); return; }
   fs.readFile(fp, (err, data) => {
     if (err) { res.writeHead(404); res.end('not found'); return; }
@@ -59,10 +67,18 @@ function rec(id, name, pass, detail = '') {
 const browser = await chromium.launch({ headless: true });
 const ctx = await browser.newContext();
 const page = await ctx.newPage();
+await page.route('https://api.dm-classic08.org/api/health', route => route.fulfill({
+  status: 200,
+  contentType: 'application/json',
+  body: JSON.stringify({ status: 'ok', up: true, model: 'e2e-stub', depth: 0 }),
+}));
 
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
 page.on('console', m => { if (m.type() === 'error') errors.push('console.error: ' + m.text()); });
+page.on('response', response => {
+  if (response.status() === 404) errors.push('404: ' + response.url());
+});
 
 // ---- ヘルパー ----
 async function clearStorage() {
@@ -77,6 +93,34 @@ async function gotoIndex(query = '') {
     return el && /件中/.test(el.textContent);
   }, { timeout: 15000 });
   await page.waitForTimeout(400);
+}
+
+async function ensureFilterExpanded(targetPage) {
+  const body = targetPage.locator('#filterPanelBody');
+  if (await body.evaluate(element => element.classList.contains('hidden'))) {
+    await targetPage.locator('#filterPanelToggle').click();
+  }
+  await body.waitFor({ state: 'visible' });
+}
+
+async function newGrowthPage() {
+  const growthCtx = await browser.newContext();
+  await growthCtx.addInitScript(() => {
+    window.__growthEvents = [];
+    window.__copiedSearchURL = '';
+    const spy = (eventName, params) => window.__growthEvents.push([eventName, params || {}]);
+    Object.defineProperty(window, 'trackEvent', {
+      configurable: true,
+      get: () => spy,
+      set: value => { window.__analyticsTrackEvent = value; },
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async value => { window.__copiedSearchURL = value; } },
+    });
+  });
+  const growthPage = await growthCtx.newPage();
+  return { growthCtx, growthPage };
 }
 
 // ===========================================================================
@@ -102,6 +146,7 @@ try {
   errors.length = 0;
   await gotoIndex('?q=' + encodeURIComponent('・'));
   const cnt1 = await page.locator('#resultCount').textContent();
+  await ensureFilterExpanded(page);
   await page.fill('#textSearch', 'W・ブレイカー(');
   await page.waitForTimeout(400);
   await page.fill('#textSearch', '[a-z]+*?(){}');
@@ -115,10 +160,12 @@ try {
 try {
   await gotoIndex('?q=' + encodeURIComponent('ドラゴン'));
   const before = await page.locator('#cardList mark').count();
+  await ensureFilterExpanded(page);
   await page.fill('#textSearch', '');
   await page.waitForTimeout(400);
   const after = await page.locator('#cardList mark').count();
-  rec(3, '検索クリアでハイライト解除', before > 0 && after === 0, `before=${before}, after=${after}`);
+  const searchValue = await page.locator('#textSearch').inputValue();
+  rec(3, '検索クリアでハイライト解除', before > 0 && after === 0, `before=${before}, after=${after}, value="${searchValue}"`);
 } catch (e) { rec(3, '検索クリアでハイライト解除', false, 'EXC: ' + e.message); }
 
 // ---- #4 今日の1枚バナー表示 ----
@@ -232,34 +279,44 @@ try {
   await page.locator('#mobileDetail').evaluate(el => el.classList.add('hidden'));
 } catch (e) { rec(10, '関連カードクリック遷移・「←デッキ」非表示', false, 'EXC: ' + e.message); }
 
-// ---- #11 ブロッカーフィルター=283件 ----
+// ---- #11 ブロッカーフィルターがカードデータと一致 ----
 try {
   await clearStorage();
   await gotoIndex();
+  await ensureFilterExpanded(page);
   await page.selectOption('#abilityFilter', 'ブロッカー');
   await page.waitForTimeout(400);
-  const cnt = await page.evaluate(() => filterCards().length);
-  rec(11, 'ブロッカーフィルター=283件', cnt === 283, `filtered=${cnt}, expected=283`);
-} catch (e) { rec(11, 'ブロッカーフィルター=283件', false, 'EXC: ' + e.message); }
+  const { actual, expected } = await page.evaluate(() => ({
+    actual: filterCards().length,
+    expected: CARDS.filter(card => (card.text || '').includes('ブロッカー')).length,
+  }));
+  rec(11, 'ブロッカーフィルターがカードデータと一致', actual === expected, `filtered=${actual}, expected=${expected}`);
+} catch (e) { rec(11, 'ブロッカーフィルターがカードデータと一致', false, 'EXC: ' + e.message); }
 
-// ---- #12 W・ブレイカーフィルター=242件 ----
+// ---- #12 W・ブレイカーフィルターがカードデータと一致 ----
 try {
   await page.selectOption('#abilityFilter', 'W・ブレイカー');
   await page.waitForTimeout(400);
-  const cnt = await page.evaluate(() => filterCards().length);
-  rec(12, 'W・ブレイカーフィルター=242件', cnt === 242, `filtered=${cnt}, expected=242`);
-} catch (e) { rec(12, 'W・ブレイカーフィルター=242件', false, 'EXC: ' + e.message); }
+  const { actual, expected } = await page.evaluate(() => ({
+    actual: filterCards().length,
+    expected: CARDS.filter(card => (card.text || '').includes('W・ブレイカー')).length,
+  }));
+  rec(12, 'W・ブレイカーフィルターがカードデータと一致', actual === expected, `filtered=${actual}, expected=${expected}`);
+} catch (e) { rec(12, 'W・ブレイカーフィルターがカードデータと一致', false, 'EXC: ' + e.message); }
 
 // ---- #13 abilityフィルターURL同期(?ability=)復元 ----
 try {
   await gotoIndex('?ability=' + encodeURIComponent('ブロッカー'));
   const selVal = await page.locator('#abilityFilter').inputValue();
-  const cnt = await page.evaluate(() => filterCards().length);
-  rec(13, 'abilityフィルターURL同期(?ability=)復元', selVal === 'ブロッカー' && cnt === 283,
-    `selectValue="${selVal}", filtered=${cnt}`);
+  const { actual, expected } = await page.evaluate(() => ({
+    actual: filterCards().length,
+    expected: CARDS.filter(card => (card.text || '').includes('ブロッカー')).length,
+  }));
+  rec(13, 'abilityフィルターURL同期(?ability=)復元', selVal === 'ブロッカー' && actual === expected,
+    `selectValue="${selVal}", filtered=${actual}, expected=${expected}`);
 } catch (e) { rec(13, 'abilityフィルターURL同期(?ability=)復元', false, 'EXC: ' + e.message); }
 
-// ---- #14 殿堂バッジ（サイバー・ブレイン→🏅/スケルトン・バイス→🚫） ----
+// ---- #14 クラシック08制限バッジ（制限/お助け） ----
 try {
   await clearStorage();
   await gotoIndex('?q=' + encodeURIComponent('サイバー・ブレイン'));
@@ -272,22 +329,23 @@ try {
   await page.locator('#mobileDetail').evaluate(el => el.classList.add('hidden'));
   await gotoIndex('?q=' + encodeURIComponent('スケルトン・バイス'));
   const banHtml = await page.locator('#cardList').innerHTML();
-  const hasBan = banHtml.includes('🚫');
-  rec(14, '殿堂バッジ（サイバー・ブレイン→🏅/スケルトン・バイス→🚫）', hasMedal && detailMedal && hasBan,
-    `listMedal=${hasMedal}, detailMedal=${detailMedal}, banBadge=${hasBan}`);
-} catch (e) { rec(14, '殿堂バッジ（サイバー・ブレイン→🏅/スケルトン・バイス→🚫）', false, 'EXC: ' + e.message); }
+  const hasHelper = banHtml.includes('🎴');
+  rec(14, 'クラシック08制限バッジ（制限/お助け）', hasMedal && detailMedal && hasHelper,
+    `listMedal=${hasMedal}, detailMedal=${detailMedal}, helperBadge=${hasHelper}`);
+} catch (e) { rec(14, 'クラシック08制限バッジ（制限/お助け）', false, 'EXC: ' + e.message); }
 
-// ---- #15 inPool:false 3件はバッジ非表示 ----
+// ---- #15 制限データでid未解決のカードはプール外 ----
 try {
+  await page.waitForFunction(() => window.isRestrictionsReady && window.isRestrictionsReady(), { timeout: 8000 });
   const r = await page.evaluate(() => {
-    const names = ['ボルメテウス・サファイア・ドラゴン', 'フューチャー・スラッシュ', '凶星王ダーク・ヒドラ'];
-    return names.map(n => ({ n, inCards: !!CARDS.find(c => c.name === n), inHof: HOF_MAP.has(n) }));
+    const unresolved = [...REG.banned, ...REG.restricted, ...REG.helper].filter(entry => !entry.id);
+    return unresolved.map(entry => ({ name: entry.name, inCards: CARDS.some(card => card.name === entry.name), status: RESTRICTION_MAP.get(entry.name) }));
   });
-  const allAbsent = r.every(x => !x.inCards);
-  rec(15, 'inPool:false 3件はバッジ非表示', allAbsent, JSON.stringify(r));
-} catch (e) { rec(15, 'inPool:false 3件はバッジ非表示', false, 'EXC: ' + e.message); }
+  const allAbsent = r.length > 0 && r.every(entry => !entry.inCards && !!entry.status);
+  rec(15, '制限データでid未解決のカードはプール外', allAbsent, JSON.stringify(r));
+} catch (e) { rec(15, '制限データでid未解決のカードはプール外', false, 'EXC: ' + e.message); }
 
-// ---- #16 メタデッキ5デッキ表示 ----
+// ---- #16 メタデッキデータを全件表示 ----
 try {
   errors.length = 0;
   await page.goto(BASE + '/meta.html');
@@ -295,9 +353,10 @@ try {
   const deckCards = await page.locator('#deckList > div').count();
   const names = await page.locator('#deckList h2').count();
   const cardLinks = await page.locator('#deckList a[href^="index.html?q="]').count();
-  rec(16, 'メタデッキ5デッキ表示', deckCards === 5 && names === 5 && cardLinks > 0,
-    `deckCards=${deckCards}, names=${names}, cardLinks=${cardLinks}`);
-} catch (e) { rec(16, 'メタデッキ5デッキ表示', false, 'EXC: ' + e.message); }
+  const expected = await page.evaluate(async () => (await fetch('data/meta-decks.json').then(response => response.json())).length);
+  rec(16, 'メタデッキデータを全件表示', deckCards === expected && names === expected && cardLinks > 0,
+    `deckCards=${deckCards}, names=${names}, expected=${expected}, cardLinks=${cardLinks}`);
+} catch (e) { rec(16, 'メタデッキデータを全件表示', false, 'EXC: ' + e.message); }
 
 // ---- #17 meta→index ?q= 遷移 ----
 try {
@@ -329,14 +388,169 @@ try {
     `index→meta link=${toMeta}, meta→index link=${toIndex}`);
 } catch (e) { rec(18, 'ヘッダー相互リンク（index↔meta）', false, 'EXC: ' + e.message); }
 
+// ---- #19 ホームからガイドハブへ移動できる ----
+try {
+  await gotoIndex();
+  const link = page.locator('header a[href="guides/"]');
+  const label = (await link.textContent()).trim();
+  rec(19, 'ホームからガイドハブへ移動できる', await link.count() === 1 && /遊び方|デッキ解説/.test(label),
+    `count=${await link.count()}, label="${label}"`);
+} catch (e) { rec(19, 'ホームからガイドハブへ移動できる', false, 'EXC: ' + e.message); }
+
+// ---- #20 カード詳細表示ごとに安全なイベントを1回だけ送る ----
+{
+  let growthCtx;
+  try {
+    const created = await newGrowthPage();
+    growthCtx = created.growthCtx;
+    const growthPage = created.growthPage;
+    await growthPage.goto(BASE + '/index.html');
+    await growthPage.waitForFunction(() => Array.isArray(CARDS) && CARDS.length > 0, { timeout: 15000 });
+    const detail = await growthPage.evaluate(() => {
+      const id = CARDS[0].id;
+      selectCard(id);
+      selectCard(id);
+      return { id, events: window.__growthEvents };
+    });
+    const events = detail.events.filter(([name]) => name === 'view_card_detail');
+    const safe = events.every(([, params]) => params.card_id === detail.id && !('card_name' in params) && !('query' in params));
+    rec(20, 'カード詳細は表示操作ごと1回計測', events.length === 2 && safe,
+      `count=${events.length}, safe=${safe}`);
+  } catch (e) { rec(20, 'カード詳細は表示操作ごと1回計測', false, 'EXC: ' + e.message); }
+  finally { if (growthCtx) await growthCtx.close(); }
+}
+
+// ---- #21 39→40の境界だけデッキ完成を計測し、40→39→40は再計測 ----
+{
+  let growthCtx;
+  try {
+    const created = await newGrowthPage();
+    growthCtx = created.growthCtx;
+    const growthPage = created.growthPage;
+    await growthPage.goto(BASE + '/index.html');
+    await growthPage.waitForFunction(() => Array.isArray(CARDS) && CARDS.length >= 10, { timeout: 15000 });
+    const events = await growthPage.evaluate(() => {
+      const ids = CARDS.slice(0, 10).map(card => card.id);
+      ids.slice(0, 9).forEach(id => { for (let i = 0; i < 4; i += 1) addToDeck(id); });
+      for (let i = 0; i < 3; i += 1) addToDeck(ids[9]);
+      addToDeck(ids[9]);
+      removeFromDeck(ids[9]);
+      addToDeck(ids[9]);
+      return window.__growthEvents.filter(([name]) => name === 'deck_complete');
+    });
+    const safe = events.every(([, params]) => params.card_count === 40 && !('deck_name' in params));
+    rec(21, '39→40の境界だけデッキ完成を計測', events.length === 2 && safe,
+      `count=${events.length}, safe=${safe}`);
+  } catch (e) { rec(21, '39→40の境界だけデッキ完成を計測', false, 'EXC: ' + e.message); }
+  finally { if (growthCtx) await growthCtx.close(); }
+}
+
+// ---- #22 recipe URL復元だけcopy_deckを計測 ----
+{
+  let growthCtx;
+  try {
+    const created = await newGrowthPage();
+    growthCtx = created.growthCtx;
+    const growthPage = created.growthPage;
+    await growthPage.goto(BASE + '/index.html?recipe=rcp-2628');
+    await growthPage.waitForFunction(() => document.getElementById('deckCountBadge')?.textContent === '40', { timeout: 15000 });
+    const recipeEvents = await growthPage.evaluate(() => window.__growthEvents.filter(([name]) => name === 'copy_deck'));
+    await growthPage.evaluate(() => { window.__growthEvents.length = 0; history.replaceState(null, '', location.pathname); });
+    await growthPage.reload();
+    await growthPage.waitForFunction(() => document.getElementById('resultCount') && /\u4ef6中/.test(document.getElementById('resultCount').textContent), { timeout: 15000 });
+    const localEvents = await growthPage.evaluate(() => window.__growthEvents.filter(([name]) => name === 'copy_deck'));
+    const safe = recipeEvents.length === 1 && recipeEvents[0][1].content_id === 'rcp-2628' && !('deck_name' in recipeEvents[0][1]);
+    rec(22, 'recipe URL復元だけcopy_deckを1回計測', safe && localEvents.length === 0,
+      `recipe=${recipeEvents.length}, local=${localEvents.length}, safe=${safe}`);
+  } catch (e) { rec(22, 'recipe URL復元だけcopy_deckを1回計測', false, 'EXC: ' + e.message); }
+  finally { if (growthCtx) await growthCtx.close(); }
+}
+
+// ---- #23 PWA prompt表示とインストール完了を計測 ----
+{
+  let growthCtx;
+  try {
+    const created = await newGrowthPage();
+    growthCtx = created.growthCtx;
+    const growthPage = created.growthPage;
+    await growthPage.goto(BASE + '/index.html');
+    const events = await growthPage.evaluate(() => {
+      const promptEvent = new Event('beforeinstallprompt');
+      promptEvent.prompt = async () => {};
+      promptEvent.userChoice = Promise.resolve({ outcome: 'accepted' });
+      window.dispatchEvent(promptEvent);
+      window.dispatchEvent(new Event('appinstalled'));
+      return window.__growthEvents;
+    });
+    const prompts = events.filter(([name]) => name === 'pwa_install_prompt');
+    const installs = events.filter(([name]) => name === 'pwa_install');
+    rec(23, 'PWA prompt表示と完了を各1回計測', prompts.length === 1 && installs.length === 1,
+      `prompt=${prompts.length}, install=${installs.length}`);
+  } catch (e) { rec(23, 'PWA prompt表示と完了を各1回計測', false, 'EXC: ' + e.message); }
+  finally { if (growthCtx) await growthCtx.close(); }
+}
+
+// ---- #24 検索共有URLは許可フィルターだけを含む ----
+{
+  let growthCtx;
+  try {
+    const created = await newGrowthPage();
+    growthCtx = created.growthCtx;
+    const growthPage = created.growthPage;
+    await growthPage.goto(BASE + '/index.html?chatApi=https%3A%2F%2Fevil.test&d=secret&recipe=rcp-1&q=%E7%AB%9C&ability=' + encodeURIComponent('ブロッカー'));
+    await growthPage.waitForFunction(() => document.getElementById('resultCount') && /\u4ef6中/.test(document.getElementById('resultCount').textContent), { timeout: 15000 });
+    await ensureFilterExpanded(growthPage);
+    await growthPage.locator('#shareSearchBtn').click();
+    await growthPage.waitForFunction(() => window.__copiedSearchURL.length > 0);
+    const copied = await growthPage.evaluate(() => window.__copiedSearchURL);
+    const copiedURL = new URL(copied);
+    const keys = [...copiedURL.searchParams.keys()];
+    const allowed = new Set(['q', 'civs', 'type', 'cost', 'race', 'set', 'power', 'rarity', 'ability', 'c05', 'sortKey', 'sortDir']);
+    const onlyAllowed = keys.every(key => allowed.has(key));
+    rec(24, '検索共有URLは許可フィルターだけ', copiedURL.searchParams.get('q') === '竜' && copiedURL.searchParams.get('ability') === 'ブロッカー' && onlyAllowed,
+      `url=${copied}, onlyAllowed=${onlyAllowed}`);
+  } catch (e) { rec(24, '検索共有URLは許可フィルターだけ', false, 'EXC: ' + e.message); }
+  finally { if (growthCtx) await growthCtx.close(); }
+}
+
+// ---- #25 ガイドハブからシノビドルゲーザ解説へ移動できる ----
+try {
+  await gotoIndex();
+  await page.locator('header a[href="guides/"]').click();
+  await page.waitForURL('**/guides/');
+  const shinobiLink = page.locator('a[href="../deck-guide/shinobi-dorugeza/"]');
+  rec(25, 'ガイドハブからシノビドルゲーザへ移動できる', await shinobiLink.count() === 1,
+    `links=${await shinobiLink.count()}`);
+} catch (e) { rec(25, 'ガイドハブからシノビドルゲーザへ移動できる', false, 'EXC: ' + e.message); }
+
+// ---- #26 シノビドルゲーザCTAは合法なレシピを指す ----
+try {
+  await page.locator('a[href="../deck-guide/shinobi-dorugeza/"]').click();
+  await page.waitForURL('**/deck-guide/shinobi-dorugeza/');
+  const cta = page.locator('[data-growth-cta="copy_deck"]');
+  const href = await cta.getAttribute('href');
+  rec(26, 'シノビドルゲーザCTAはrcp-2628を指す', await cta.count() === 1 && /[?&]recipe=rcp-2628(?:&|$)/.test(href || ''),
+    `href=${href}`);
+} catch (e) { rec(26, 'シノビドルゲーザCTAはrcp-2628を指す', false, 'EXC: ' + e.message); }
+
+// ---- #27 ガイドCTAからデッキを40枚で復元 ----
+try {
+  await page.locator('[data-growth-cta="copy_deck"]').click();
+  await page.waitForFunction(() => document.getElementById('deckCountBadge')?.textContent === '40', { timeout: 15000 });
+  const panelVisible = await page.locator('#deckPanel').isVisible();
+  const total = (await page.locator('#deckTotal').textContent()).trim();
+  rec(27, 'ガイドCTAからデッキを40枚で復元', panelVisible && /40\s*\/\s*40/.test(total),
+    `panel=${panelVisible}, total=${total}`);
+} catch (e) { rec(27, 'ガイドCTAからデッキを40枚で復元', false, 'EXC: ' + e.message); }
+
 // ===========================================================================
 // 後片付け & サマリー
 // ===========================================================================
 await browser.close();
 server.close();
 
-// #1〜#18 の件数のみカウント（補足サブケースは含めない）
-const mainResults = results.filter(r => r.id >= 1 && r.id <= 18);
+// #1〜#27 の件数のみカウント（補足サブケースは含めない）
+const mainResults = results.filter(r => r.id >= 1 && r.id <= 27);
 const passed = mainResults.filter(r => r.pass).length;
 const failed = mainResults.filter(r => !r.pass).length;
 const total = mainResults.length;

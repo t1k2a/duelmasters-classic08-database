@@ -1,0 +1,93 @@
+[
+  {
+    "path": "guide/classic08-getting-started/",
+    "title": "デュエマクラシック08の始め方｜カード検索から初対戦まで",
+    "kind": "guide",
+    "relatedCardIds": [
+      "dm01-100",
+      "dm06-110",
+      "dm01-027"
+    ]
+  },
+  {
+    "path": "guide/classic05-vs-classic08/",
+    "title": "デュエマクラシック05と08の違い｜カードプールと選び方",
+    "kind": "guide",
+    "relatedCardIds": [
+      "dm01-100",
+      "dm16-044",
+      "dm29-003"
+    ]
+  },
+  {
+    "path": "guide/classic08-restrictions/",
+    "title": "クラシック08の殿堂・お助けカード｜独自制限の確認方法",
+    "kind": "guide",
+    "relatedCardIds": [
+      "dm10-009",
+      "dm08-008",
+      "dm10-036",
+      "dm25-s04"
+    ]
+  },
+  {
+    "path": "deck-guide/shinobi-dorugeza/",
+    "title": "シノビドルゲーザの組み方・回し方｜クラシック08デッキ解説",
+    "kind": "deck-guide",
+    "relatedCardIds": [
+      "dm13-s04",
+      "dm29-003",
+      "dm29-042",
+      "dm29-053"
+    ],
+    "featuredRecipeId": "rcp-2628"
+  },
+  {
+    "path": "deck-guide/black-green-rush/",
+    "title": "黒緑速攻の組み方・回し方｜クラシック08デッキ解説",
+    "kind": "deck-guide",
+    "relatedCardIds": [
+      "dm28-064",
+      "dm11-054",
+      "dm30-046",
+      "dm26-054"
+    ],
+    "featuredRecipeId": "rcp-3716"
+  },
+  {
+    "path": "deck-guide/nekura-fernando/",
+    "title": "ネクラフェルナンドの組み方・回し方｜クラシック08デッキ解説",
+    "kind": "deck-guide",
+    "relatedCardIds": [
+      "dm28-005",
+      "dmc46-012",
+      "dm28-043",
+      "dm27-030"
+    ],
+    "featuredRecipeId": "rcp-5850"
+  },
+  {
+    "path": "deck-guide/bolmeteus-control/",
+    "title": "ボルメテウスコントロールの組み方・回し方｜クラシック08",
+    "kind": "deck-guide",
+    "relatedCardIds": [
+      "dm06-s08",
+      "dm14-034",
+      "dm01-052",
+      "dm01-027"
+    ],
+    "featuredRecipeId": "rcp-1756"
+  },
+  {
+    "path": "deck-guide/beginner-low-rarity-deck/",
+    "title": "低レアリティ中心で始める赤単速攻｜クラシック08入門デッキ",
+    "kind": "deck-guide",
+    "relatedCardIds": [
+      "dm01-100",
+      "dm06-098",
+      "dm06-064",
+      "dm14-034"
+    ],
+    "featuredRecipeId": "rcp-0114"
+  }
+]

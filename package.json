@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsx scripts/build-analytics-config.ts && tsx scripts/build-json.ts && tsx scripts/annotate-recipe-pool.ts && tsx scripts/build-meta-decks.ts && tsx scripts/build-restrictions.ts && tsx scripts/build-deck-legality-js.ts && npm run build:css && tsx scripts/build-card-pages.ts",
+    "build": "tsx scripts/build-analytics-config.ts && tsx scripts/build-json.ts && tsx scripts/annotate-recipe-pool.ts && tsx scripts/build-meta-decks.ts && tsx scripts/build-restrictions.ts && tsx scripts/build-deck-legality-js.ts && tsx scripts/copy-vendor-assets.ts && tsx scripts/build-growth-pages.ts && npm run build:css && tsx scripts/build-card-pages.ts",
     "build:analytics-config": "tsx scripts/build-analytics-config.ts",
     "build:css": "tailwindcss -i scripts/tailwind-input.css -o public/css/tailwind.css --minify",
     "build:card-pages": "tsx scripts/build-card-pages.ts",
+    "build:growth-pages": "tsx scripts/build-growth-pages.ts",
+    "build:vendor": "tsx scripts/copy-vendor-assets.ts",
     "build:recipe-pool": "tsx scripts/annotate-recipe-pool.ts",
     "build:meta-decks": "tsx scripts/build-meta-decks.ts",
     "serve": "npx serve public",
@@ -48,6 +50,7 @@
     "@hono/node-server": "^2.0.4",
     "@prisma/client": "^5.22.0",
     "hono": "^4.12.23",
+    "qrcode-generator": "1.4.4",
     "tsx": "^4.19.2",
     "twitter-text": "^3.1.0"
   },

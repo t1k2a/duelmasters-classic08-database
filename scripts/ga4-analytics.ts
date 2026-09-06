@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 
 // .env ファイルを自動ロード（Node 20.0 等の環境でも安全に動作）
@@ -50,6 +51,35 @@ interface ShopShare {
   percentage: number;
 }
 
+export interface GrowthPeriodMetrics {
+  activeUsers: number;
+  organicUsers: number;
+  guideEntrances: number;
+  viewCardDetail: number;
+  copyDeck: number;
+  deckComplete: number;
+  shareDeck: number;
+  pwaInstall: number;
+  contentCtaClick: number;
+}
+
+export interface GrowthPeriodComparison {
+  last7Days: GrowthPeriodMetrics;
+  last28Days: GrowthPeriodMetrics;
+}
+
+interface NormalizedAnalyticsRow {
+  dimensions: string[];
+  metrics: string[];
+}
+
+interface GrowthPeriodInput {
+  activeUsers: number;
+  channelRows: NormalizedAnalyticsRow[];
+  eventRows: NormalizedAnalyticsRow[];
+  guideRows: NormalizedAnalyticsRow[];
+}
+
 interface AnalyticsSummary {
   period: string;
   totalPv: number;
@@ -62,7 +92,119 @@ interface AnalyticsSummary {
   shopShares: ShopShare[];
   deckShareEvents: number;
   deckBuyEvents: number;
+  growth: GrowthPeriodComparison;
   isMock?: boolean;
+}
+
+const growthEventFields = {
+  view_card_detail: 'viewCardDetail',
+  copy_deck: 'copyDeck',
+  deck_complete: 'deckComplete',
+  share_deck: 'shareDeck',
+  pwa_install: 'pwaInstall',
+  content_cta_click: 'contentCtaClick',
+} as const;
+
+const comparisonMetrics: { label: string; key: keyof GrowthPeriodMetrics }[] = [
+  { label: 'アクティブユーザー', key: 'activeUsers' },
+  { label: 'オーガニック検索ユーザー', key: 'organicUsers' },
+  { label: 'ガイド入口セッション', key: 'guideEntrances' },
+  { label: 'カード詳細閲覧', key: 'viewCardDetail' },
+  { label: 'ガイドCTAクリック', key: 'contentCtaClick' },
+  { label: 'デッキコピー', key: 'copyDeck' },
+  { label: '40枚完成', key: 'deckComplete' },
+  { label: 'デッキ共有', key: 'shareDeck' },
+  { label: 'PWAインストール', key: 'pwaInstall' },
+];
+
+function finiteNonNegative(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function percentage(numerator: number, denominator: number): string {
+  if (denominator <= 0) return '0.0%';
+  return `${((numerator / denominator) * 100).toFixed(1)}%`;
+}
+
+function weeklyPace(value7Days: number, value28Days: number): string {
+  const weeklyAverage = value28Days / 4;
+  if (weeklyAverage <= 0) return value7Days > 0 ? '新規' : '比較不可';
+  const change = ((value7Days - weeklyAverage) / weeklyAverage) * 100;
+  const sign = change > 0 ? '+' : '';
+  return `${sign}${change.toFixed(1)}%`;
+}
+
+function isGuidePath(pagePath: string): boolean {
+  return /\/(?:guide|deck-guide|guides)(?:\/|$)/.test(pagePath);
+}
+
+export function aggregateGrowthPeriod(input: GrowthPeriodInput): GrowthPeriodMetrics {
+  const metrics: GrowthPeriodMetrics = {
+    activeUsers: finiteNonNegative(input.activeUsers),
+    organicUsers: 0,
+    guideEntrances: 0,
+    viewCardDetail: 0,
+    copyDeck: 0,
+    deckComplete: 0,
+    shareDeck: 0,
+    pwaInstall: 0,
+    contentCtaClick: 0,
+  };
+
+  for (const row of input.channelRows) {
+    if (row.dimensions[0] === 'Organic Search') {
+      metrics.organicUsers += finiteNonNegative(row.metrics[0]);
+    }
+  }
+
+  for (const row of input.eventRows) {
+    const field = growthEventFields[row.dimensions[0] as keyof typeof growthEventFields];
+    if (field) metrics[field] += finiteNonNegative(row.metrics[0]);
+  }
+
+  for (const row of input.guideRows) {
+    if (isGuidePath(row.dimensions[0] || '')) {
+      metrics.guideEntrances += finiteNonNegative(row.metrics[0]);
+    }
+  }
+
+  return metrics;
+}
+
+export function renderGrowthFunnel(metrics: GrowthPeriodMetrics): string {
+  return `### 直近期間の成長ファネル
+
+| 段階 | 件数 | アクティブユーザー比 |
+| :--- | ---: | ---: |
+| アクティブユーザー | ${metrics.activeUsers.toLocaleString()} | ${percentage(metrics.activeUsers, metrics.activeUsers)} |
+| オーガニック検索 | ${metrics.organicUsers.toLocaleString()} | ${percentage(metrics.organicUsers, metrics.activeUsers)} |
+| ガイド入口 | ${metrics.guideEntrances.toLocaleString()} | ${percentage(metrics.guideEntrances, metrics.activeUsers)} |
+| \`view_card_detail\` | ${metrics.viewCardDetail.toLocaleString()} | ${percentage(metrics.viewCardDetail, metrics.activeUsers)} |
+| \`content_cta_click\` | ${metrics.contentCtaClick.toLocaleString()} | ${percentage(metrics.contentCtaClick, metrics.activeUsers)} |
+| \`copy_deck\` | ${metrics.copyDeck.toLocaleString()} | ${percentage(metrics.copyDeck, metrics.activeUsers)} |
+| \`deck_complete\` | ${metrics.deckComplete.toLocaleString()} | ${percentage(metrics.deckComplete, metrics.activeUsers)} |
+| \`share_deck\` | ${metrics.shareDeck.toLocaleString()} | ${percentage(metrics.shareDeck, metrics.activeUsers)} |
+| \`pwa_install\` | ${metrics.pwaInstall.toLocaleString()} | ${percentage(metrics.pwaInstall, metrics.activeUsers)} |`;
+}
+
+export function renderGrowthPeriodComparison(comparison: GrowthPeriodComparison): string {
+  const rows = comparisonMetrics.map(({ label, key }) => {
+    const current = comparison.last7Days[key];
+    const total28Days = comparison.last28Days[key];
+    const weeklyAverage = total28Days / 4;
+    return `| ${label} | ${current.toLocaleString()} | ${total28Days.toLocaleString()} | ${weeklyAverage.toLocaleString(undefined, { maximumFractionDigits: 1 })} | ${weeklyPace(current, total28Days)} |`;
+  });
+
+  return `## オーガニック成長（7日 / 28日）
+
+直近7日を、直近28日の週平均（28日値 ÷ 4）と比較します。
+
+| 指標 | 直近7日 | 直近28日 | 28日週平均 | 週次ペース差 |
+| :--- | ---: | ---: | ---: | ---: |
+${rows.join('\n')}
+
+${renderGrowthFunnel(comparison.last7Days)}`;
 }
 
 function getJstDateString(): string {
@@ -86,7 +228,7 @@ function formatDuration(seconds: number): string {
   return `${m}分${s}秒`;
 }
 
-function generateActionStrategy(data: AnalyticsSummary): string {
+export function generateActionStrategy(data: AnalyticsSummary): string {
   const topSource = data.trafficSources.length > 0
     ? [...data.trafficSources].sort((a, b) => b.users - a.users)[0]
     : { source: 'Direct / Unknown', users: 0, percentage: 0 };
@@ -123,6 +265,10 @@ function generateActionStrategy(data: AnalyticsSummary): string {
 | **カード/デッキ購入クリック数 (送客)** | **${totalBuyActions.toLocaleString()} 回** | 🟢 購買意欲の高いユーザーを効率送客中 |
 | **購入送客 CVR (送客数 / UU)** | **${buyCvr}%** | 🎯 目標 10.0% に向け最適化中 |
 | **デッキ共有 (X / 画像) イベント** | **${data.deckShareEvents.toLocaleString()} 回 (共有率 ${shareRate}%)** | 🟡 バイラル拡大の余地あり |
+
+---
+
+${renderGrowthPeriodComparison(data.growth)}
 
 ---
 
@@ -185,6 +331,78 @@ ${data.shopShares.map(s => `${s.shop.padEnd(16)} [${'█'.repeat(Math.round(s.pe
 - \`@x-operator\`: 本レポートの「購買TOPカード」を参照して X 投稿キューを自動最適化。
 - \`public/js/analytics.js\`: \`click_buy_card\` / \`click_buy_deck\` / \`share_deck\` をリアルタイム計測。
 `;
+}
+
+interface AnalyticsRowLike {
+  dimensionValues?: ({ value?: string | null } | null)[] | null;
+  metricValues?: ({ value?: string | null } | null)[] | null;
+}
+
+function normalizeRows(rows: AnalyticsRowLike[] | null | undefined): NormalizedAnalyticsRow[] {
+  return (rows || []).map(row => ({
+    dimensions: (row.dimensionValues || []).map(value => value?.value || ''),
+    metrics: (row.metricValues || []).map(value => value?.value || '0'),
+  }));
+}
+
+export async function fetchGrowthPeriod(
+  client: BetaAnalyticsDataClient,
+  propertyId: string,
+  startDate: '7daysAgo' | '28daysAgo',
+): Promise<GrowthPeriodMetrics> {
+  const dateRanges = [{ startDate, endDate: 'yesterday' }];
+  const property = `properties/${propertyId}`;
+
+  const [overviewResult, channelResult, eventResult, guideResult] = await Promise.all([
+    client.runReport({
+      property,
+      dateRanges,
+      metrics: [{ name: 'activeUsers' }],
+    }),
+    client.runReport({
+      property,
+      dateRanges,
+      dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+      metrics: [{ name: 'activeUsers' }],
+    }),
+    client.runReport({
+      property,
+      dateRanges,
+      dimensions: [{ name: 'eventName' }],
+      metrics: [{ name: 'eventCount' }],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'eventName',
+          inListFilter: { values: Object.keys(growthEventFields) },
+        },
+      },
+    }),
+    client.runReport({
+      property,
+      dateRanges,
+      // landingPage is the first pageview in a session; pagePath also counts later visits.
+      dimensions: [{ name: 'landingPage' }],
+      metrics: [{ name: 'sessions' }],
+      dimensionFilter: {
+        filter: {
+          fieldName: 'landingPage',
+          stringFilter: {
+            matchType: 'FULL_REGEXP',
+            value: '^.*/(guide|deck-guide|guides)(/.*)?$',
+          },
+        },
+      },
+      limit: 1000,
+    }),
+  ]);
+
+  const overviewRows = normalizeRows(overviewResult[0].rows as AnalyticsRowLike[] | null | undefined);
+  return aggregateGrowthPeriod({
+    activeUsers: finiteNonNegative(overviewRows[0]?.metrics[0]),
+    channelRows: normalizeRows(channelResult[0].rows as AnalyticsRowLike[] | null | undefined),
+    eventRows: normalizeRows(eventResult[0].rows as AnalyticsRowLike[] | null | undefined),
+    guideRows: normalizeRows(guideResult[0].rows as AnalyticsRowLike[] | null | undefined),
+  });
 }
 
 // GA4 Data API から実測値を取得して集計
@@ -299,6 +517,11 @@ async function fetchRealAnalytics(propertyId: string): Promise<AnalyticsSummary>
     { shop: 'カーナベル (Ka-Nabell)', clicks: Math.round(buyClicksTotal * 0.20), percentage: 20 },
   ];
 
+  const [last7Days, last28Days] = await Promise.all([
+    fetchGrowthPeriod(client, propertyId, '7daysAgo'),
+    fetchGrowthPeriod(client, propertyId, '28daysAgo'),
+  ]);
+
   return {
     period: '直近30日間 (実測データ)',
     totalPv,
@@ -311,6 +534,7 @@ async function fetchRealAnalytics(propertyId: string): Promise<AnalyticsSummary>
     shopShares,
     deckShareEvents,
     deckBuyEvents,
+    growth: { last7Days, last28Days },
     isMock: false,
   };
 }
@@ -358,6 +582,30 @@ async function main() {
       ],
       deckShareEvents: 740,
       deckBuyEvents: 185,
+      growth: {
+        last7Days: {
+          activeUsers: 47,
+          organicUsers: 0,
+          guideEntrances: 0,
+          viewCardDetail: 0,
+          copyDeck: 0,
+          deckComplete: 0,
+          shareDeck: 0,
+          pwaInstall: 0,
+          contentCtaClick: 0,
+        },
+        last28Days: {
+          activeUsers: 47,
+          organicUsers: 0,
+          guideEntrances: 0,
+          viewCardDetail: 0,
+          copyDeck: 0,
+          deckComplete: 0,
+          shareDeck: 0,
+          pwaInstall: 0,
+          contentCtaClick: 0,
+        },
+      },
       isMock: true,
     };
   } else {
@@ -382,7 +630,10 @@ async function main() {
   console.log(`GA4 Analytics & Strategy Report generated at: ${outPath}`);
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+const entryPoint = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
+if (import.meta.url === entryPoint) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}
