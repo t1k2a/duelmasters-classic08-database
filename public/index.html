@@ -1656,13 +1656,13 @@ function shareDeckX() {
   if (!deck.length) { showToast('デッキが空です'); return; }
   const cardCount = deckTotalCount();
   if (cardCount < 1 || cardCount > DECK_MAX) { showToast('デッキの枚数を確認してください'); return; }
-  if (window.trackGrowthEvent) {
-    window.trackGrowthEvent('share_deck', { method: 'x', card_count: cardCount });
-  }
   const url = buildDeckURL();
   const summary = deckSummaryText(deck);
   const intentURL = `https://twitter.com/intent/tweet?text=${encodeURIComponent(summary)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent(SHARE_HASHTAGS_PARAM)}`;
-  window.open(intentURL, '_blank', 'noopener');
+  const intentWindow = window.open(intentURL, '_blank', 'noopener');
+  if (intentWindow && window.trackGrowthEvent) {
+    window.trackGrowthEvent('share_deck', { method: 'x', card_count: cardCount });
+  }
 }
 
 // deck/recipe をブラウザで開いたとき document.title を動的に更新する。

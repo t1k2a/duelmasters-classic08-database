@@ -232,6 +232,34 @@ try {
   finally { if (ctx) await ctx.close(); }
 }
 
+// ===== #7 X Intent はポップアップを開けた場合だけ共有導線を計測 =====
+{
+  let ctx;
+  try {
+    ctx = await browser.newContext();
+    await ctx.addInitScript(() => {
+      window.__growthEvents = [];
+      const spy = (eventName, params) => window.__growthEvents.push([eventName, params || {}]);
+      Object.defineProperty(window, 'trackEvent', { configurable: true, get: () => spy, set: () => {} });
+    });
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/index.html?recipe=rcp-2628');
+    await page.waitForFunction(() => deckTotalCount() === 40, { timeout: 15000 });
+    const result = await page.evaluate(() => {
+      window.__growthEvents.length = 0;
+      window.open = () => null;
+      shareDeckX();
+      const blocked = window.__growthEvents.length;
+      window.open = () => ({});
+      shareDeckX();
+      return { blocked, events: window.__growthEvents.filter(([name]) => name === 'share_deck') };
+    });
+    rec(7, 'X Intentはポップアップ成功時だけ計測', result.blocked === 0 && result.events.length === 1 && result.events[0][1].method === 'x',
+      `blocked=${result.blocked}, events=${result.events.length}`);
+  } catch (e) { rec(7, 'X Intentはポップアップ成功時だけ計測', false, 'EXC: ' + e.message); }
+  finally { if (ctx) await ctx.close(); }
+}
+
 // ===== #7 画像に復元URL/QRを描画し、QR失敗時もPNGを出力する =====
 {
   let ctx;
