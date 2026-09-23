@@ -746,11 +746,11 @@ Expected: PASS.
 
 **Step 3: Run browser checks**
 
-Run: `npm run test:e2e:deck-legality`
+Run: `npm run test:e2e`
 
 Expected: all cases PASS.
 
-Run: `npm run test:e2e`
+Run: `npm run test:e2e:deck-legality`
 
 Expected: all cases PASS.
 

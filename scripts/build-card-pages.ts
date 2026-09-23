@@ -15,15 +15,19 @@
  * Usage: npm run build:card-pages
  */
 
-import { readFile, writeFile, mkdir } from 'fs/promises'
+import { readFile, writeFile, mkdir, unlink } from 'fs/promises'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+
+import { extractSitemapLastModified, growthSitemapUrls, validateGrowthPages, type GrowthPage } from '../src/growth/growth-pages.js'
+import { renderStaticPageGuideLinks } from '../src/growth/render-growth-page.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PUBLIC_DIR = join(__dirname, '../public')
 const CARDS_FILE = join(PUBLIC_DIR, 'cards.json')
 const RECIPES_FILE = join(PUBLIC_DIR, 'data/recipes.json')
 const META_FILE = join(PUBLIC_DIR, 'data/meta-decks.json')
+const GROWTH_CONTENT_FILE = join(__dirname, '../data/content/growth-pages.json')
 
 const SITE = 'https://t1k2a.github.io/duelmasters-classic08-database'
 const IMG_BASE = 'https://dm.takaratomy.co.jp/wp-content/card/cardimage'
@@ -61,6 +65,7 @@ interface RecipeJson {
   civilizations?: string[]
   archetype?: string
   author?: string
+  poolStatus?: string
 }
 
 interface MetaDeckJson {
@@ -93,6 +98,14 @@ function escapeXml(s: string): string {
 function jsonLdEscape(s: string): string {
   // Escape for embedding inside a <script type="application/ld+json"> block.
   return s.replace(/</g, '\\u003c').replace(/>/g, '\\u003e')
+}
+
+/** Write generated HTML only when its rendered content differs from the prior build. */
+async function writeGeneratedHtml(file: string, html: string): Promise<boolean> {
+  const previous = await readFile(file, 'utf8').catch(() => undefined)
+  if (previous === html) return false
+  await writeFile(file, html)
+  return true
 }
 
 // SPA(public/index.html)と同じ文明カラー。静的ページでも見た目を揃える。
@@ -897,7 +910,7 @@ function formatCardText(rawText: string): string {
   return formatted
 }
 
-function cardPageHtml(card: CardJson): string {
+function cardPageHtml(card: CardJson, relatedGuides: GrowthPage[] = []): string {
   const url = `${SITE}/card/${card.id}/`
   const image = `${IMG_BASE}/${card.id}.jpg`
   const title = `${card.name} - デュエルマスターズ クラシック08`
@@ -1071,7 +1084,7 @@ ${jsonLdEscape(jsonLd)}
               カーナベル
             </a>
           </div>
-        </section>
+        </section>${relatedGuides.length ? `\n        ${renderStaticPageGuideLinks(relatedGuides, '../../')}` : ''}
       </div>
     </article>
   </main>
@@ -1196,8 +1209,9 @@ function deckPageHtml(opts: {
   civilizations: string[]
   byId: Map<string, CardJson>
   extraDesc?: string
+  relatedGuide?: GrowthPage
 }): string {
-  const { pathSlug, redirectId, deckName, cards, civilizations, byId, extraDesc } = opts
+  const { pathSlug, redirectId, deckName, cards, civilizations, byId, extraDesc, relatedGuide } = opts
   const url = `${SITE}/recipe/${pathSlug}/`
   const top = getRepresentativeCard(cards, deckName, byId)
   const total = deckTotal(cards)
@@ -1289,7 +1303,7 @@ ${jsonLdEscape(jsonLd)}
       </div>
     </div>
     <h2 class="text-lg font-semibold mt-8">カードリスト</h2>
-    ${cardList}
+    ${cardList}${relatedGuide ? `\n    ${renderStaticPageGuideLinks([relatedGuide], '../../')}` : ''}
     <p class="mt-6"><a href="../../" class="text-indigo-600 hover:underline text-sm">デュエルマスターズ クラシック08 データベース トップへ</a></p>
   </main>
   <div id="toast" role="status" aria-live="polite" aria-atomic="true" class="opacity-0 pointer-events-none transition-opacity fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm rounded-lg px-4 py-2 shadow-lg"></div>
@@ -1304,17 +1318,45 @@ async function main() {
   await mkdir(join(PUBLIC_DIR, 'css'), { recursive: true })
   await writeFile(join(PUBLIC_DIR, 'css/card-page.css'), CARD_PAGE_CSS.trim())
 
-  const cards: CardJson[] = JSON.parse(await readFile(CARDS_FILE, 'utf-8'))
-  const recipes: RecipeJson[] = JSON.parse(await readFile(RECIPES_FILE, 'utf-8'))
-  const metaDecks: MetaDeckJson[] = JSON.parse(await readFile(META_FILE, 'utf-8'))
+  const [cards, recipes, metaDecks, growthInput]: [CardJson[], RecipeJson[], MetaDeckJson[], unknown] = await Promise.all([
+    readFile(CARDS_FILE, 'utf-8').then(JSON.parse),
+    readFile(RECIPES_FILE, 'utf-8').then(JSON.parse),
+    readFile(META_FILE, 'utf-8').then(JSON.parse),
+    readFile(GROWTH_CONTENT_FILE, 'utf-8').then(JSON.parse),
+  ])
   const byId = new Map(cards.map(c => [c.id, c]))
+  const { pages: growthPages } = validateGrowthPages(growthInput, { cards, recipes })
+  const changedSitemapUrls = new Set<string>()
+  const growthChangeFile = join(PUBLIC_DIR, 'data/.growth-pages-changes.json')
+  const changedGrowthUrls = await readFile(growthChangeFile, 'utf8')
+    .then(value => JSON.parse(value) as unknown)
+    .catch(() => [])
+  if (Array.isArray(changedGrowthUrls)) {
+    for (const url of changedGrowthUrls) {
+      if (typeof url === 'string') changedSitemapUrls.add(url)
+    }
+  }
+  await unlink(growthChangeFile).catch(() => undefined)
+  const guidesByCardId = new Map<string, GrowthPage[]>()
+  const guideByRecipeId = new Map<string, GrowthPage>()
+  for (const page of growthPages) {
+    for (const cardId of page.relatedCardIds) {
+      const guides = guidesByCardId.get(cardId) ?? []
+      guides.push(page)
+      guidesByCardId.set(cardId, guides)
+    }
+    if (page.featuredRecipeId) guideByRecipeId.set(page.featuredRecipeId, page)
+  }
 
   // --- card pages ---
   let cardPages = 0
   for (const card of cards) {
     const dir = join(PUBLIC_DIR, 'card', card.id)
     await mkdir(dir, { recursive: true })
-    await writeFile(join(dir, 'index.html'), cardPageHtml(card))
+    const url = `${SITE}/card/${card.id}/`
+    if (await writeGeneratedHtml(join(dir, 'index.html'), cardPageHtml(card, guidesByCardId.get(card.id)?.slice(0, 3)))) {
+      changedSitemapUrls.add(url)
+    }
     cardPages++
   }
 
@@ -1324,7 +1366,8 @@ async function main() {
   for (const recipe of recipes) {
     const dir = join(PUBLIC_DIR, 'recipe', recipe.id)
     await mkdir(dir, { recursive: true })
-    await writeFile(
+    const url = `${SITE}/recipe/${recipe.id}/`
+    if (await writeGeneratedHtml(
       join(dir, 'index.html'),
       deckPageHtml({
         pathSlug: recipe.id,
@@ -1334,9 +1377,12 @@ async function main() {
         civilizations: recipe.civilizations ?? [],
         byId,
         extraDesc: recipe.archetype ? `アーキタイプ: ${recipe.archetype}。` : undefined,
-      })
-    )
-    recipeUrls.push(`${SITE}/recipe/${recipe.id}/`)
+        relatedGuide: guideByRecipeId.get(recipe.id),
+      }),
+    )) {
+      changedSitemapUrls.add(url)
+    }
+    recipeUrls.push(url)
     recipePages++
   }
 
@@ -1458,7 +1504,7 @@ ${PAGE_FOOTER}
 </html>
 `
     await mkdir(dir, { recursive: true })
-    await writeFile(join(dir, 'index.html'), html)
+    if (await writeGeneratedHtml(join(dir, 'index.html'), html)) changedSitemapUrls.add(url)
     metaUrls.push(url)
     metaPages++
   }
@@ -1472,17 +1518,16 @@ Sitemap: ${SITE}/sitemap.xml
 
   // sitemap.xml（card + recipe + meta を一括生成、上書き競合を避ける）
   const today = new Date().toISOString().slice(0, 10)
+  const previousSitemap = await readFile(join(PUBLIC_DIR, 'sitemap.xml'), 'utf8').catch(() => '')
+  const previousLastModified = extractSitemapLastModified(previousSitemap)
+  const sitemapEntry = (url: string): string =>
+    `  <url><loc>${escapeXml(url)}</loc><lastmod>${changedSitemapUrls.has(url) ? today : previousLastModified.get(url) ?? today}</lastmod></url>`
   const urls = [
-    `  <url><loc>${SITE}/</loc><lastmod>${today}</lastmod></url>`,
-    ...cards.map(
-      c => `  <url><loc>${escapeXml(`${SITE}/card/${c.id}/`)}</loc><lastmod>${today}</lastmod></url>`
-    ),
-    ...recipeUrls.map(
-      u => `  <url><loc>${escapeXml(u)}</loc><lastmod>${today}</lastmod></url>`
-    ),
-    ...metaUrls.map(
-      u => `  <url><loc>${escapeXml(u)}</loc><lastmod>${today}</lastmod></url>`
-    ),
+    sitemapEntry(`${SITE}/`),
+    ...cards.map(c => sitemapEntry(`${SITE}/card/${c.id}/`)),
+    ...recipeUrls.map(sitemapEntry),
+    ...metaUrls.map(sitemapEntry),
+    ...growthSitemapUrls(growthPages, SITE).map(sitemapEntry),
   ]
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -1494,6 +1539,7 @@ ${urls.join('\n')}
   console.log(`Card pages   : ${cardPages}`)
   console.log(`Recipe pages : ${recipePages}`)
   console.log(`Meta pages   : ${metaPages}`)
+  console.log(`Growth URLs  : ${growthPages.length + 1}`)
   console.log(`robots.txt   : ${join(PUBLIC_DIR, 'robots.txt')}`)
   console.log(`sitemap.xml  : ${join(PUBLIC_DIR, 'sitemap.xml')} (${urls.length} urls)`)
 }
