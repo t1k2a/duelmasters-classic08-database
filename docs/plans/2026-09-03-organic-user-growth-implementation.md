@@ -522,7 +522,6 @@ git commit -m "feat(growth): connect guides to cards and deck builder"
 - Modify: `public/index.html:1077-1284,1604-1653,2077-2175`
 - Modify: `public/js/analytics.js:29-46`
 - Modify: `scripts/e2e.mjs`
-- Modify: `scripts/e2e-deck.mjs`
 
 **Step 1: Write failing analytics E2E cases**
 
@@ -537,7 +536,7 @@ git commit -m "feat(growth): connect guides to cards and deck builder"
 
 **Step 2: Run and verify failure**
 
-Run: `npm run test:e2e && npm run test:e2e:deck`
+Run: `npm run test:e2e && npm run test:e2e:deck-legality`
 
 Expected: new cases FAIL; existing cases remain PASS.
 
@@ -566,14 +565,14 @@ window.trackEventOnce = function (key, eventName, params) {
 
 **Step 5: Run tests**
 
-Run: `npm run test:e2e && npm run test:e2e:deck`
+Run: `npm run test:e2e && npm run test:e2e:deck-legality`
 
 Expected: PASS with exact event counts.
 
 **Step 6: Commit**
 
 ```bash
-git add public/index.html public/js/analytics.js scripts/e2e.mjs scripts/e2e-deck.mjs
+git add public/index.html public/js/analytics.js scripts/e2e.mjs
 git commit -m "feat(analytics): measure organic growth funnel"
 ```
 
@@ -585,20 +584,19 @@ git commit -m "feat(analytics): measure organic growth funnel"
 - Modify: `package-lock.json`
 - Modify: `public/index.html:140-220,1115-1168,2196-2365`
 - Modify: `scripts/e2e.mjs`
-- Modify: `scripts/e2e-deck.mjs`
 - Create: `scripts/copy-vendor-assets.ts`
 - Generate: `public/js/vendor/qrcode.js`
 
 **Step 1: Write failing UX tests**
 
 - 絞り込み後の「検索条件を共有」が現在の`q`、文明、カード種、コスト、種族、セット、パワー、レアリティ、能力、05絞り込み、ソートだけを含むURLをコピーする。
-- `chatApi`、`d`、`recipe`など検索以外の状態を混ぜない。
+- `d`、`recipe`など検索以外の状態を混ぜない。
 - 生成デッキ画像にサイト名、復元URL文字列、QR領域がある。
 - QR生成を意図的に失敗させてもPNG出力・Web Share API fallbackは継続する。
 
 **Step 2: Run and verify failure**
 
-Run: `npm run test:e2e && npm run test:e2e:deck`
+Run: `npm run test:e2e && npm run test:e2e:deck-legality`
 
 Expected: new cases FAIL.
 
@@ -633,14 +631,14 @@ async function drawDeckQr(ctx, url, x, y, size) {
 
 **Step 6: Run tests**
 
-Run: `npm run test:e2e && npm run test:e2e:deck && node scripts/test-deck-url.mjs`
+Run: `npm run test:e2e && npm run test:e2e:deck-legality && node scripts/test-deck-url.mjs`
 
 Expected: PASS; forced QR failure case still produces a non-empty PNG blob.
 
 **Step 7: Commit**
 
 ```bash
-git add package.json package-lock.json scripts/copy-vendor-assets.ts public/js/vendor public/index.html scripts/e2e.mjs scripts/e2e-deck.mjs
+git add package.json package-lock.json scripts/copy-vendor-assets.ts public/js/vendor public/index.html scripts/e2e.mjs
 git commit -m "feat(growth): add shareable searches and deck QR"
 ```
 
@@ -752,7 +750,7 @@ Run: `npm run test:e2e`
 
 Expected: all cases PASS.
 
-Run: `npm run test:e2e:deck`
+Run: `npm run test:e2e:deck-legality`
 
 Expected: all cases PASS.
 

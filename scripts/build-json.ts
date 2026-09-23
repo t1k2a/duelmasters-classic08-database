@@ -84,6 +84,11 @@ async function main() {
           p => p.setCode === printing.setCode && p.cardNumber === printing.cardNumber
         )
         if (!alreadyHas) existing.printings.push(printing)
+        for (const s of card.additionalSetNames) {
+          if (!existing.setsContaining.includes(s)) {
+            existing.setsContaining.push(s)
+          }
+        }
       } else {
         cards.set(card.name, {
           id: cardId,
@@ -105,7 +110,7 @@ async function main() {
   const result: CardJson[] = Array.from(cards.values())
 
   await mkdir(OUT_DIR, { recursive: true })
-  await writeFile(OUT_FILE, JSON.stringify(result))
+  await writeFile(OUT_FILE, JSON.stringify(result, null, 2))
 
   const sizeKB = Math.round(JSON.stringify(result).length / 1024)
   console.log(`HTML files  : ${total}`)

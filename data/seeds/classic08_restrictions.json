@@ -64,8 +64,6 @@
   "knownMissingFromCardPool": {
     "description": "一次ソースには載るが public/cards.json に存在しないカード。DMC系・プロモ由来で公式DBに詳細ページが無く取得できていない（data/seeds/known_gaps.md 参照）。制限リストには表示するが、カード詳細ページへのリンクは張れない。",
     "names": [
-      "ガルベリアス・ドラゴン",
-      "フューチャー・スラッシュ",
       "ボルメテウス・サファイア・ドラゴン"
     ]
   }

@@ -4,7 +4,7 @@
 //
 // 表記ゆれの主因は DM Vault 側の「漢字（読み仮名）」括弧付き表記。cards.json は弾ごとに
 // 括弧の有無が不統一なため、両側から括弧を除去し normalizeKana で正規化したキーで照合する。
-import { normalizeKana } from '../chat/normalize.js'
+import { normalizeKana } from './normalize-kana.js'
 
 export interface CardLike {
   id: string

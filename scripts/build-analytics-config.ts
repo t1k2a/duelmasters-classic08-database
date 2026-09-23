@@ -14,7 +14,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
-// ローカル実行時は .env を process.env へ読み込む（src/chat/env.ts と同じ慣習）。
+// ローカル実行時は .env を process.env へ読み込む。
 // CI（deploy.yml）には .env が無く process.loadEnvFile は throw するため握りつぶす。
 // その場合は CI が渡す process.env.GA_MEASUREMENT_ID をそのまま使う。
 try {

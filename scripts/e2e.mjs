@@ -497,7 +497,7 @@ try {
     const created = await newGrowthPage();
     growthCtx = created.growthCtx;
     const growthPage = created.growthPage;
-    await growthPage.goto(BASE + '/index.html?chatApi=https%3A%2F%2Fevil.test&d=secret&recipe=rcp-1&q=%E7%AB%9C&ability=' + encodeURIComponent('ブロッカー'));
+    await growthPage.goto(BASE + '/index.html?d=secret&recipe=rcp-1&q=%E7%AB%9C&ability=' + encodeURIComponent('ブロッカー'));
     await growthPage.waitForFunction(() => document.getElementById('resultCount') && /\u4ef6中/.test(document.getElementById('resultCount').textContent), { timeout: 15000 });
     await ensureFilterExpanded(growthPage);
     await growthPage.locator('#shareSearchBtn').click();
