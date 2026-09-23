@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>デュエマクラシック08 データベース | デュエマクラシック カード検索 & デッキビルダー (DM-01〜DM-30)</title>
-    <meta name="description" content="デュエマクラシック08（DM-01〜DM-30・戦国編まで）の全2,134枚カードデータベース。デッキ構築、リアルタイムマナカーブ分析、高精細デッキ画像生成、殿堂ルール解説、AIデッキ相談を完全網羅。">
+    <meta name="description" content="デュエマクラシック08（DM-01〜DM-30・戦国編まで）の全2,134枚カードデータベース。デッキ構築、リアルタイムマナカーブ分析、高精細デッキ画像生成、殿堂ルール解説を網羅。">
   <meta name="keywords" content="デュエマクラシック,デュエマクラシック08,デュエマ クラシック,デュエルマスターズ,デッキビルダー,デッキ画像,ボルコン,天門,カード検索,殿堂レギュレーション,戦国編,デュエマ">
   <link rel="canonical" href="https://t1k2a.github.io/duelmasters-classic08-database/">
   <meta property="og:type" content="website">
@@ -38,7 +38,7 @@
     .card-row.selected { background:#eff6ff; border-left:3px solid #3b82f6; }
     .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
     @media (max-width: 640px) {
-      #textSearch, #chatInput { font-size: 16px; }
+      #textSearch { font-size: 16px; }
     }
       /* ダークモード & インタラクション */
     .dark .card-row:hover { background: #1e293b; }
@@ -284,38 +284,6 @@
   <span id="deckCountBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">0</span>
 </button>
 
-<!-- AIに聞く フローティングボタン（health で出し分け・既定hidden） -->
-<button id="chatFab" onclick="openChatSheet()"
-  class="hidden fixed bottom-[5.5rem] right-5 z-30 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center text-sm font-medium gap-1 px-4 h-11">
-  💬 AIに聞く
-</button>
-
-<!-- AIチャット ボトムシート（全幅） -->
-<div id="chatSheet" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeChatSheet(event)">
-  <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
-    <div class="w-full max-w-[430px] bg-white rounded-t-2xl max-h-[85vh] flex flex-col">
-      <div class="flex justify-between items-center gap-3 px-5 pt-5 pb-3 border-b border-gray-100">
-        <h2 class="font-bold text-base">💬 AIに聞く <span class="text-xs font-normal text-gray-400">クラシック08 アシスタント</span></h2>
-        <div class="flex items-center gap-2 shrink-0">
-          <button onclick="resetChat()" class="text-xs text-gray-500 border border-gray-300 rounded-full px-3 py-1 hover:bg-gray-50">リセット</button>
-          <button onclick="closeChatSheet()" class="text-gray-400 text-xl leading-none">&times;</button>
-        </div>
-      </div>
-      <div id="chatLog" class="flex-1 overflow-y-auto px-5 py-3 space-y-3 min-h-[200px]"></div>
-      <div class="px-5 pt-1 pb-2 flex gap-2 flex-wrap" id="chatExamples">
-        <button onclick="chatUseExample(this)" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full px-3 py-1">ボルメテウス・ホワイト・ドラゴンの能力は？</button>
-        <button onclick="chatUseExample(this)" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full px-3 py-1">ブロッカーって何？</button>
-        <button onclick="chatUseExample(this)" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full px-3 py-1">クラシック05と08の違いは？</button>
-      </div>
-      <div class="px-5 pb-5 pt-1 flex gap-2 border-t border-gray-100">
-        <input id="chatInput" type="text" placeholder="質問を入力..."
-          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
-        <button id="chatSendBtn" onclick="sendChat()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg px-4 font-medium">送信</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- デッキパネル ボトムシート（全幅） -->
 <div id="deckPanel" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeDeckPanel(event)">
   <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
@@ -426,14 +394,6 @@
 
 <script src="js/deck-legality.js"></script>
 <script>
-let CHAT_API_BASE = 'https://api.dm-classic08.org'; // AWS EC2 + Cloudflare Tunnel(Groq駆動)。ローカル確認は ?chatApi=http://localhost:8788 で上書き可
-// ?chatApi= で一時的に上書き可能（差し替え前の動作確認・E2E用）
-try {
-  const _ca = new URLSearchParams(location.search).get('chatApi');
-  if (_ca) CHAT_API_BASE = _ca;
-} catch {}
-const CHAT_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
-
 const RENDER_PAGE = 100;
 let renderOffset = 0;
 let lastResults = [];
@@ -1733,7 +1693,6 @@ function loadRecipe(recipeId) {
   saveDeck();
   renderDeckBadge();
   document.getElementById('mobileDetail').classList.add('hidden');
-  if (typeof closeChatSheet === 'function') closeChatSheet();
   openDeckPanel();
   showToast(`「${recipe.name || 'デッキ'}」を読み込みました！🎴`);
 }
@@ -1758,320 +1717,6 @@ if (!localStorage.getItem('dm_tooltip_seen')) {
   localStorage.setItem('dm_tooltip_seen', '1');
 }
 
-// ===== AIチャット（ローカルLLM / ngrok経由） =====
-let chatHistory = [];   // { role:'user'|'assistant', content } の往復履歴
-let chatBusy = false;
-
-// タイピングドット（「考え中」表示）。起動中メッセージでも再利用する。
-const CHAT_DOTS = '<span class="chat-typing inline-flex gap-1 items-center py-0.5">'
-  + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>'
-  + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>'
-  + '<span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>'
-  + '</span>';
-
-// health で FAB を出し分け。Render無料枠はスリープするため、未応答＝「落ちている」と
-// 即断せず、スリープの可能性を考慮して楽観的にFABを表示する（ping自体が起動トリガーにもなる）。
-async function pollChatHealth() {
-  const fab = document.getElementById('chatFab');
-  // CHAT_API_BASE 未設定（プレースホルダのまま）なら問い合わせずFAB非表示のまま
-  if (CHAT_API_BASE.includes('YOUR-DOMAIN')) { fab.classList.add('hidden'); return; }
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 3500);
-    const r = await fetch(CHAT_API_BASE + '/api/health', { headers: CHAT_HEADERS, signal: ctrl.signal });
-    clearTimeout(t);
-    const j = await r.json();
-    fab.classList.toggle('hidden', !j.up);
-  } catch {
-    // タイムアウト/未応答はスリープ中の可能性が高い。送信時に起動＋「起動中」表示で対応するためFABは出す。
-    fab.classList.remove('hidden');
-  }
-}
-window.addEventListener('load', pollChatHealth);
-
-function openChatSheet() {
-  document.getElementById('chatSheet').classList.remove('hidden');
-  document.getElementById('chatInput').focus();
-  // スリープ中なら先に起こしておく（fire-and-forget）。最初の送信の待ち時間を短縮。
-  if (!CHAT_API_BASE.includes('YOUR-DOMAIN')) {
-    fetch(CHAT_API_BASE + '/api/health', { headers: CHAT_HEADERS }).catch(() => {});
-  }
-}
-
-function closeChatSheet(e) {
-  if (!e || e.target === document.getElementById('chatSheet')) {
-    document.getElementById('chatSheet').classList.add('hidden');
-  }
-}
-
-function resetChat() {
-  chatHistory = [];
-  document.getElementById('chatLog').innerHTML = '';
-}
-
-function chatUseExample(btn) {
-  document.getElementById('chatInput').value = btn.textContent;
-  sendChat();
-}
-
-function chatErrorMessage(code) {
-  if (code === 'BUSY') return '混んでいます。少し待ってからもう一度お試しください。';
-  if (code === 'RATE_LIMIT') return 'アクセスが集中しています。少し待ってからお試しください。';
-  return '今は使えません。時間をおいてお試しください。';
-}
-
-function appendUserBubble(text) {
-  const log = document.getElementById('chatLog');
-  const wrap = document.createElement('div');
-  wrap.className = 'flex justify-end';
-  wrap.innerHTML = `<div class="bg-emerald-600 text-white text-sm rounded-2xl rounded-br-sm px-3 py-2 max-w-[80%] whitespace-pre-wrap break-words"></div>`;
-  wrap.firstChild.textContent = text;
-  log.appendChild(wrap);
-  log.scrollTop = log.scrollHeight;
-}
-
-// アシスタントの吹き出しを追加し、本文textを持つ要素を返す
-function appendAssistantBubble() {
-  const log = document.getElementById('chatLog');
-  const wrap = document.createElement('div');
-  wrap.className = 'flex flex-col items-start gap-2';
-  const text = document.createElement('div');
-  text.className = 'bg-gray-100 text-gray-800 text-sm rounded-2xl rounded-bl-sm px-3 py-2 max-w-[90%] whitespace-pre-wrap break-words';
-  wrap.appendChild(text);
-  log.appendChild(wrap);
-  log.scrollTop = log.scrollHeight;
-  return text;
-}
-
-// 根拠カードを既存のカード表示（civ色・コスト/パワー等）に寄せてDB実値で描画
-function renderCardCards(bubble, cards) {
-  const wrap = bubble.parentElement;
-  const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 w-full';
-  grid.innerHTML = cards.map(renderCardCard).join('');
-  wrap.appendChild(grid);
-  document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
-}
-
-function renderCardCard(card) {
-  const civs = civBadge(card.civilizations || []);
-  const meta = `${escapeHtml(card.cardType)}・${card.cost ?? '—'}コスト${card.power !== null && card.power !== undefined ? ` / ${card.power.toLocaleString()}P` : ''}`;
-  const races = (card.races && card.races.length) ? `<div class="text-xs text-gray-400 truncate">${escapeHtml(card.races.join('/'))}</div>` : '';
-  return `
-    <div class="border border-gray-100 rounded-lg p-2 cursor-pointer hover:bg-gray-50" onclick="closeChatSheet();selectCard('${card.id}')">
-      <div class="flex items-center gap-2">
-        <img src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${card.id}.jpg"
-          alt="" loading="lazy"
-          onerror="this.parentNode.querySelector('.card-img-placeholder').style.display='flex';this.style.display='none'"
-          class="w-[40px] h-[56px] object-cover rounded shrink-0 bg-gray-100">
-        <div class="card-img-placeholder w-[40px] h-[56px] rounded shrink-0 bg-gray-100 hidden items-center justify-center text-gray-300 text-base">🎴</div>
-        <div class="min-w-0 flex-1">
-          <div class="font-semibold text-xs text-gray-900 truncate">${escapeHtml(card.name)}</div>
-          <div class="text-xs text-gray-500 mt-0.5 flex items-center gap-1 flex-wrap">${civs}</div>
-          <div class="text-xs text-gray-500 truncate">${meta}</div>
-          ${races}
-        </div>
-      </div>
-    </div>`;
-}
-
-// デッキ構築要求への応答：選定レシピの40枚を画像グリッドで描画（合成画像は作らず個別カード）
-function renderDeckCards(bubble, deck) {
-  const wrap = bubble.parentElement;
-  const box = document.createElement('div');
-  box.className = 'w-full';
-  const cards = Array.isArray(deck.cards) ? deck.cards : [];
-  const total = cards.reduce((s, c) => s + (c.count || 0), 0);
-  const title = escapeHtml(deck.name || 'デッキ');
-  const arch = deck.archetype ? `<span class="text-gray-400 font-normal">（${escapeHtml(deck.archetype)}）</span>` : '';
-  // ユニークカードをコスト昇順で安定ソート（未解決カードは末尾）
-  const entries = cards.map((rc, i) => ({ rc, card: cardById(rc.id), i }));
-  entries.sort((a, b) => {
-    const ca = a.card && a.card.cost != null ? a.card.cost : 99;
-    const cb = b.card && b.card.cost != null ? b.card.cost : 99;
-    return ca - cb || a.i - b.i;
-  });
-  const grid = entries.map(e => e.card ? renderDeckCard(e.card, e.rc.count) : renderDeckCardMissing(e.rc)).join('');
-  box.innerHTML = `
-    <div class="w-full border border-emerald-100 rounded-lg overflow-hidden">
-      <div class="bg-emerald-50 px-3 py-2 flex items-center justify-between gap-2">
-        <div class="min-w-0">
-          <div class="font-semibold text-sm text-gray-900 truncate">🃏 ${title} ${arch}</div>
-          <div class="text-xs text-gray-500">${total}枚（${entries.length}種）</div>
-        </div>
-        <button onclick="loadRecipe('${escapeHtml(deck.id)}')" class="shrink-0 bg-emerald-600 text-white text-xs rounded-full px-3 py-1.5 hover:bg-emerald-700">デッキに読み込む</button>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2">${grid}</div>
-    </div>`;
-  wrap.appendChild(box);
-  document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
-}
-
-// デッキ内の1カードタイル（画像＋枚数バッジ）。タップで既存の詳細遷移。
-function renderDeckCard(card, count) {
-  return `
-    <div class="border border-gray-100 rounded-lg p-1.5 cursor-pointer hover:bg-gray-50" onclick="closeChatSheet();selectCard('${card.id}')">
-      <div class="relative">
-        <img src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${card.id}.jpg"
-          alt="" loading="lazy"
-          onerror="this.parentNode.querySelector('.card-img-placeholder').style.display='flex';this.style.display='none'"
-          class="w-full aspect-[5/7] object-cover rounded bg-gray-100">
-        <div class="card-img-placeholder w-full aspect-[5/7] rounded bg-gray-100 hidden items-center justify-center text-gray-300 text-2xl">🎴</div>
-        <span class="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[10px] font-bold rounded px-1">×${count}</span>
-      </div>
-      <div class="font-semibold text-[11px] text-gray-900 truncate mt-1">${escapeHtml(card.name)}</div>
-      <div class="text-[10px] text-gray-500 truncate">${card.cost ?? '—'}コスト</div>
-    </div>`;
-}
-
-// CARDS に存在しないidでも崩れずに表示（id＋枚数のみ）。
-function renderDeckCardMissing(rc) {
-  return `
-    <div class="border border-gray-100 rounded-lg p-1.5 text-[11px] text-gray-500">
-      <div class="w-full aspect-[5/7] rounded bg-gray-100 flex items-center justify-center text-gray-300 text-2xl">🎴</div>
-      <div class="truncate mt-1">${escapeHtml(rc.id)}</div>
-      <div class="text-[10px]">×${rc.count}</div>
-    </div>`;
-}
-
-// 軽量Markdown→HTML。信頼できない出力を想定し、escapeHtml後にのみ整形タグを挿入（XSS安全）。
-function renderMarkdown(src) {
-  const inline = (s) => s
-    .replace(/`([^`]+)`/g, '<code class="bg-gray-200 rounded px-1 text-[0.85em]">$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-600 underline">$1</a>');
-  const lines = escapeHtml(src).split('\n');
-  let html = '', listType = null, inCode = false, code = '';
-  const closeList = () => { if (listType) { html += '</' + listType + '>'; listType = null; } };
-  for (const line of lines) {
-    if (/^\s*```/.test(line)) {
-      if (inCode) { html += `<pre class="bg-gray-800 text-gray-100 rounded p-2 overflow-x-auto text-xs my-1"><code>${code}</code></pre>`; code = ''; inCode = false; }
-      else { closeList(); inCode = true; }
-      continue;
-    }
-    if (inCode) { code += line + '\n'; continue; }
-    const h = line.match(/^(#{1,3})\s+(.*)$/);
-    if (h) { closeList(); html += `<div class="font-bold mt-2 mb-1">${inline(h[2])}</div>`; continue; }
-    const ul = line.match(/^\s*[-*]\s+(.*)$/);
-    const ol = line.match(/^\s*\d+\.\s+(.*)$/);
-    if (ul) { if (listType !== 'ul') { closeList(); html += '<ul class="list-disc ml-5 my-1 space-y-0.5">'; listType = 'ul'; } html += `<li>${inline(ul[1])}</li>`; continue; }
-    if (ol) { if (listType !== 'ol') { closeList(); html += '<ol class="list-decimal ml-5 my-1 space-y-0.5">'; listType = 'ol'; } html += `<li>${inline(ol[1])}</li>`; continue; }
-    closeList();
-    if (line.trim() === '') continue;
-    html += `<p class="my-1">${inline(line)}</p>`;
-  }
-  closeList();
-  if (inCode && code) html += `<pre class="bg-gray-800 text-gray-100 rounded p-2 overflow-x-auto text-xs my-1"><code>${code}</code></pre>`;
-  return html;
-}
-
-async function chatAsk(question, history) {
-  const bubble = appendAssistantBubble();
-  bubble.innerHTML = CHAT_DOTS;
-  let res;
-  try {
-    res = await fetch(CHAT_API_BASE + '/api/chat', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...CHAT_HEADERS },
-      body: JSON.stringify({ question, history }),
-    });
-  } catch {
-    bubble.textContent = chatErrorMessage('ERROR');
-    return '';
-  }
-  bubble.innerHTML = CHAT_DOTS;
-  if (!res.ok || !res.body) {
-    bubble.textContent = chatErrorMessage(res.status === 429 ? 'RATE_LIMIT' : 'ERROR');
-    return '';
-  }
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '', assistant = '', final = null;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let i;
-    while ((i = buf.indexOf('\n')) >= 0) {
-      const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
-      if (!line.startsWith('data:')) continue;
-      let ev;
-      try { ev = JSON.parse(line.slice(5).trim()); } catch { continue; }
-      if (ev.token) { assistant += ev.token; bubble.textContent = assistant; }
-      if (ev.done) final = ev;
-      document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
-    }
-  }
-  if (final?.error) {
-    bubble.textContent = chatErrorMessage(final.error);
-  } else if (assistant) {
-    // ストリーミング中はプレーン表示、完了時に Markdown を整形描画へ差し替え
-    bubble.classList.remove('whitespace-pre-wrap');
-    bubble.innerHTML = renderMarkdown(assistant);
-  } else {
-    // トークンもエラーも無い（空応答）: タイピングドットを残さない
-    bubble.textContent = '（応答がありませんでした）';
-  }
-  // デッキ構築要求で40枚が返ったターンは deck を優先し、8枚グリッドは省略（二重表示を避ける）
-  if (final?.deck) renderDeckCards(bubble, final.deck);
-  else if (final?.cards?.length) renderCardCards(bubble, final.cards);
-  if (final?.sources?.length) renderSources(bubble, final.sources);
-  return assistant;
-}
-
-// Web検索フォールバック時の出典リンク（DB範囲外であることを明示）
-function renderSources(bubble, sources) {
-  const wrap = bubble.parentElement;
-  const box = document.createElement('div');
-  box.className = 'w-full text-xs text-gray-500 border-t border-gray-100 pt-1 mt-1';
-  const links = sources.slice(0, 5).map(s =>
-    `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="block text-indigo-600 underline truncate">${escapeHtml(s.title || s.url)}</a>`
-  ).join('');
-  box.innerHTML = `<div class="text-gray-400 mb-0.5">🔎 Web検索の出典（DB収録範囲外）</div>${links}`;
-  wrap.appendChild(box);
-  document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
-}
-
-async function sendChat() {
-  if (chatBusy) return;
-  const input = document.getElementById('chatInput');
-  const question = input.value.trim();
-  if (!question) return;
-  chatBusy = true;
-  input.value = '';
-  document.getElementById('chatSendBtn').disabled = true;
-  appendUserBubble(question);
-  const history = chatHistory.slice();
-  chatHistory.push({ role: 'user', content: question });
-  try {
-    const answer = await chatAsk(question, history);
-    if (answer) chatHistory.push({ role: 'assistant', content: answer });
-  } catch {
-    appendAssistantBubble().textContent = chatErrorMessage('ERROR');
-  } finally {
-    chatBusy = false;
-    document.getElementById('chatSendBtn').disabled = false;
-    input.focus();
-  }
-}
-
-// IME変換確定Enterの誤送信を防ぐ。compositionend と同フレームに発火する keydown も抑止するため、
-// フラグの解除は次フレーム（rAF）まで遅延させる。
-(function setupChatInputEnter() {
-  const input = document.getElementById('chatInput');
-  if (!input) return;
-  let composing = false;
-  input.addEventListener('compositionstart', () => { composing = true; });
-  input.addEventListener('compositionend', () => {
-    requestAnimationFrame(() => { composing = false; });
-  });
-  input.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter') return;
-    if (composing || event.isComposing || event.keyCode === 229) return;
-    sendChat();
-  });
-})();
 </script>
 
 <!-- PWA: Service Worker 登録 + インストールプロンプト制御 -->

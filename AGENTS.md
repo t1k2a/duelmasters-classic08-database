@@ -9,7 +9,7 @@
 - **[CEO]** AI Agent / プロジェクト全体統括・グロース戦略判断
 - **[Director]** 進行管理・仕様策定・タスク管理
 - **[Reviewer / QA Lead]** コード品質・セキュリティ・パフォーマンス・アクセシビリティ監査
-- **[Tech Lead / Fullstack Engineer]** カードDB・デッキビルダー・AIチャット・静的生成システム開発
+- **[Tech Lead / Fullstack Engineer]** カードDB・デッキビルダー・静的生成システム開発
 - **[CMO / Marketing Lead]** X（旧Twitter）自動配信・SEO最適化・バイラル施策
 - **[Data Analyst]** GA4イベントトラッキング設計・CVR/送客データ分析
 

@@ -1,6 +1,6 @@
-// src/chat/recipe-match.test.ts
+// src/scraper/recipe-match.test.ts
 // レシピのカード名照合ロジック（src/scraper/recipe-match.ts）のゴールデンケース。
-// test:chat の glob(src/chat/*.test.ts)で回るよう、ここに置いて scraper の純関数を検証する。
+// scraper のテストとしてレシピ照合処理を検証する。
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
@@ -9,7 +9,7 @@ import {
   matchCardName,
   parseUnmatchedNote,
   rematchRecipe,
-} from '../scraper/recipe-match.js'
+} from './recipe-match.js'
 
 // cards.json は弾ごとに読み仮名括弧の有無が不統一（DBに括弧付き/無しが混在）。
 const CARDS = [
