@@ -34,6 +34,7 @@ try {
   await page.route('**/wp-content/card/cardimage/**', route => route.abort());
   await page.goto(baseUrl);
   await page.waitForFunction(() => window.isRestrictionsReady?.(), undefined, { timeout: 8000 });
+  await page.waitForFunction(() => CARDS.length > 0, undefined, { timeout: 8000 });
   await page.evaluate(() => {
     addToDeck('dm10-036'); // 母なる大地
     addToDeck('dm25-s04'); // 龍仙ロマネスク
