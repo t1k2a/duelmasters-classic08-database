@@ -10,6 +10,8 @@ public/js/analytics-config.js
 
 # marketing の運用ドキュメント（非公開）
 docs/marketing/*.md
+# GA4週次レポートはCodexで参照するためリポジトリに保存
+!docs/marketing/ga4-action-strategy.md
 docs/marketing/*.ics
 docs/marketing/scripts/
 

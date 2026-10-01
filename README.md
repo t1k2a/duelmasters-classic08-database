@@ -41,6 +41,16 @@ npm run serve
 
 > 📝 静的ページ（`public/card/`・`public/recipe/`）と `sitemap.xml` は CI ではビルドされません。データ更新時は `npm run build:card-pages` でローカル生成し、`public/` ごとコミットしてください。
 
+## GA4週次レポート
+
+毎週月曜09:00（日本時間）、`Weekly GA4 Analytics & Strategy Report` が実測レポートを生成し、デフォルトブランチの `docs/marketing/ga4-action-strategy.md` に自動保存します。レポート末尾には生成元のActions実行URLを記録します。Codexで更新後のリポジトリを開き、「GA4週次レポートを確認して」と依頼すれば、Summaryの貼り付けは不要です。既存の作業環境ではリポジトリの最新化が必要です。
+
+初回は変更をデフォルトブランチに反映した後、Actionsから `Run workflow` を実行してください。`GA4_PROPERTY_ID` と `GOOGLE_APPLICATION_CREDENTIALS` のSecretsが必要です。モック実行・取得失敗・デフォルトブランチ以外の実行では保存済みレポートを更新しません。デフォルトブランチで実測データを取得できた実行ではダウンロード用Artifactも7日間保持します。
+
+保存ジョブは `GITHUB_TOKEN` の `contents: write` を使用します。ブランチ保護や組織ポリシーで書き込みが禁止されている場合、自動保存は失敗するため設定の調整が必要です。レポートの閲覧範囲はリポジトリの公開設定に従います。
+
+確認手順は [GA4レポート確認スキル](.agents/skills/ga4-report/SKILL.md) にまとめています。
+
 ## 技術スタック
 
 スクレイピングで収集したデータを正規化し、静的サイトとして GitHub Pages に配信するパイプライン構成です。

@@ -9,9 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ga4-weekly-report-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   generate-report:
     runs-on: ubuntu-latest
+    outputs:
+      real_data: ${{ steps.report.outputs.real_data }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,13 +41,69 @@ jobs:
           chmod 600 "$RUNNER_TEMP/gcp-key.json"
 
       - name: Run GA4 Analytics Report
+        id: report
         env:
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-key.json
           GA4_MOCK: ${{ secrets.GA4_PROPERTY_ID == '' && 'true' || 'false' }}
-        run: npx tsx scripts/ga4-analytics.ts
+        run: |
+          npx tsx scripts/ga4-analytics.ts
+          if [ "$GA4_MOCK" = 'false' ]; then
+            echo 'real_data=true' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Publish report to job summary
         run: |
           echo "## Weekly GA4 Analytics & Organic Growth Report" >> "$GITHUB_STEP_SUMMARY"
           cat docs/marketing/ga4-action-strategy.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report for repository storage
+        if: steps.report.outputs.real_data == 'true' && github.ref_name == github.event.repository.default_branch
+        uses: actions/upload-artifact@v4
+        with:
+          name: ga4-weekly-report
+          path: docs/marketing/ga4-action-strategy.md
+          if-no-files-found: error
+          retention-days: 7
+
+  save-report:
+    needs: generate-report
+    if: needs.generate-report.outputs.real_data == 'true' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download generated report
+        uses: actions/download-artifact@v4
+        with:
+          name: ga4-weekly-report
+          path: report
+
+      - name: Save report to default branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'docs/marketing/ga4-action-strategy.md';
+            const branch = context.payload.repository.default_branch;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const report = fs.readFileSync('report/ga4-action-strategy.md', 'utf8');
+            const content = Buffer.from(`${report}\n\n---\n生成元: ${runUrl}\n`).toString('base64');
+            let sha;
+            try {
+              const existing = await github.rest.repos.getContent({
+                ...context.repo, path, ref: branch,
+              });
+              sha = existing.data.sha;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            await github.rest.repos.createOrUpdateFileContents({
+              ...context.repo,
+              path,
+              branch,
+              sha,
+              message: 'chore(marketing): update weekly GA4 report [skip ci]',
+              content,
+            });
