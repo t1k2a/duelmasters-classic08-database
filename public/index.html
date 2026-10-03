@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>デュエマクラシック08 データベース | デュエマクラシック カード検索 & デッキビルダー (DM-01〜DM-30)</title>
-    <meta name="description" content="デュエマクラシック08（DM-01〜DM-30・戦国編まで）の全2,251枚カードデータベース。デッキ構築、リアルタイムマナカーブ分析、高精細デッキ画像生成、殿堂ルール解説を網羅。">
+    <meta name="description" content="デュエマクラシック08（DM-01〜DM-30・戦国編まで）の2,251種類を収録したカードデータベース。デッキ構築、リアルタイムマナカーブ分析、高精細デッキ画像生成、殿堂ルール解説を網羅。">
   <meta name="keywords" content="デュエマクラシック,デュエマクラシック08,デュエマ クラシック,デュエルマスターズ,デッキビルダー,デッキ画像,ボルコン,天門,カード検索,殿堂レギュレーション,戦国編,デュエマ">
   <link rel="canonical" href="https://t1k2a.github.io/duelmasters-classic08-database/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="デュエマ クラシック08 カード検索">
-  <meta property="og:description" content="デュエル・マスターズ クラシック08環境の全カード検索・デッキビルダー。全2134枚収録。">
+  <meta property="og:description" content="デュエル・マスターズ クラシック08環境のカード検索・デッキビルダー。2,251種類を収録。">
   <meta property="og:url" content="https://t1k2a.github.io/duelmasters-classic08-database/">
   <meta property="og:image" content="https://t1k2a.github.io/duelmasters-classic08-database/ogp.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="デュエマ クラシック08 カード検索">
-  <meta name="twitter:description" content="デュエル・マスターズ クラシック08環境の全カード検索・デッキビルダー。全2134枚収録。">
+  <meta name="twitter:description" content="デュエル・マスターズ クラシック08環境のカード検索・デッキビルダー。2,251種類を収録。">
   <meta name="twitter:image" content="https://t1k2a.github.io/duelmasters-classic08-database/ogp.png">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode: "class" };</script>
+  <link rel="stylesheet" href="css/tailwind.css">
+  <link rel="stylesheet" href="css/catalog.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -104,23 +104,26 @@
   }
   </script>
 </head>
-<body class="bg-slate-950 min-h-screen flex flex-col items-center">
+<body class="catalog-page bg-slate-950 min-h-screen flex flex-col items-center">
 
 <!-- ヘッダー -->
-<header class="w-full bg-indigo-700 text-white shadow-md sticky top-0 z-20 flex justify-center">
-  <div class="w-full max-w-[430px] px-4 py-3 flex items-center gap-3">
-  <span class="text-lg font-bold tracking-wide">🎴 デュエマ クラシック08 カード検索</span>
-  <button id="pwaInstallBtn" onclick="pwaInstall()" class="hidden bg-white/15 hover:bg-white/25 text-white text-sm rounded px-2 py-1 leading-none">📲 インストール</button>
-  <a href="guides/" class="ml-auto text-indigo-100 hover:text-white text-sm underline underline-offset-2">遊び方・デッキ解説</a>
-  <a href="meta.html" class="text-indigo-100 hover:text-white text-sm underline underline-offset-2">メタデッキ</a>
-  <a href="regulations.html" class="text-indigo-100 hover:text-white text-sm underline underline-offset-2">レギュレーション</a>
-  <span id="cardCountBadge" class="text-indigo-200 text-sm"></span>
+<header class="catalog-header w-full bg-indigo-700 text-white shadow-md flex justify-center">
+  <div class="catalog-header-inner">
+    <div class="catalog-brand">
+      <span class="catalog-brand-title">🎴 デュエマ クラシック08 カード検索</span>
+      <span id="cardCountBadge" class="text-indigo-200 text-xs"></span>
+      <button id="pwaInstallBtn" onclick="pwaInstall()" class="hidden bg-white/15 hover:bg-white/25 text-white text-sm rounded px-2 py-1">📲 インストール</button>
+    </div>
+    <nav class="catalog-nav" aria-label="メインナビゲーション">
+      <a href="guides/" class="text-indigo-100 hover:text-white underline underline-offset-2">遊び方・デッキ解説</a>
+      <a href="meta.html" class="text-indigo-100 hover:text-white underline underline-offset-2">メタデッキ</a>
+      <a href="regulations.html" class="text-indigo-100 hover:text-white underline underline-offset-2">レギュレーション</a>
+    </nav>
   </div>
 </header>
 
-<!-- LP ラッパー: SP幅を中央に配置 -->
-<div class="flex justify-center w-full min-h-[calc(100vh-52px)]">
-  <div class="w-full max-w-[430px] bg-gray-50 dark:bg-slate-900 dark:text-slate-100 flex flex-col shadow-2xl md:border-x md:border-slate-800 transition-colors duration-200" style="height:calc(100vh - 52px); overflow:hidden;">
+<div class="catalog-layout">
+  <div class="catalog-shell bg-gray-50 dark:bg-slate-900 dark:text-slate-100 shadow-2xl md:border-x md:border-slate-800 transition-colors duration-200">
 
     <!-- 今日の1枚バナー -->
     <div id="todayPick" class="hidden flex-shrink-0 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-100 px-4 py-2">
@@ -135,19 +138,20 @@
     </div>
 
     <!-- 検索バー + フィルター -->
-    <div class="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex-shrink-0 transition-colors">
-      <!-- トグルヘッダー（常時表示） -->
-      <button onclick="toggleFilterPanel()" id="filterPanelToggle"
-        class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-800/60">
-        <span class="text-sm font-semibold text-gray-700 dark:text-slate-200">🔍 検索・絞り込み</span>
-        <span id="filterPanelChevron" class="text-gray-400 text-sm leading-none">▼</span>
-      </button>
-
-      <!-- 開閉本体（初期は折りたたみ） -->
+    <div class="catalog-search bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex-shrink-0 transition-colors">
+      <div class="px-4 pt-3">
+        <label for="textSearch" class="block text-sm font-semibold text-gray-700 dark:text-slate-200 mb-2">カードを検索</label>
+        <input id="textSearch" type="search" placeholder="カード名・テキストで検索..."
+          class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div class="flex items-center justify-between px-4 py-2 gap-2">
+        <button onclick="toggleFilterPanel()" id="filterPanelToggle" type="button" aria-controls="filterPanelBody" aria-expanded="false"
+          class="flex items-center gap-2 py-2 text-sm font-semibold text-gray-700 dark:text-slate-200">
+          詳細条件・並び替え <span id="filterPanelChevron" class="text-gray-400 text-sm" aria-hidden="true">▼</span>
+        </button>
+        <button id="resetSearchBtn" type="button" onclick="resetSearchFilters()" class="text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">条件をクリア</button>
+      </div>
       <div id="filterPanelBody" class="hidden px-4 pb-3">
-      <input id="textSearch" type="text" placeholder="カード名・テキストで検索..."
-        class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-
       <div class="mt-3 space-y-2">
         <!-- 絞り込み セクション -->
         <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">絞り込み</p>
@@ -158,15 +162,15 @@
         </label>
         <!-- 文明タグ -->
         <div class="flex gap-2 flex-wrap" id="mobileCivTags">
-          <button onclick="toggleMobileCiv(this,'光')"  data-civ="光"  data-on="1" class="civ-光  border rounded-full px-3 py-0.5 text-xs font-medium">光</button>
-          <button onclick="toggleMobileCiv(this,'水')"  data-civ="水"  data-on="1" class="civ-水  border rounded-full px-3 py-0.5 text-xs font-medium">水</button>
-          <button onclick="toggleMobileCiv(this,'闇')"  data-civ="闇"  data-on="1" class="civ-闇  border rounded-full px-3 py-0.5 text-xs font-medium">闇</button>
-          <button onclick="toggleMobileCiv(this,'火')"  data-civ="火"  data-on="1" class="civ-火  border rounded-full px-3 py-0.5 text-xs font-medium">火</button>
-          <button onclick="toggleMobileCiv(this,'自然')" data-civ="自然" data-on="1" class="civ-自然 border rounded-full px-3 py-0.5 text-xs font-medium">自然</button>
+          <button onclick="toggleMobileCiv(this,'光')"  data-civ="光"  data-on="1" aria-pressed="true" class="civ-光  border rounded-full px-3 py-0.5 text-xs font-medium">光</button>
+          <button onclick="toggleMobileCiv(this,'水')"  data-civ="水"  data-on="1" aria-pressed="true" class="civ-水  border rounded-full px-3 py-0.5 text-xs font-medium">水</button>
+          <button onclick="toggleMobileCiv(this,'闇')"  data-civ="闇"  data-on="1" aria-pressed="true" class="civ-闇  border rounded-full px-3 py-0.5 text-xs font-medium">闇</button>
+          <button onclick="toggleMobileCiv(this,'火')"  data-civ="火"  data-on="1" aria-pressed="true" class="civ-火  border rounded-full px-3 py-0.5 text-xs font-medium">火</button>
+          <button onclick="toggleMobileCiv(this,'自然')" data-civ="自然" data-on="1" aria-pressed="true" class="civ-自然 border rounded-full px-3 py-0.5 text-xs font-medium">自然</button>
         </div>
         <!-- カード種類 + コスト -->
         <div class="flex gap-2">
-          <select id="mobileCardType" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+          <select id="mobileCardType" aria-label="カードの種類" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
             <option value="">種類: すべて</option>
             <option value="クリーチャー">クリーチャー</option>
             <option value="進化クリーチャー">進化クリーチャー</option>
@@ -178,7 +182,7 @@
             <option value="進化クロスギア">進化クロスギア</option>
             <option value="城">城</option>
           </select>
-          <select id="mobileCostMax" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+          <select id="mobileCostMax" aria-label="コスト" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
             <option value="">コスト: すべて</option>
             <option value="max:2">〜2</option>
             <option value="range:3:5">3〜5</option>
@@ -187,21 +191,21 @@
           </select>
         </div>
         <!-- 種族 + パック -->
-        <select id="mobileRaceFilter" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+        <select id="mobileRaceFilter" aria-label="種族" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
           <option value="">種族: すべて</option>
         </select>
-        <select id="mobileSetFilter" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+        <select id="mobileSetFilter" aria-label="収録パック" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
           <option value="">パック: すべて</option>
         </select>
         <!-- パワー範囲 + レアリティ -->
         <div class="flex gap-2">
-          <select id="powerFilter" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+          <select id="powerFilter" aria-label="パワー" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
             <option value="">パワー: すべて</option>
             <option value="max:4999">〜4999</option>
             <option value="range:5000:9999">5000〜9999</option>
             <option value="min:10000">10000以上</option>
           </select>
-          <select id="rarityFilter" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+          <select id="rarityFilter" aria-label="レアリティ" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
             <option value="">レアリティ: すべて</option>
             <option value="SR">SR</option>
             <option value="VR">VR</option>
@@ -211,7 +215,7 @@
           </select>
         </div>
         <!-- 特殊能力 -->
-        <select id="abilityFilter" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+        <select id="abilityFilter" aria-label="特殊能力" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
           <option value="">特殊能力: すべて</option>
           <option value="ブロッカー">ブロッカー</option>
           <option value="スピードアタッカー">スピードアタッカー</option>
@@ -226,14 +230,14 @@
         <!-- ソート セクション -->
         <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">ソート</p>
         <div class="flex gap-2">
-          <select id="sortKey" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
+          <select id="sortKey" aria-label="並び替えの基準" class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs">
             <option value="">デフォルト</option>
             <option value="name">名前順</option>
             <option value="cost">マナ順</option>
             <option value="power">攻撃力順</option>
             <option value="rarity">レアリティ順</option>
           </select>
-          <select id="sortDir" class="w-20 border border-gray-300 rounded px-2 py-1 text-xs">
+          <select id="sortDir" aria-label="並び替えの方向" class="w-20 border border-gray-300 rounded px-2 py-1 text-xs">
             <option value="asc">昇順 ↑</option>
             <option value="desc">降順 ↓</option>
           </select>
@@ -247,7 +251,7 @@
     </div>
 
     <!-- カードリスト -->
-    <div class="flex-1 overflow-y-auto">
+    <div class="catalog-results">
       <div class="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2">
         <span class="text-xs text-gray-500" id="resultCount">読み込み中...</span>
         <div class="flex items-center gap-1">
@@ -283,9 +287,9 @@
 </div>
 
 <!-- デッキ フローティングボタン -->
-<button id="deckFab" onclick="openDeckPanel()"
+<button id="deckFab" onclick="openDeckPanel()" aria-label="マイデッキを開く"
   class="fixed bottom-5 right-5 z-30 bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl">
-  🃏
+  <span aria-hidden="true">🃏</span><span>デッキ</span>
   <span id="deckCountBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">0</span>
 </button>
 
@@ -339,10 +343,10 @@
           <span class="text-[10px] text-gray-400 font-normal">一括検索</span>
         </div>
         <div class="grid grid-cols-2 gap-1.5">
-          <button onclick="buyDeck('mercari')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-xs font-semibold transition-all shadow-2xs">
+          <button onclick="searchDeckShop('mercari')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-xs font-semibold transition-all shadow-2xs">
             メルカリで探す
           </button>
-          <button onclick="buyDeck('surugaya')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold transition-all shadow-2xs">
+          <button onclick="searchDeckShop('surugaya')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold transition-all shadow-2xs">
             駿河屋で探す
           </button>
         </div>
@@ -711,6 +715,8 @@ function cardRowHTML(c) {
   const term = currentSearchTerm();
   return `
     <div class="card-row px-3 py-2 cursor-pointer ${selectedCard === c.id ? 'selected' : ''}"
+         role="button" tabindex="0" aria-label="${escapeHtml(c.name)}の詳細を見る"
+         onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectCard('${c.id}'); }"
          onclick="selectCard('${c.id}')">
       <div class="flex items-center gap-3">
         <img
@@ -741,6 +747,8 @@ function cardCellHTML(c) {
   const term = currentSearchTerm();
   return `
     <div class="card-cell border border-gray-100 rounded-lg p-2 cursor-pointer hover:bg-gray-50 ${selectedCard === c.id ? 'ring-2 ring-indigo-400' : ''}"
+         role="button" tabindex="0" aria-label="${escapeHtml(c.name)}の詳細を見る"
+         onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectCard('${c.id}'); }"
          onclick="selectCard('${c.id}')">
       <img
         src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${c.id}.jpg"
@@ -759,7 +767,7 @@ function cardItemHTML(c) {
 function applyListContainerClass() {
   const el = document.getElementById('cardList');
   if (viewMode === 'grid') {
-    el.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 p-2';
+    el.className = 'catalog-grid';
   } else {
     el.className = 'divide-y divide-gray-100';
   }
@@ -785,7 +793,11 @@ function renderList() {
   applyListContainerClass();
   document.getElementById('resultCount').textContent = `${CARDS.length.toLocaleString()}件中 ${lastResults.length.toLocaleString()}件`;
   const slice = lastResults.slice(0, RENDER_PAGE);
-  document.getElementById('cardList').innerHTML = slice.map(cardItemHTML).join('');
+  document.getElementById('cardList').innerHTML = slice.length ? slice.map(cardItemHTML).join('') : `
+    <div id="searchEmptyState" class="px-4 py-8 text-center text-gray-600 text-sm" role="status">
+      <p>条件に一致するカードがありません。</p>
+      <button type="button" onclick="resetSearchFilters()" class="mt-3 text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">条件をクリアしてすべて表示</button>
+    </div>`;
   renderOffset = slice.length;
   updateShowMore();
 }
@@ -1084,6 +1096,7 @@ function toggleMobileCiv(btn, civ) {
     mobileCivFilter.add(civ);
     btn.classList.remove('opacity-30');
   }
+  btn.setAttribute('aria-pressed', String(mobileCivFilter.has(civ)));
   scheduleUpdate();
 }
 
@@ -1181,6 +1194,25 @@ function applyFilterPanelCollapsed() {
   const collapsed = localStorage.getItem(FILTER_COLLAPSE_KEY) !== '0';
   document.getElementById('filterPanelBody').classList.toggle('hidden', collapsed);
   document.getElementById('filterPanelChevron').textContent = collapsed ? '▼' : '▲';
+  document.getElementById('filterPanelToggle').setAttribute('aria-expanded', String(!collapsed));
+}
+
+function resetSearchFilters() {
+  clearTimeout(debounceTimer);
+  clearTimeout(urlTimer);
+  ['textSearch','mobileCardType','mobileCostMax','mobileRaceFilter','mobileSetFilter','powerFilter','rarityFilter','abilityFilter','sortKey'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('sortDir').value = 'asc';
+  document.getElementById('classic05Filter').checked = false;
+  mobileCivFilter = new Set(['光','水','闇','火','自然']);
+  document.querySelectorAll('#mobileCivTags button[data-civ]').forEach(btn => {
+    btn.classList.remove('opacity-30');
+    btn.setAttribute('aria-pressed', 'true');
+  });
+  renderList();
+  syncURL();
+  document.getElementById('textSearch').focus();
 }
 
 function toggleFilterPanel() {
@@ -1547,7 +1579,7 @@ function deckSummaryText(deckEntries, deckName = '') {
 // 弾番号・通常番号のゼロ埋めを除去し、s番号は s を保持して桁ゼロ埋めを除去する。
 function encodeCardId(id) {
   const m = /^dm(\d+)-(s?)(\d+)$/.exec(id);
-  if (!m) return null;
+  if (!m) return /^[a-z0-9]+-[a-z0-9]+$/.test(id) ? id : null;
   const set = String(parseInt(m[1], 10));
   const num = m[2] + String(parseInt(m[3], 10));
   return `${set}-${num}`;
@@ -1556,6 +1588,8 @@ function encodeCardId(id) {
 // 短縮トークン（6-8 / 6-s8）をカードID（dm06-008 / dm06-s08）へ復元する。
 // 弾は2桁、通常番号は3桁、s番号は2桁でゼロ埋めする。
 function decodeCardToken(token) {
+  // DMC・プロモなどはカタログIDをそのまま保持する。存在確認は復元時に行う。
+  if (/^[a-z][a-z0-9]*-[a-z0-9]+$/.test(token)) return token;
   const m = /^(\d+)-(s?)(\d+)$/.exec(token);
   if (!m) return null;
   const set = m[1].padStart(2, '0');
@@ -1578,20 +1612,36 @@ function encodeDeck(deckEntries) {
     .join('.');
 }
 
-// ?d= 形式の文字列を [{id,count}] へデコードする。
-// cards.json に存在しないIDや不正トークンは黙ってスキップする。
+// ?d= 形式を復元する。不正な行を捨てて不完全なデッキを作らない。
 function decodeDeck(str) {
-  return str
-    .split('.')
-    .map(part => {
-      const m = /^(.+?)(?:x(\d+))?$/.exec(part);
-      if (!m) return null;
-      const id = decodeCardToken(m[1]);
-      if (!id || !CARDS.find(c => c.id === id)) return null;
-      const count = m[2] ? parseInt(m[2], 10) : 1;
-      return { id, count };
-    })
-    .filter(Boolean);
+  if (typeof str !== 'string' || !str) return null;
+  const entries = [];
+  for (const part of str.split('.')) {
+    const m = /^(.+?)(?:x(\d+))?$/.exec(part);
+    if (!m) return null;
+    const id = decodeCardToken(m[1]);
+    if (!id) return null;
+    entries.push({ id, count: m[2] ? Number(m[2]) : 1 });
+  }
+  return validateSharedDeck(entries);
+}
+
+// 新旧共有形式の共通検証。同一IDは合算し、上限違反は全体を拒否する。
+function validateSharedDeck(entries) {
+  if (!Array.isArray(entries) || !entries.length || entries.length > DECK_MAX) return null;
+  const merged = new Map();
+  let total = 0;
+  for (const entry of entries) {
+    if (!entry || typeof entry.id !== 'string' || !Number.isSafeInteger(entry.count)
+      || entry.count < 1 || entry.count > CARD_MAX) return null;
+    const card = CARDS.find(c => c.id === entry.id);
+    if (!card) return null;
+    const count = (merged.get(card.id)?.count || 0) + entry.count;
+    total += entry.count;
+    if (count > CARD_MAX || total > DECK_MAX) return null;
+    merged.set(card.id, { id: card.id, name: card.name, count });
+  }
+  return [...merged.values()];
 }
 
 function buildDeckURL() {
@@ -1666,21 +1716,16 @@ function restoreDeckFromURL() {
       const parsed = JSON.parse(decodeURIComponent(escape(atob(params.get('deck')))));
       decoded = Array.isArray(parsed) ? parsed : null;
     }
-    if (!Array.isArray(decoded)) return;
-    const restored = decoded
-      .filter(e => e && e.id && CARDS.find(c => c.id === e.id))
-      .map(e => {
-        const card = CARDS.find(c => c.id === e.id);
-        return { id: e.id, name: card.name, count: Math.min(CARD_MAX, Math.max(1, e.count | 0)) };
-      });
-    if (!restored.length) return;
+    if (!params.has('d') && !params.has('deck')) return;
+    const restored = validateSharedDeck(decoded);
+    if (!restored) { showToast('共有デッキが不正です。カードと枚数を確認してください'); return; }
     if (deck.length && !confirm('共有されたデッキを読み込みます。現在のデッキは上書きされます。よろしいですか？')) return;
     deck = restored;
     saveDeck();
     renderDeckBadge();
-    updateDeckTitle(deck, deckName);
+    updateDeckTitle(deck);
     openDeckPanel();
-  } catch { /* 不正な deck/d param は無視 */ }
+  } catch { showToast('共有デッキを読み込めませんでした'); }
 }
 
 // 静的レシピページからのリダイレクト（?recipe=rcp-XXXX または ?recipe=meta-X）でレシピを開く。
