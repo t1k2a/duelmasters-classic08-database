@@ -64,7 +64,7 @@ function rec(id, name, pass, detail = '') {
 }
 
 // ---- ブラウザ起動 ----
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
 const ctx = await browser.newContext();
 const page = await ctx.newPage();
 await page.route('https://api.dm-classic08.org/api/health', route => route.fulfill({
@@ -218,14 +218,14 @@ try {
   const listClass0 = await page.locator('#cardList').getAttribute('class');
   await page.locator('#viewGridBtn').click();
   await page.waitForTimeout(200);
-  const gridClass = await page.locator('#cardList').getAttribute('class');
+  const gridColumns = await page.locator('#cardList').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
   const cellCount = await page.locator('#cardList .card-cell').count();
   const vmKey = await page.evaluate(() => localStorage.getItem('dm_view_mode'));
   await gotoIndex();
-  const gridAfterReload = (await page.locator('#cardList').getAttribute('class')).includes('grid-cols-2');
+  const gridAfterReload = await page.locator('#cardList').evaluate(el => getComputedStyle(el).display === 'grid' && getComputedStyle(el).gridTemplateColumns.split(' ').length === 2);
   rec(7, 'グリッド/リスト切替・viewMode永続化',
-    listClass0.includes('divide-y') && gridClass.includes('grid-cols-2') && cellCount > 0 && vmKey === 'grid' && gridAfterReload,
-    `list0grid=${listClass0.includes('grid-cols-2')}, gridAfter=${gridClass.includes('grid-cols-2')}, cells=${cellCount}, vm=${vmKey}, reloadGrid=${gridAfterReload}`);
+    listClass0.includes('divide-y') && gridColumns === 2 && cellCount > 0 && vmKey === 'grid' && gridAfterReload,
+    `list0grid=${listClass0.includes('catalog-grid')}, gridAfter=${gridColumns === 2}, cells=${cellCount}, vm=${vmKey}, reloadGrid=${gridAfterReload}`);
 } catch (e) { rec(7, 'グリッド/リスト切替・viewMode永続化', false, 'EXC: ' + e.message); }
 
 // ---- #8 showMore が選択中モードで追加描画 ----

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `dmc08-${CACHE_VERSION}`;
 
 // SW のスコープ（GitHub Pages サブパス /duelmasters-classic08-database/）を基準に解決する
@@ -7,6 +7,8 @@ const SCOPE = new URL(self.registration.scope);
 // 必須 app shell（1件でも失敗したら install を中断する）
 const PRECACHE_REQUIRED = [
   './index.html',
+  './css/tailwind.css',
+  './css/catalog.css',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
