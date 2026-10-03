@@ -8,7 +8,7 @@
  */
 
 import { readdir, readFile, writeFile, mkdir } from 'fs/promises'
-import { join, dirname } from 'path'
+import { join, dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { parseCardHtml, isValidCardPage } from '../src/scraper/parse-card.js'
 
@@ -37,8 +37,38 @@ interface CardJson {
   setsContaining: string[]
 }
 
-async function main() {
-  const setDirs = (await readdir(RAW_DIR)).sort()
+/** Validate only; never normalize or rewrite the committed catalog. */
+export function validateReusableCards(value: unknown): asserts value is CardJson[] {
+  const record = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v)
+  const text = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0
+  const nullableText = (v: unknown) => v === null || typeof v === 'string'
+  const nullableNumber = (v: unknown) => v === null || (typeof v === 'number' && Number.isFinite(v))
+  const strings = (v: unknown) => Array.isArray(v) && v.every(text)
+  if (!Array.isArray(value) || value.length === 0) throw new Error('Reusable cards.json must be a non-empty array')
+  const ids = new Set<string>()
+  for (const [index, card] of value.entries()) {
+    if (!record(card) || !text(card.id) || !/^[a-z0-9][a-z0-9+_-]*$/.test(card.id) ||
+      !text(card.name) || !text(card.cardType) || !nullableNumber(card.cost) ||
+      !nullableNumber(card.power) || !strings(card.civilizations) || !strings(card.races) ||
+      !nullableText(card.rarity) || !nullableText(card.text) || !strings(card.setsContaining) ||
+      !Array.isArray(card.printings) || card.printings.length === 0 ||
+      !card.printings.every(p => record(p) && text(p.setCode) && text(p.cardNumber) && nullableText(p.rarity))) {
+      throw new Error(`Invalid reusable cards.json entry at index ${index}`)
+    }
+    if (ids.has(card.id)) throw new Error(`Duplicate reusable cards.json ID at index ${index}`)
+    ids.add(card.id)
+  }
+}
+
+export async function buildCards(options: { rawDir: string; outFile: string; reuse: boolean }): Promise<void> {
+  if (options.reuse) {
+    const existing: unknown = JSON.parse(await readFile(options.outFile, 'utf-8'))
+    validateReusableCards(existing)
+    console.warn(`BUILD_REUSE_CARDS_JSON=true: validated and reused ${existing.length} cards without rewriting cards.json. Raw HTML was not read; this does not verify raw-data ingestion or completeness.`)
+    return
+  }
+  const setDirs = (await readdir(options.rawDir)).sort()
 
   const cards = new Map<string, CardJson>()
   let total = 0
@@ -46,7 +76,7 @@ async function main() {
   let skipped = 0
 
   for (const setCode of setDirs) {
-    const setDir = join(RAW_DIR, setCode)
+    const setDir = join(options.rawDir, setCode)
     let files: string[]
     try {
       files = (await readdir(setDir)).filter(f => f.endsWith('.html')).sort()
@@ -109,15 +139,18 @@ async function main() {
 
   const result: CardJson[] = Array.from(cards.values())
 
-  await mkdir(OUT_DIR, { recursive: true })
-  await writeFile(OUT_FILE, JSON.stringify(result, null, 2))
+  await mkdir(dirname(options.outFile), { recursive: true })
+  await writeFile(options.outFile, JSON.stringify(result, null, 2))
 
   const sizeKB = Math.round(JSON.stringify(result).length / 1024)
   console.log(`HTML files  : ${total}`)
   console.log(`Parsed      : ${parsed}`)
   console.log(`Skipped     : ${skipped}`)
   console.log(`Unique cards: ${result.length}`)
-  console.log(`Output      : ${OUT_FILE} (${sizeKB} KB)`)
+  console.log(`Output      : ${options.outFile} (${sizeKB} KB)`)
 }
 
-main().catch(e => { console.error(e); process.exit(1) })
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  buildCards({ rawDir: RAW_DIR, outFile: OUT_FILE, reuse: process.env.BUILD_REUSE_CARDS_JSON === 'true' })
+    .catch(e => { console.error(e); process.exit(1) })
+}

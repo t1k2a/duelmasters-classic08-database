@@ -39,6 +39,8 @@ npm run serve
 # → http://localhost:3000 などで開く
 ```
 
+`data/raw/` がない環境で、追跡済み `public/cards.json` を使って全ページ生成を検証する場合は、`BUILD_REUSE_CARDS_JSON=true npm run build` を実行できます。この明示モードでは既存カタログの形式を検証し、`cards.json` を書き換えず再利用します。raw HTMLは存在しても読み込まないため、再取り込みやカード収録の完全性の検証にはなりません。不正・空・欠損カタログでは失敗します。通常の `npm run build` は従来どおり完全な `data/raw/` が必要です。ビルドはその他の `public/` 生成物を更新するため、検証用コピーでの実行を推奨します。
+
 > 📝 静的ページ（`public/card/`・`public/recipe/`）と `sitemap.xml` は CI ではビルドされません。データ更新時は `npm run build:card-pages` でローカル生成し、`public/` ごとコミットしてください。
 
 ## GA4週次レポート
