@@ -54,8 +54,33 @@ try {
       }
       const ready = async () => page.waitForFunction(() => typeof CARDS !== 'undefined' && CARDS.length > 0 && /件中/.test(document.getElementById('resultCount')?.textContent || ''));
       try {
-        await page.goto(base + '/index.html');
+        await page.goto(base + '/index.html?sortKey=name&sortDir=asc');
         await ready();
+        await check('search scrolls away while header and deck stay usable', async () => {
+          await page.screenshot({ path: path.join(artifacts, `${name}-initial.png`) });
+          const headerBefore = await page.locator('.catalog-header').boundingBox();
+          await page.mouse.move(viewport.width / 2, viewport.height - 160);
+          await page.mouse.wheel(0, 500);
+          await page.waitForFunction(() => document.querySelector('.catalog-shell').scrollTop >= 400);
+          const metrics = await page.evaluate(() => {
+            const shell = document.querySelector('.catalog-shell').getBoundingClientRect();
+            const search = document.querySelector('.catalog-search').getBoundingClientRect();
+            const results = document.querySelector('.catalog-results').getBoundingClientRect();
+            return { searchBottom: search.bottom, shellTop: shell.top, visibleResultsHeight: Math.min(results.bottom, shell.bottom) - Math.max(results.top, shell.top) };
+          });
+          assert.ok(metrics.searchBottom <= metrics.shellTop, JSON.stringify(metrics));
+          assert.deepEqual(await page.locator('.catalog-header').boundingBox(), headerBefore);
+          assert.equal(await page.locator('.catalog-nav a').count(), 3);
+          await page.screenshot({ path: path.join(artifacts, `${name}-scrolled.png`) });
+          console.log(`SCROLL ${name}: ${JSON.stringify(metrics)}`);
+          await page.locator('#deckFab').click();
+          await page.locator('#deckPanel').waitFor({ state: 'visible' });
+          await page.locator('#deckPanel button[onclick="closeDeckPanel()"]').first().click();
+          await page.locator('#deckPanel').waitFor({ state: 'hidden' });
+          await page.evaluate(() => scrollToTop());
+          await page.waitForFunction(() => document.querySelector('.catalog-shell').scrollTop === 0);
+          assert.ok(await page.locator('#textSearch').isVisible());
+        });
         await check('search remains visible when advanced filters collapse', async () => {
           assert.ok(await page.locator('#textSearch').isVisible());
           for (let i = 0; i < 2; i++) {

@@ -2212,13 +2212,13 @@ async function exportDeckImage() {
 <script>
 // ===== スクロールトップ =====
 function scrollToTop() {
-  const listEl = document.getElementById('cardList');
+  const listEl = document.querySelector('.catalog-shell');
   if (listEl) listEl.scrollTo({ top: 0, behavior: 'smooth' });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const listEl = document.getElementById('cardList');
+  const listEl = document.querySelector('.catalog-shell');
   const scrollBtn = document.getElementById('scrollTopBtn');
   const checkScroll = (st) => {
     if (!scrollBtn) return;
