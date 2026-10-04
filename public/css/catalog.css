@@ -7,10 +7,11 @@ body.catalog-page { height: 100vh; height: 100dvh; min-height: 0; overflow: hidd
 .catalog-page .catalog-brand-title { font-size: 16px; font-weight: 700; }
 .catalog-page .catalog-nav { display: flex; gap: 16px; margin-top: 8px; overflow-x: auto; white-space: nowrap; padding-bottom: 2px; font-size: 12px; }
 .catalog-page .catalog-layout { display: flex; justify-content: center; width: 100%; flex: 1; min-height: 0; }
-.catalog-page .catalog-shell { width: 100%; max-width: 430px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.catalog-page .catalog-shell { width: 100%; max-width: 430px; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
 .catalog-page .catalog-search { flex-shrink: 0; }
 .catalog-page #filterPanelBody { max-height: 35vh; max-height: 35dvh; overflow-y: auto; }
-.catalog-page .catalog-results { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+/* Search and results share the shell scroll area so cards can use its full height. */
+.catalog-page .catalog-results { flex-shrink: 0; padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 .catalog-page .catalog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px; }
 .catalog-page #searchEmptyState { grid-column: 1 / -1; }
 .catalog-page #deckFab { right: max(20px, calc((100vw - 430px) / 2 + 20px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: auto; min-width: 112px; padding: 0 16px; gap: 6px; font-size: 14px; }
