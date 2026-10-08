@@ -1,5 +1,6 @@
 const CACHE_VERSION = 'v3';
-const CACHE_NAME = `dmc08-${CACHE_VERSION}`;
+const CACHE_PREFIX = 'dmc08-';
+const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // SW のスコープ（GitHub Pages サブパス /duelmasters-classic08-database/）を基準に解決する
 const SCOPE = new URL(self.registration.scope);
@@ -75,7 +76,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });

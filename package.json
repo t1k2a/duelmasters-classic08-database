@@ -34,7 +34,7 @@
     "scrape:recipes:sample": "LIMIT=30 tsx src/scraper/scrape-recipes.ts",
     "recipes:rematch": "tsx src/scraper/rematch-recipes.ts",
     "recipes:merge-checkpoint": "tsx src/scraper/merge-checkpoint.ts",
-    "test": "tsx --test src/scraper/*.test.ts src/verify/*.test.ts",
+    "test": "tsx --test src/scraper/*.test.ts src/verify/*.test.ts && node --test scripts/test-deck-safety.mjs",
     "build:restrictions": "tsx scripts/build-restrictions.ts",
     "build:deck-legality-js": "tsx scripts/build-deck-legality-js.ts",
     "x:post": "tsx --env-file=.env scripts/x-post.ts",
