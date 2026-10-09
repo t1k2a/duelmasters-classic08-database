@@ -504,6 +504,8 @@ fetch('cards.json')
   .then(r => r.json())
   .then(data => {
     CARDS = data;
+    loadDeck();
+    renderDeckBadge();
     CARDS.forEach(c => { c._kana = normalizeKana(c.name); })
     DM_SET_MAP = buildSetMap(CARDS);
     populateSetSelects();
@@ -1273,13 +1275,16 @@ let deck = [];
 function loadDeck() {
   try {
     const raw = localStorage.getItem(DECK_KEY);
-    deck = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(deck)) deck = [];
-  } catch { deck = []; }
+    if (raw === null) return;
+    const parsed = JSON.parse(raw);
+    const restored = Array.isArray(parsed) && !parsed.length ? [] : validateSharedDeck(parsed);
+    if (!restored) throw new Error('Invalid stored deck');
+    deck = restored;
+  } catch { showToast('保存デッキを読み込めませんでした。保存内容は変更していません'); }
 }
 
-function saveDeck() {
-  localStorage.setItem(DECK_KEY, JSON.stringify(deck));
+function saveDeck(entries = deck) {
+  localStorage.setItem(DECK_KEY, JSON.stringify(entries));
 }
 
 function deckTotalCount() {
@@ -1465,22 +1470,42 @@ function renderDeckPanel() {
       </div>`;
     return;
   }
-  listEl.innerHTML = deck.map(e => `
-    <div class="flex items-center gap-2 py-1.5 text-sm">
-      <div class="relative shrink-0 w-9 h-[52px]">
-        <img
-          src="https://dm.takaratomy.co.jp/wp-content/card/cardimage/${e.id}.jpg"
-          alt=""
-          loading="lazy"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-          class="w-9 h-[52px] object-cover rounded shadow-sm">
-        <div style="display:none" class="w-9 h-[52px] rounded bg-gray-100 items-center justify-center text-gray-300 text-base">🎴</div>
-      </div>
-      <span class="flex-1 truncate cursor-pointer hover:text-indigo-600 leading-tight" onclick="selectCard('${e.id}', true)">${escapeHtml(e.name)}</span>
-      <span class="text-gray-500 shrink-0">×${e.count}</span>
-      <button onclick="removeFromDeck('${e.id}')" class="text-red-400 hover:text-red-600 text-lg leading-none shrink-0 w-6">−</button>
-    </div>
-  `).join('');
+  listEl.replaceChildren(...deck.map(e => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 py-1.5 text-sm';
+    const imageWrap = document.createElement('div');
+    imageWrap.className = 'relative shrink-0 w-9 h-[52px]';
+    const image = document.createElement('img');
+    image.alt = '';
+    image.loading = 'lazy';
+    image.className = 'w-9 h-[52px] object-cover rounded shadow-sm';
+    const fallback = document.createElement('div');
+    fallback.style.display = 'none';
+    fallback.className = 'w-9 h-[52px] rounded bg-gray-100 items-center justify-center text-gray-300 text-base';
+    fallback.textContent = '🎴';
+    image.addEventListener('error', () => {
+      image.style.display = 'none';
+      fallback.style.display = 'flex';
+    });
+    image.src = `https://dm.takaratomy.co.jp/wp-content/card/cardimage/${encodeURIComponent(e.id)}.jpg`;
+    imageWrap.append(image, fallback);
+    const name = document.createElement('button');
+    name.type = 'button';
+    name.className = 'flex-1 truncate text-left cursor-pointer hover:text-indigo-600 leading-tight';
+    name.textContent = e.name;
+    name.addEventListener('click', () => selectCard(e.id, true));
+    const count = document.createElement('span');
+    count.className = 'text-gray-500 shrink-0';
+    count.textContent = `×${e.count}`;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'text-red-400 hover:text-red-600 text-lg leading-none shrink-0 w-6';
+    remove.textContent = '−';
+    remove.setAttribute('aria-label', `${e.name} を1枚減らす`);
+    remove.addEventListener('click', () => removeFromDeck(e.id));
+    row.append(imageWrap, name, count, remove);
+    return row;
+  }));
 }
 
 function openDeckPanel() {
@@ -1720,8 +1745,8 @@ function restoreDeckFromURL() {
     const restored = validateSharedDeck(decoded);
     if (!restored) { showToast('共有デッキが不正です。カードと枚数を確認してください'); return; }
     if (deck.length && !confirm('共有されたデッキを読み込みます。現在のデッキは上書きされます。よろしいですか？')) return;
+    saveDeck(restored);
     deck = restored;
-    saveDeck();
     renderDeckBadge();
     updateDeckTitle(deck);
     openDeckPanel();
@@ -1757,21 +1782,26 @@ function restoreRecipeFromURL(recipeId) {
       }
     }
 
-    if (!cards || !cards.length) return false;
-
-    deck = cards
-      .map(rc => {
-        const card = cardById(rc.id) || (rc.name ? CARDS.find(c => c.name === rc.name) : null);
-        if (!card) return null;
-        return { id: card.id, name: card.name, count: Math.min(CARD_MAX, Math.max(1, rc.count | 0)) };
-      })
-      .filter(Boolean);
-
-    if (!deck.length) return false;
-
-    restoredRecipeId = String(recipeId);
-
-    saveDeck();
+    // 未到着のレシピだけを再試行する。拒否・キャンセルは完了として扱う。
+    if (cards === null) return false;
+    try {
+      const candidate = Array.isArray(cards) ? cards.map(rc => {
+        if (!rc || typeof rc !== 'object') return null;
+        // 古い名前だけのメタデッキに対応。明示された未知IDは黙って置換しない。
+        const card = rc.id == null && typeof rc.name === 'string'
+          ? CARDS.find(c => c.name === rc.name) : cardById(rc.id);
+        return card ? { id: card.id, count: rc.count } : null;
+      }) : null;
+      const restored = validateSharedDeck(candidate);
+      if (!restored) { showToast('レシピが不正です。カードと枚数を確認してください'); return true; }
+      if (deck.length && !confirm('レシピを読み込みます。現在のデッキは上書きされます。よろしいですか？')) return true;
+      saveDeck(restored);
+      deck = restored;
+      restoredRecipeId = String(recipeId);
+    } catch {
+      showToast('レシピを読み込めませんでした');
+      return true;
+    }
     renderDeckBadge();
     updateDeckTitle(deck, deckName);
     openDeckPanel();
@@ -1829,7 +1859,6 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.add('hidden'), 2000);
 }
 
-loadDeck();
 renderDeckBadge();
 
 // デッキFAB 吹き出し：初回のみ表示
