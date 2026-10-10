@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
+import { fetchCampaignPerformance, type CampaignPerformance } from './ga4-campaign-report.js';
 
 // .env ファイルを自動ロード（Node 20.0 等の環境でも安全に動作）
 function loadEnv() {
@@ -94,6 +95,7 @@ interface AnalyticsSummary {
   deckBuyEvents: number;
   growth: GrowthPeriodComparison;
   isMock?: boolean;
+  campaignPerformance?: CampaignPerformance[];
 }
 
 const growthEventFields = {
@@ -285,6 +287,14 @@ ${data.isMock ? 'このレポートはテストデータです。実績の判断
 イベント比は同じユーザーの複数回操作を含みます。CVRや共有ユーザー率ではありません。購入リンククリックは購入完了・売上を示しません。
 
 ${renderGrowthPeriodComparison(data.growth)}
+
+## 投稿別流入（source / medium / campaign / content）
+
+完了した直近30日間。セッション帰属の4項目で集計し、content（utm_content）で投稿を区別します。イベント数は延べ回数で、購入完了数・CVRではありません。未設定値や集約行は投稿を特定できません。
+
+| source | medium | campaign | content | sessions | copy_deck | deck_complete | share_deck | click_buy_card | click_buy_deck |
+| :--- | :--- | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+${data.campaignPerformance?.map(row => `| ${[row.source, row.medium, row.campaign, row.content].map(text).join(' | ')} | ${[row.sessions, row.copyDeck, row.deckComplete, row.shareDeck, row.buyCard, row.buyDeck].join(' | ')} |`).join('\n') || (data.campaignPerformance ? '| 返却行なし | — | — | — | — | — | — | — | — | — |' : '| 未取得 | — | — | — | — | — | — | — | — | — |')}
 
 ## 2. 流入元
 
@@ -522,6 +532,7 @@ export async function fetchRealAnalytics(
     deckShareEvents,
     deckBuyEvents,
     growth: { last7Days, last28Days },
+    campaignPerformance: await fetchCampaignPerformance(client, propertyId),
     isMock: false,
   };
 }
