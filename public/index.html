@@ -1139,8 +1139,14 @@ function buildSearchURL() {
 
 function syncURL() {
   const params = currentSearchParams();
+  const incoming = new URLSearchParams(location.search);
+  // 同意前の検索操作でも流入情報と既存の復元導線を残す。
+  // 共有URLは currentSearchParams() の検索条件だけを使い、UTMを拡散しない。
+  for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id', 'recipe', 'd', 'deck', 'id']) {
+    if (incoming.has(key)) params.set(key, incoming.get(key));
+  }
   const qs = params.toString();
-  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+  history.replaceState(null, '', `${location.pathname}${qs ? `?${qs}` : ''}${location.hash}`);
 }
 
 async function shareSearch() {
