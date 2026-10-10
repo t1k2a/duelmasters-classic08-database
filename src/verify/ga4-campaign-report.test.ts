@@ -26,6 +26,20 @@ test('empty campaign reports stay empty; API errors and incomplete pagination ar
   await assert.rejects(fetchCampaignPerformance({ runReport: async () => [{ rows: [], rowCount: 1 }] } as any, 'test'), /incomplete/i);
 });
 
+test('missing rowCount continues full event pages and keeps identical content in different campaigns separate', async () => {
+  const eventOffsets: number[] = [];
+  const client = { runReport: async (request: any) => {
+    if (request.metrics[0].name === 'sessions') return [{ rows: [] }];
+    eventOffsets.push(request.offset);
+    const row = (campaign: string) => ({ dimensionValues: ['x', 'social', campaign, 'same-post', 'copy_deck'].map(value => ({ value })), metricValues: [{ value: '1' }] });
+    return [{ rows: request.offset === 0 ? Array.from({ length: request.limit }, (_, i) => row(`campaign-${i}`)) : [row('last-campaign')] }];
+  } } as any;
+  const rows = await fetchCampaignPerformance(client, 'test');
+  assert.deepEqual(eventOffsets, [0, 10000]);
+  assert.equal(rows.length, 10001);
+  assert.ok(rows.every(row => row.copyDeck === 1 && row.sessions === 0));
+});
+
 test('report escapes campaign dimensions and labels event counts without claiming conversions', async () => {
   const data = await fetchRealAnalytics('test', { runReport: async () => [{ rows: [] }] } as any);
   const content = 'post|<script>\n# injected';

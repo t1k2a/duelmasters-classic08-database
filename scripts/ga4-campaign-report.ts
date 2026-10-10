@@ -19,6 +19,7 @@ const eventFields = { copy_deck: 'copyDeck', deck_complete: 'deckComplete', shar
 /** Fetch completed 30-day session acquisition and event counts, joining by all four dimensions. */
 export async function fetchCampaignPerformance(client: Pick<BetaAnalyticsDataClient, 'runReport'>, propertyId: string): Promise<CampaignPerformance[]> {
   const results = new Map<string, CampaignPerformance>();
+  const pageSize = 10000;
   // Sessions must be queried separately: a session can contain several event names.
   for (const events of [false, true]) {
     let offset = 0;
@@ -30,7 +31,7 @@ export async function fetchCampaignPerformance(client: Pick<BetaAnalyticsDataCli
         metrics: [{ name: events ? 'eventCount' : 'sessions' }],
         ...(events ? { dimensionFilter: { filter: { fieldName: 'eventName', inListFilter: { values: Object.keys(eventFields) } } } } : {}),
         orderBys: [...dimensions, ...(events ? ['eventName'] : [])].map(dimensionName => ({ dimension: { dimensionName } })),
-        limit: 10000,
+        limit: pageSize,
         offset,
       });
       const rows = response.rows || [];
@@ -45,7 +46,7 @@ export async function fetchCampaignPerformance(client: Pick<BetaAnalyticsDataCli
         results.set(key, entry);
       }
       offset += rows.length;
-      if (offset >= (response.rowCount ?? rows.length)) break;
+      if (response.rowCount != null ? offset >= response.rowCount : rows.length < pageSize) break;
       if (rows.length === 0) throw new Error('Incomplete GA4 campaign pagination');
     }
   }
