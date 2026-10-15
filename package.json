@@ -39,7 +39,9 @@
     "build:deck-legality-js": "tsx scripts/build-deck-legality-js.ts",
     "x:post": "tsx --env-file=.env scripts/x-post.ts",
     "x:post-queue": "tsx scripts/x-post-queue.ts",
-    "verify:x-queue": "tsx src/verify/x-queue.ts"
+    "verify:x-queue": "tsx src/verify/x-queue.ts",
+    "ga4:report": "tsx scripts/ga4-analytics.ts --local",
+    "ga4:report:mock": "tsx scripts/ga4-analytics.ts --local --mock"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
