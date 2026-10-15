@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { pathToFileURL } from 'url';
+import { pathToFileURL, fileURLToPath } from 'url';
+import { preparePrivateDirectory, writePrivateReport } from './ga4-private-output.js';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { fetchCampaignPerformance, type CampaignPerformance } from './ga4-campaign-report.js';
 
@@ -28,16 +29,16 @@ function loadEnv() {
     } catch (e) {}
   }
 }
-loadEnv();
+
 
 
 // scripts/ga4-analytics.ts
 // Google Analytics 4 (Data API) から実測値を取得・集計し、
-// 観測値と未実行の改善仮説を区別したレポート（docs/marketing/ga4-action-strategy.md）を出力する。
+// 観測値と未実行の改善仮説を区別したレポート（.private-reports/）を出力する。
 //
 // 使い方:
-//   npx tsx scripts/ga4-analytics.ts          # 実測モード (要 GA4_PROPERTY_ID, GOOGLE_APPLICATION_CREDENTIALS)
-//   npx tsx scripts/ga4-analytics.ts --mock   # モック/テストモード (CI・検証用)
+//   npm run ga4:report                      # 実測モード (要 GA4_PROPERTY_ID, GOOGLE_APPLICATION_CREDENTIALS)
+//   npm run ga4:report:mock                 # モック/テストモード (ローカル検証用)
 
 interface BuyClickCard {
   id: string;
@@ -146,7 +147,7 @@ function isGuidePath(pagePath: string): boolean {
  *
  * Dimension values originate outside this repository.  Keeping each value on
  * one escaped line prevents it from closing the report's code fence or
- * changing the surrounding Markdown structure in GITHUB_STEP_SUMMARY.
+ * changing the surrounding Markdown structure in the private report.
  */
 export function escapeMarkdownReportText(value: string): string {
   return String(value)
@@ -539,13 +540,24 @@ export async function fetchRealAnalytics(
 
 // メイン実行
 async function main() {
+  // Refuse automation before reading .env, credentials, or contacting GA4.
+  if (process.env.CI || process.env.GITHUB_ACTIONS || process.env.GITHUB_RUN_ID ||
+      !process.argv.includes('--local') ||
+      process.argv.slice(2).some(arg => arg !== '--local' && arg !== '--mock')) {
+    throw new Error('Local execution required');
+  }
+  loadEnv();
+  if (process.env.CI || process.env.GITHUB_ACTIONS || process.env.GITHUB_RUN_ID) {
+    throw new Error('Local execution required');
+  }
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  preparePrivateDirectory(root);
   const isMock = process.argv.includes('--mock') || process.env.GA4_MOCK === 'true';
   const propertyId = process.env.GA4_PROPERTY_ID;
 
   let summary: AnalyticsSummary;
 
   if (isMock) {
-    console.log('Running GA4 analytics in --mock mode.');
     summary = {
       period: '直近30日間 (シミュレーション)',
       totalPv: 48520,
@@ -607,31 +619,22 @@ async function main() {
       isMock: true,
     };
   } else {
-    if (!propertyId) {
-      console.error('Error: GA4_PROPERTY_ID 環境変数が未設定です。本番実測を行うには GA4_PROPERTY_ID と GOOGLE_APPLICATION_CREDENTIALS を設定してください。');
-      console.error('テスト実行を行う場合は `npx tsx scripts/ga4-analytics.ts --mock` を使用してください。');
-      process.exit(1);
+    if (!propertyId || !process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+        !fs.statSync(process.env.GOOGLE_APPLICATION_CREDENTIALS).isFile()) {
+      throw new Error('Missing local configuration');
     }
-
-    try {
-      summary = await fetchRealAnalytics(propertyId);
-      console.log('Successfully fetched and parsed real metrics from GA4 Data API.');
-    } catch (err) {
-      console.error('Failed to fetch/aggregate GA4 Data API metrics:', err);
-      process.exit(1);
-    }
+    summary = await fetchRealAnalytics(propertyId);
   }
 
   const report = generateActionStrategy(summary);
-  const outPath = path.join(process.cwd(), 'docs/marketing/ga4-action-strategy.md');
-  fs.writeFileSync(outPath, report, 'utf-8');
-  console.log(`GA4 Analytics & Strategy Report generated at: ${outPath}`);
+  writePrivateReport(root, report, isMock);
+  console.log(isMock ? 'GA4 fixture report saved locally (not real data).' : 'GA4 report saved locally.');
 }
 
 const entryPoint = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
 if (import.meta.url === entryPoint) {
-  main().catch(err => {
-    console.error(err);
+  main().catch(() => {
+    console.error('GA4 report failed. See docs/ga4-private-report.md.');
     process.exit(1);
   });
 }
