@@ -298,7 +298,7 @@
   <div class="absolute bottom-0 left-0 right-0 flex justify-center" onclick="event.stopPropagation()">
     <div class="w-full max-w-[430px] bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-5">
       <div class="flex justify-between items-center gap-3 mb-3">
-        <h2 class="font-bold text-base flex items-center gap-2">
+        <h2 id="deckHeading" tabindex="-1" class="font-bold text-base flex items-center gap-2">
           マイデッキ <span id="deckTotal" class="text-sm font-normal text-gray-500">0 / 40</span>
         </h2>
         <button onclick="closeDeckPanel()" class="text-gray-400 text-xl leading-none shrink-0">&times;</button>
@@ -1005,6 +1005,10 @@ function detailHTML(c) {
         class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg py-2 font-medium">
         ＋ デッキに追加
       </button>
+      <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <p id="detailDeckProgress" role="status" aria-live="polite" aria-atomic="true" class="text-gray-600">${detailDeckProgressText(c.id)}</p>
+        <button type="button" onclick="viewDeckFromDetail()" class="text-indigo-600 underline font-medium">デッキを見る</button>
+      </div>
       ${recipeButtonHTML(c)}
       <table class="text-sm w-full">
         <tr><td class="text-gray-500 pr-3 py-0.5 w-24">カードの種類</td><td class="font-medium">${escapeHtml(c.cardType)}</td></tr>
@@ -1082,6 +1086,12 @@ function selectCard(id, fromDeck = false) {
 function backToDeck() {
   document.getElementById('mobileDetail').classList.add('hidden');
   document.getElementById('deckPanel').classList.remove('hidden');
+}
+
+function viewDeckFromDetail() {
+  closeDetail();
+  openDeckPanel();
+  document.getElementById('deckHeading').focus();
 }
 
 function closeDetail(e) {
@@ -1313,6 +1323,9 @@ function addToDeck(id) {
   renderDeckBadge();
   if (!document.getElementById('deckPanel').classList.contains('hidden')) renderDeckPanel();
   showToast(`${card.name} を追加`);
+  if (window.trackGrowthEvent) {
+    window.trackGrowthEvent('add_to_deck', { card_id: id, card_count: deckTotalCount() });
+  }
   if (previousTotal < DECK_MAX && deckTotalCount() === DECK_MAX && window.trackGrowthEvent) {
     window.trackGrowthEvent('deck_complete', { card_count: DECK_MAX });
   }
@@ -1340,6 +1353,30 @@ function renderDeckBadge() {
   const fab = document.getElementById('deckFab');
   document.getElementById('deckCountBadge').textContent = total;
   fab.classList.remove('hidden');
+  updateDetailDeckProgress();
+}
+
+function detailDeckProgressText(id) {
+  const count = deck.find(entry => entry.id === id)?.count || 0;
+  return `このカード：${count}枚 / デッキ合計：${deckTotalCount()} / ${DECK_MAX}`;
+}
+
+function updateDetailDeckProgress() {
+  const progress = document.getElementById('detailDeckProgress');
+  if (progress) progress.textContent = detailDeckProgressText(selectedCard);
+}
+
+function deckStatusHTML(total, violations) {
+  // The legality engine still requires exactly 40. Only the editing presentation
+  // distinguishes an unfinished deck from actual adoption/overflow violations.
+  const remaining = Math.max(0, DECK_MAX - total);
+  const errors = violations.filter(v => !(remaining > 0 && v.type === 'deck-size'));
+  const progress = remaining > 0 ? `<p class="text-sm text-indigo-600 mb-2" role="status">あと ${remaining} 枚で完成</p>` : '';
+  return progress + (errors.length ? `
+    <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700 space-y-1">
+      <div class="font-semibold">⚠️ クラシック08のルール違反があります</div>
+      ${errors.map(v => `<div>・${escapeHtml(v.message)}</div>`).join('')}
+    </div>` : '');
 }
 
 function civCounts() {
@@ -1431,14 +1468,10 @@ function renderDeckPanel() {
   const legalityEl = document.getElementById('deckLegality');
   if (legalityEl) {
     if (REG && typeof checkDeckLegality === 'function') {
-      const { legal, violations } = checkDeckLegality(deck, REG);
-      legalityEl.innerHTML = legal ? '' : `
-        <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700 space-y-1">
-          <div class="font-semibold">⚠️ クラシック08のルール違反があります</div>
-          ${violations.map(v => `<div>・${escapeHtml(v.message)}</div>`).join('')}
-        </div>`;
+      const { violations } = checkDeckLegality(deck, REG);
+      legalityEl.innerHTML = deckStatusHTML(total, violations);
     } else {
-      legalityEl.innerHTML = '';
+      legalityEl.innerHTML = deckStatusHTML(total, []);
     }
   }
 

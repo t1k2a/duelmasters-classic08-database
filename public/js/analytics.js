@@ -49,6 +49,7 @@
   // イベントごとの許可パラメータだけに正規化する。
   var GROWTH_EVENT_PARAMS = {
     view_card_detail: ['card_id'],
+    add_to_deck: ['card_id', 'card_count'],
     copy_deck: ['content_id', 'card_count'],
     content_cta_click: ['content_id', 'destination_type'],
     deck_complete: ['card_count'],
@@ -78,6 +79,7 @@
       }
     }
     if (eventName === 'view_card_detail' && !clean.card_id) return null
+    if (eventName === 'add_to_deck' && (!clean.card_id || !clean.card_count)) return null
     if (eventName === 'copy_deck' && !clean.content_id) return null
     if (eventName === 'content_cta_click' && (!clean.content_id || !clean.destination_type)) return null
     if (eventName === 'deck_complete' && clean.card_count !== 40) return null

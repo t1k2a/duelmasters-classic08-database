@@ -107,3 +107,27 @@ test('同意済み復元と重複UTMは最初の値を維持する', () => {
   assert.equal(h.context.location.searchParams.has('q'), false);
   assert.equal(h.context.location.hash, '#anchor');
 });
+
+test('追加イベントは同意と許可されたID・枚数だけを使用する', () => {
+  for (const consent of [undefined, 'denied', 'granted']) {
+    const h = harness('', consent);
+    h.startAnalytics();
+    h.context.trackGrowthEvent('add_to_deck', { card_id: 'dm01-100', card_count: 1, name: '自由入力を送らない', ip: 'fixture' });
+    const events = h.context.dataLayer?.filter((a: any) => a[0] === 'event') || [];
+    assert.equal(events.length, consent === 'granted' ? 1 : 0);
+    if (consent === 'granted') {
+      assert.deepEqual(JSON.parse(JSON.stringify(events[0][2])), { card_id: 'dm01-100', card_count: 1 });
+      for (const params of [{ card_id: 'bad id', card_count: 1 }, { card_id: 'dm01-100', card_count: 0 }, { card_id: 'dm01-100', card_count: 41 }, { card_id: 'dm01-100', card_count: 1.5 }]) h.context.trackGrowthEvent('add_to_deck', params);
+      assert.equal(h.context.dataLayer.filter((a: any) => a[0] === 'event').length, 1);
+    }
+  }
+});
+
+test('同意済み初期化は一度だけで明示page_viewを追加しない', () => {
+  const h = harness('', 'granted');
+  h.startAnalytics();
+  h.startAnalytics();
+  assert.equal(h.loads.length, 1);
+  assert.equal(h.context.dataLayer.filter((a: any) => a[0] === 'config').length, 1);
+  assert.equal(h.context.dataLayer.filter((a: any) => a[0] === 'event' && a[1] === 'page_view').length, 0);
+});
