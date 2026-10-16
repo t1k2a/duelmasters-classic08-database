@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4-deck-progress';
 const CACHE_PREFIX = 'dmc08-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 

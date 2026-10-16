@@ -49,6 +49,7 @@
   // イベントごとの許可パラメータだけに正規化する。
   var GROWTH_EVENT_PARAMS = {
     view_card_detail: ['card_id'],
+    add_to_deck: ['card_id', 'card_count'],
     copy_deck: ['content_id', 'card_count'],
     content_cta_click: ['content_id', 'destination_type'],
     deck_complete: ['card_count'],
@@ -59,6 +60,15 @@
   var GROWTH_SHARE_METHODS = ['x', 'web_share', 'image_download']
   var GROWTH_DESTINATION_TYPES = ['deck_builder']
 
+  /**
+   * Build a new allowlisted payload without forwarding names or free-form input.
+   * Unknown fields and invalid optional values are omitted; unknown events or
+   * missing/invalid required values return null so callers suppress the event.
+   * This validates payloads only; trackEvent applies the separate consent check.
+   * @param {string} eventName Growth event defined in GROWTH_EVENT_PARAMS.
+   * @param {object} params Untrusted event parameters; non-objects use an empty payload.
+   * @returns {object|null} Sanitized parameters, or null when the event must be dropped.
+   */
   function growthEventParams(eventName, params) {
     var allowed = GROWTH_EVENT_PARAMS[eventName]
     if (!allowed) return null
@@ -78,6 +88,7 @@
       }
     }
     if (eventName === 'view_card_detail' && !clean.card_id) return null
+    if (eventName === 'add_to_deck' && (!clean.card_id || !clean.card_count)) return null
     if (eventName === 'copy_deck' && !clean.content_id) return null
     if (eventName === 'content_cta_click' && (!clean.content_id || !clean.destination_type)) return null
     if (eventName === 'deck_complete' && clean.card_count !== 40) return null
