@@ -127,6 +127,38 @@ try {
             }
           }
         });
+        await check('card detail and generated pages link to the selected card in all shops', async () => {
+          const fixture = await page.evaluate(() => CARDS.find(card => card.name === '凶戦士ブレイズ・クロー'));
+          assert.ok(fixture);
+          await page.locator('#textSearch').fill(fixture.name);
+          await page.locator('#cardList').getByRole('button', { name: `${fixture.name}の詳細を見る`, exact: true }).click();
+          await page.locator('#mobileDetail').waitFor({ state: 'visible' });
+          const verifyLinks = async (scope) => {
+            for (const [label, host, key, query] of [
+              ['駿河屋', 'www.suruga-ya.jp', 'search_word', `デュエルマスターズ ${fixture.name}`],
+              ['カーナベル', 'www.ka-nabell.com', 'key_word', fixture.name],
+              ['メルカリ', 'jp.mercari.com', 'keyword', `デュエルマスターズ ${fixture.name}`],
+            ]) {
+              const link = scope.getByRole('link', { name: label, exact: true });
+              const url = new URL(await link.getAttribute('href'));
+              assert.equal(url.hostname, host);
+              assert.equal(url.searchParams.get(key), query);
+              if (label === 'カーナベル') {
+                assert.equal(url.searchParams.get('genre'), '7');
+                assert.equal(url.searchParams.get('type'), '2');
+              }
+              assert.equal(await link.getAttribute('target'), '_blank');
+              assert.match(await link.getAttribute('rel'), /noopener/);
+              assert.match(await link.getAttribute('rel'), /noreferrer/);
+            }
+          };
+          await verifyLinks(page.locator('#mobileDetail'));
+          await page.screenshot({ path: path.join(artifacts, `${name}-shop-links.png`) });
+          await page.goto(`${base}/card/${fixture.id}/`);
+          await verifyLinks(page);
+          await page.goto(base + '/index.html');
+          await ready();
+        });
         await check('form controls have accessible labels', async () => {
           const missing = await page.locator('input:not([type=hidden]), select, textarea').evaluateAll(elements => elements.filter(el => !(el.labels?.length || el.getAttribute('aria-label')?.trim() || el.getAttribute('aria-labelledby')?.split(/\s+/).some(id => document.getElementById(id)?.textContent.trim()))).map(el => el.id || el.outerHTML));
           assert.deepEqual(missing, []);
@@ -149,7 +181,7 @@ try {
           await page.locator('#deckPanel').getByRole('button', { name: '駿河屋で探す', exact: true }).click();
           const opened = await page.evaluate(() => window.__qaOpened);
           assert.equal(opened.length, 2);
-          for (const [index, host, key] of [[0, 'jp.mercari.com', 'keyword'], [1, 'www.surugaya.jp', 'search_word']]) {
+          for (const [index, host, key] of [[0, 'jp.mercari.com', 'keyword'], [1, 'www.suruga-ya.jp', 'search_word']]) {
             const url = new URL(opened[index].url);
             assert.equal(url.protocol, 'https:'); assert.equal(url.hostname, host);
             assert.ok(url.searchParams.get(key)?.includes('デュエルマスターズ'));
