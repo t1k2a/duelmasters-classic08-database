@@ -28,12 +28,15 @@ try {
     const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 1000 }, serviceWorkers: 'block' });
     context.setDefaultTimeout(8000);
     const tagRequests = [], externalRequests = [];
+    let resolveTagRequest;
+    const tagRequestRecorded = new Promise(resolve => { resolveTagRequest = resolve; });
     await context.route('**/*', route => {
       const url = new URL(route.request().url());
       if (url.origin === base) return route.continue();
       externalRequests.push(url.hostname);
       if (url.hostname === 'www.googletagmanager.com' && url.pathname === '/gtag/js') {
         tagRequests.push(url.pathname);
+        resolveTagRequest();
         // The real Google script is never downloaded. Inspect the app's command queue.
         return route.fulfill({ contentType: 'text/javascript', body: '/* isolated tag fixture */' });
       }
@@ -72,9 +75,13 @@ try {
     await page.evaluate(() => selectCard('dm01-100'));
     assert.match(await page.locator('#detailDeckProgress').innerText(), /このカード：1枚/);
     await page.evaluate(() => closeDetail());
+    const tagRequest = page.waitForRequest(request => {
+      const url = new URL(request.url());
+      return url.hostname === 'www.googletagmanager.com' && url.pathname === '/gtag/js';
+    });
     await page.locator('#ga-consent-accept').click();
     await page.waitForFunction(() => window.__gaLoaded);
-    await page.waitForTimeout(100);
+    await Promise.all([tagRequest, tagRequestRecorded]);
     assert.equal(tagRequests.length, 1);
     const configCount = () => page.evaluate(() => window.dataLayer.filter(a => a[0] === 'config').length);
     assert.equal(await configCount(), 1);

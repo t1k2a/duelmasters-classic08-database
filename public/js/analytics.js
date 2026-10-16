@@ -60,6 +60,15 @@
   var GROWTH_SHARE_METHODS = ['x', 'web_share', 'image_download']
   var GROWTH_DESTINATION_TYPES = ['deck_builder']
 
+  /**
+   * Build a new allowlisted payload without forwarding names or free-form input.
+   * Unknown fields and invalid optional values are omitted; unknown events or
+   * missing/invalid required values return null so callers suppress the event.
+   * This validates payloads only; trackEvent applies the separate consent check.
+   * @param {string} eventName Growth event defined in GROWTH_EVENT_PARAMS.
+   * @param {object} params Untrusted event parameters; non-objects use an empty payload.
+   * @returns {object|null} Sanitized parameters, or null when the event must be dropped.
+   */
   function growthEventParams(eventName, params) {
     var allowed = GROWTH_EVENT_PARAMS[eventName]
     if (!allowed) return null
