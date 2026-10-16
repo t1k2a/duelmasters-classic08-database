@@ -92,5 +92,5 @@ test('購入ボタンは実在するショップ検索関数に接続する', ()
   context.searchDeckShop('mercari');
   context.searchDeckShop('surugaya');
   assert.equal(new URL(opened[0]).hostname, 'jp.mercari.com');
-  assert.equal(new URL(opened[1]).hostname, 'www.surugaya.jp');
+  assert.equal(new URL(opened[1]).hostname, 'www.suruga-ya.jp');
 });

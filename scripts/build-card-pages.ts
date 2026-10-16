@@ -1065,7 +1065,7 @@ ${jsonLdEscape(jsonLd)}
             <span class="shop-badge">外部ショップ</span>
           </div>
           <div class="shop-grid">
-            <a href="https://www.surugaya.jp/search?category=5&search_word=${encodeURIComponent('デュエルマスターズ ' + card.name)}"
+            <a href="https://www.suruga-ya.jp/search?category=&search_word=${encodeURIComponent('デュエルマスターズ ' + card.name)}"
                target="_blank" rel="noopener noreferrer"
                onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${card.id}',card_name:'${escapeHtml(card.name)}',shop:'surugaya'})"
                class="shop-card shop-surugaya">
@@ -1077,7 +1077,7 @@ ${jsonLdEscape(jsonLd)}
                class="shop-card shop-mercari">
               メルカリ
             </a>
-            <a href="https://www.ka-nabell.com/?act=sell_search&genre=dm&word=${encodeURIComponent(card.name)}"
+            <a href="https://www.ka-nabell.com/?act=sell_search&genre=7&type=2&key_word=${encodeURIComponent(card.name)}"
                target="_blank" rel="noopener noreferrer"
                onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${card.id}',card_name:'${escapeHtml(card.name)}',shop:'ka-nabell'})"
                class="shop-card shop-kanabell">
@@ -1294,7 +1294,7 @@ ${jsonLdEscape(jsonLd)}
            class="text-center py-2 px-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium transition-colors">
           メルカリで探す
         </a>
-        <a href="https://www.surugaya.jp/search?category=5&search_word=${encodeURIComponent('デュエルマスターズ ' + (deckName || 'クラシック08 デッキ'))}"
+        <a href="https://www.suruga-ya.jp/search?category=&search_word=${encodeURIComponent('デュエルマスターズ ' + (deckName || 'クラシック08 デッキ'))}"
            target="_blank" rel="noopener noreferrer"
            onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'${escapeHtml(deckName || '')}',shop:'surugaya'})"
            class="text-center py-2 px-3 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium transition-colors">
@@ -1485,7 +1485,7 @@ ${jsonLdEscape(jsonLd)}
            class="text-center py-2 px-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium transition-colors">
           メルカリで探す
         </a>
-        <a href="https://www.surugaya.jp/search?category=5&search_word=${encodeURIComponent('デュエルマスターズ ' + deck.name)}"
+        <a href="https://www.suruga-ya.jp/search?category=&search_word=${encodeURIComponent('デュエルマスターズ ' + deck.name)}"
            target="_blank" rel="noopener noreferrer"
            onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'${escapeHtml(deck.name)}',shop:'surugaya',is_meta:true})"
            class="text-center py-2 px-3 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium transition-colors">

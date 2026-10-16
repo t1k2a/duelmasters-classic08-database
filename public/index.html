@@ -1032,7 +1032,7 @@ function detailHTML(c) {
           <span class="text-[10px] text-gray-400 font-normal">外部ショップ</span>
         </div>
         <div class="grid grid-cols-3 gap-1.5 text-xs">
-          <a href="https://www.surugaya.jp/search?category=5&search_word=${encodeURIComponent('デュエルマスターズ ' + c.name)}"
+          <a href="https://www.suruga-ya.jp/search?category=&search_word=${encodeURIComponent('デュエルマスターズ ' + c.name)}"
              target="_blank" rel="noopener noreferrer"
              onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${c.id}',card_name:'${escapeHtml(c.name)}',shop:'surugaya'})"
              class="flex items-center justify-center py-1.5 px-2 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium transition-colors text-center shadow-xs">
@@ -1044,7 +1044,7 @@ function detailHTML(c) {
              class="flex items-center justify-center py-1.5 px-2 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-medium transition-colors text-center shadow-xs">
             メルカリ
           </a>
-          <a href="https://www.ka-nabell.com/?act=sell_search&genre=dm&word=${encodeURIComponent(c.name)}"
+          <a href="https://www.ka-nabell.com/?act=sell_search&genre=7&type=2&key_word=${encodeURIComponent(c.name)}"
              target="_blank" rel="noopener noreferrer"
              onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${c.id}',card_name:'${escapeHtml(c.name)}',shop:'ka-nabell'})"
              class="flex items-center justify-center py-1.5 px-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition-colors text-center shadow-xs">
@@ -1706,7 +1706,7 @@ function searchDeckShop(shop) {
   if (shop === 'mercari') {
     url = `https://jp.mercari.com/search?keyword=${encodeURIComponent(query)}`;
   } else if (shop === 'surugaya') {
-    url = `https://www.surugaya.jp/search?category=5&search_word=${encodeURIComponent(query)}`;
+    url = `https://www.suruga-ya.jp/search?category=&search_word=${encodeURIComponent(query)}`;
   }
   if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
