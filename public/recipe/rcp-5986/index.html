@@ -53,15 +53,15 @@
         <span class="text-[10px] text-gray-400 font-normal">一括検索</span>
       </p>
       <div class="grid grid-cols-2 gap-2">
-        <a href="https://jp.mercari.com/search?keyword=%E3%83%87%E3%83%A5%E3%82%A8%E3%83%AB%E3%83%9E%E3%82%B9%E3%82%BF%E3%83%BC%E3%82%BA%20%E6%AD%A6%E8%A3%85%E3%83%89%E3%83%A9%E3%82%B4%E3%83%B3%E8%BB%8D%E9%9A%8A%E3%81%AE%E6%88%A6%E5%A3%AB%E3%81%9F%E3%81%A1"
+        <a href="https://jp.mercari.com/" data-shop="mercari" data-shop-query="武装ドラゴン軍隊の戦士たち"
            target="_blank" rel="noopener noreferrer"
-           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'武装ドラゴン軍隊の戦士たち',shop:'mercari'})"
+           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:&quot;武装ドラゴン軍隊の戦士たち&quot;,shop:'mercari'})"
            class="text-center py-2 px-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium transition-colors">
           メルカリで探す
         </a>
-        <a href="https://www.suruga-ya.jp/search?category=&search_word=%E3%83%87%E3%83%A5%E3%82%A8%E3%83%AB%E3%83%9E%E3%82%B9%E3%82%BF%E3%83%BC%E3%82%BA%20%E6%AD%A6%E8%A3%85%E3%83%89%E3%83%A9%E3%82%B4%E3%83%B3%E8%BB%8D%E9%9A%8A%E3%81%AE%E6%88%A6%E5%A3%AB%E3%81%9F%E3%81%A1"
+        <a href="https://www.suruga-ya.jp/" data-shop="surugaya" data-shop-query="武装ドラゴン軍隊の戦士たち"
            target="_blank" rel="noopener noreferrer"
-           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'武装ドラゴン軍隊の戦士たち',shop:'surugaya'})"
+           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:&quot;武装ドラゴン軍隊の戦士たち&quot;,shop:'surugaya'})"
            class="text-center py-2 px-3 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium transition-colors">
           駿河屋で探す
         </a>
@@ -188,6 +188,7 @@ function showToast(msg) {
   setTimeout(function () { t.classList.add('opacity-0', 'pointer-events-none'); }, 2000);
 }
 </script>
+  <script src="../../js/shop-links.js"></script>
   <script src="../../js/analytics-config.js"></script>
   <script src="../../js/analytics.js"></script>
 </body>

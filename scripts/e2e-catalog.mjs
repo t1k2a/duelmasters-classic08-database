@@ -35,6 +35,7 @@ try {
     for (const theme of ['light', 'dark']) {
       const name = `${viewport.width > 500 ? 'pc' : 'mobile'}-${theme}`;
       const context = await browser.newContext({ viewport, colorScheme: theme, serviceWorkers: 'block' });
+      context.setDefaultTimeout(8000);
       await context.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
       await context.addInitScript(({ theme }) => {
         window.__qaOpened = [];
@@ -155,9 +156,51 @@ try {
           await verifyLinks(page.locator('#mobileDetail'));
           await page.screenshot({ path: path.join(artifacts, `${name}-shop-links.png`) });
           await page.goto(`${base}/card/${fixture.id}/`);
+          assert.equal(await page.locator('script[src="../../js/shop-links.js"]').count(), 1);
           await verifyLinks(page);
+          const staticPage = await context.newPage();
+          // Recipe pages intentionally redirect ordinary visitors into the SPA.
+          // Exercise their generated fallback body using the existing crawler branch.
+          await staticPage.addInitScript(() => Object.defineProperty(navigator, 'userAgent', { value: 'Local QA crawler' }));
+          for (const [slug, query] of [['rcp-0001', 'Rozen Maiden'], ['meta-1', 'ヘヴィメタル']]) {
+            await staticPage.goto(`${base}/recipe/${slug}/`);
+            assert.equal(await staticPage.locator('script[src="../../js/shop-links.js"]').count(), 1);
+            for (const [shop, key] of [['mercari', 'keyword'], ['surugaya', 'search_word']]) {
+              const link = staticPage.locator(`a[data-shop="${shop}"]`);
+              assert.equal(new URL(await link.getAttribute('href')).searchParams.get(key), `デュエルマスターズ ${query}`);
+            }
+          }
+          await staticPage.close();
           await page.goto(base + '/index.html');
           await ready();
+        });
+        await check('special card names retain link-copy URLs and analytics through redraw', async () => {
+          const special = `日本語 Ａ B & + # / ? " ' <カード>`;
+          await context.route(/https:\/\/(jp\.mercari\.com|www\.suruga-ya\.jp|www\.ka-nabell\.com)\//, route => route.fulfill({ contentType: 'text/html', body: '<p>Offline shop navigation fixture</p>' }));
+          await page.evaluate(name => {
+            CARDS.push({ ...CARDS[0], id: 'qa-special', name });
+            window.__shopEvents = [];
+            window.trackEvent = (...args) => window.__shopEvents.push(args);
+            selectCard('qa-special');
+          }, special);
+          for (const [shop, key] of [['surugaya', 'search_word'], ['mercari', 'keyword'], ['ka-nabell', 'key_word']]) {
+            const link = page.locator(`#detailBody a[data-shop="${shop}"]`);
+            const href = await link.getAttribute('href');
+            assert.equal(new URL(href).searchParams.get(key), shop === 'ka-nabell' ? special : `デュエルマスターズ ${special}`);
+            const popupPromise = context.waitForEvent('page');
+            await link.press('Enter');
+            const popup = await popupPromise;
+            await popup.waitForURL(url => url.hostname === new URL(href).hostname && url.searchParams.get(key) === new URL(href).searchParams.get(key));
+            assert.equal(new URL(popup.url()).searchParams.get(key), new URL(href).searchParams.get(key));
+            assert.equal(await popup.evaluate(() => window.opener), null);
+            await popup.close();
+          }
+          const events = await page.evaluate(() => window.__shopEvents.filter(([name]) => name === 'click_buy_card'));
+          assert.equal(events.length, 3);
+          assert.ok(events.every(([, data]) => data.card_name === special));
+          await page.evaluate(() => selectCard('dm01-100'));
+          assert.equal(new URL(await page.locator('#detailBody a[data-shop="mercari"]').getAttribute('href')).searchParams.get('keyword'), 'デュエルマスターズ 凶戦士ブレイズ・クロー');
+          await page.locator('#mobileDetail button[onclick="closeDetail()"]').click();
         });
         await check('form controls have accessible labels', async () => {
           const missing = await page.locator('input:not([type=hidden]), select, textarea').evaluateAll(elements => elements.filter(el => !(el.labels?.length || el.getAttribute('aria-label')?.trim() || el.getAttribute('aria-labelledby')?.split(/\s+/).some(id => document.getElementById(id)?.textContent.trim()))).map(el => el.id || el.outerHTML));
@@ -176,17 +219,27 @@ try {
           assert.deepEqual(actual, fixture.ids.map(id => ({ id, count: 2 })));
           await page.screenshot({ path: path.join(artifacts, `${name}-deck.png`), fullPage: true });
         });
-        await check('both purchase buttons create safe search URLs', async () => {
-          await page.locator('#deckPanel').getByRole('button', { name: 'メルカリで探す', exact: true }).click();
-          await page.locator('#deckPanel').getByRole('button', { name: '駿河屋で探す', exact: true }).click();
-          const opened = await page.evaluate(() => window.__qaOpened);
-          assert.equal(opened.length, 2);
-          for (const [index, host, key] of [[0, 'jp.mercari.com', 'keyword'], [1, 'www.suruga-ya.jp', 'search_word']]) {
-            const url = new URL(opened[index].url);
-            assert.equal(url.protocol, 'https:'); assert.equal(url.hostname, host);
-            assert.ok(url.searchParams.get(key)?.includes('デュエルマスターズ'));
-            assert.match(opened[index].features, /noopener/);
+        await check('deck purchase links support new tabs, keyboard and analytics', async () => {
+          await context.route(/https:\/\/(jp\.mercari\.com|www\.suruga-ya\.jp)\//, route => route.fulfill({ contentType: 'text/html', body: '<p>Offline shop navigation fixture</p>' }));
+          await page.evaluate(() => { window.__shopEvents = []; window.trackEvent = (...args) => window.__shopEvents.push(args); });
+          for (const [label, host, key, keyboard] of [['メルカリで探す', 'jp.mercari.com', 'keyword', true], ['駿河屋で探す', 'www.suruga-ya.jp', 'search_word', false]]) {
+            const link = page.locator('#deckPanel').getByRole('link', { name: label, exact: true });
+            const href = await link.getAttribute('href');
+            const url = new URL(href);
+            assert.equal(url.hostname, host);
+            assert.ok(url.searchParams.get(key).includes('デュエルマスターズ'));
+            assert.equal(await link.getAttribute('target'), '_blank');
+            assert.match(await link.getAttribute('rel'), /noopener noreferrer/);
+            const popupPromise = context.waitForEvent('page');
+            if (keyboard) await link.press('Enter'); else await link.click();
+            const popup = await popupPromise;
+            await popup.waitForURL(href);
+            assert.equal(await popup.evaluate(() => window.opener), null);
+            await popup.close();
           }
+          const events = await page.evaluate(() => window.__shopEvents);
+          assert.equal(events.length, 2);
+          assert.ok(events.every(([event]) => event === 'click_buy_deck'));
         });
         await check('no JavaScript runtime errors', async () => assert.deepEqual(errors, []));
       } catch (error) {

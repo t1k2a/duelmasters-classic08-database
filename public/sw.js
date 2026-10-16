@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_PREFIX = 'dmc08-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
@@ -116,6 +116,12 @@ self.addEventListener('fetch', (event) => {
   if (!url.pathname.startsWith(SCOPE.pathname)) return;
 
   const href = url.toString();
+
+  // Shop URLs live in a fixed-path runtime. Revalidate it on every page load.
+  if (url.pathname === new URL('./js/shop-links.js', SCOPE).pathname) {
+    event.respondWith(fetch(request, { cache: 'no-cache' }));
+    return;
+  }
 
   // SWR 対象データ
   if (SWR_URLS.includes(href)) {
