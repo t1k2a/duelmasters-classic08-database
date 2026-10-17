@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v6-shared-shop-links';
 const CACHE_PREFIX = 'dmc08-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 

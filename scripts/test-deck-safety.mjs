@@ -116,12 +116,12 @@ test('activate removes only obsolete caches with this app prefix', async () => {
   let claimed = false;
   const context = vm.createContext({ URL, self: { registration: { scope: 'https://example.test/app/' },
     addEventListener: (name, fn) => { listeners[name] = fn; }, clients: { claim: () => { claimed = true; } } },
-    caches: { keys: async () => ['dmc08-v1', 'dmc08-v2', 'dmc08-v3', 'dmc08-v4', 'other-app-v3', 'dmc080-v1'], delete: async key => deleted.push(key) } });
+    caches: { keys: async () => ['dmc08-v1', 'dmc08-v2', 'dmc08-v3', 'dmc08-v4', 'dmc08-v4-deck-progress', 'dmc08-v5-recipe-focus', 'dmc08-v6-shared-shop-links', 'other-app-v3', 'dmc080-v1'], delete: async key => deleted.push(key) } });
   vm.runInContext(fs.readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8'), context);
   let done;
   listeners.activate({ waitUntil: promise => { done = promise; } });
   await done;
-  assert.deepEqual(deleted, ['dmc08-v1', 'dmc08-v2', 'dmc08-v3']);
+  assert.deepEqual(deleted, ['dmc08-v1', 'dmc08-v2', 'dmc08-v3', 'dmc08-v4', 'dmc08-v4-deck-progress', 'dmc08-v5-recipe-focus']);
   assert.equal(claimed, true);
 });
 
