@@ -557,10 +557,14 @@ fetch('data/recipes.json')
   .then(r => r.json())
   .then(data => {
     RECIPES = Array.isArray(data) ? data : [];
-    // 詳細モーダルが開いていればレシピ件数を反映して再描画
+    // レシピ導線だけ更新し、操作中のボタンやフォーカスを維持する。
     if (selectedCard && !document.getElementById('mobileDetail').classList.contains('hidden')) {
       const c = CARDS.find(x => x.id === selectedCard);
-      if (c) document.getElementById('detailBody').innerHTML = detailHTML(c);
+      const recipeSlot = document.getElementById('detailRecipeButton');
+      if (c && recipeSlot) {
+        recipeSlot.innerHTML = recipeButtonHTML(c);
+        recipeSlot.hidden = !RECIPES.length;
+      }
     }
   })
   .catch(() => { RECIPES = []; });
@@ -1009,7 +1013,7 @@ function detailHTML(c) {
         <p id="detailDeckProgress" role="status" aria-live="polite" aria-atomic="true" class="text-gray-600">${detailDeckProgressText(c.id)}</p>
         <button type="button" onclick="viewDeckFromDetail()" class="text-indigo-600 underline font-medium">デッキを見る</button>
       </div>
-      ${recipeButtonHTML(c)}
+      <div id="detailRecipeButton" ${RECIPES.length ? '' : 'hidden'}>${recipeButtonHTML(c)}</div>
       <table class="text-sm w-full">
         <tr><td class="text-gray-500 pr-3 py-0.5 w-24">カードの種類</td><td class="font-medium">${escapeHtml(c.cardType)}</td></tr>
         <tr><td class="text-gray-500 pr-3 py-0.5">コスト</td><td class="font-medium">${c.cost ?? '—'}</td></tr>
