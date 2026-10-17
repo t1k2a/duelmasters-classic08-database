@@ -790,21 +790,21 @@ body {
             <span class="shop-badge">外部ショップ</span>
           </div>
           <div class="shop-grid">
-            <a href="https://www.suruga-ya.jp/search?category=&search_word=%E3%83%87%E3%83%A5%E3%82%A8%E3%83%AB%E3%83%9E%E3%82%B9%E3%82%BF%E3%83%BC%E3%82%BA%20%E7%94%9F%E5%91%BD%E5%89%A5%E5%A5%AA"
+            <a href="https://www.suruga-ya.jp/" data-shop="surugaya" data-shop-query="生命剥奪"
                target="_blank" rel="noopener noreferrer"
-               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'dm09-029',card_name:'生命剥奪',shop:'surugaya'})"
+               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'dm09-029',card_name:&quot;生命剥奪&quot;,shop:'surugaya'})"
                class="shop-card shop-surugaya">
               駿河屋
             </a>
-            <a href="https://jp.mercari.com/search?keyword=%E3%83%87%E3%83%A5%E3%82%A8%E3%83%AB%E3%83%9E%E3%82%B9%E3%82%BF%E3%83%BC%E3%82%BA%20%E7%94%9F%E5%91%BD%E5%89%A5%E5%A5%AA"
+            <a href="https://jp.mercari.com/" data-shop="mercari" data-shop-query="生命剥奪"
                target="_blank" rel="noopener noreferrer"
-               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'dm09-029',card_name:'生命剥奪',shop:'mercari'})"
+               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'dm09-029',card_name:&quot;生命剥奪&quot;,shop:'mercari'})"
                class="shop-card shop-mercari">
               メルカリ
             </a>
-            <a href="https://www.ka-nabell.com/?act=sell_search&genre=7&type=2&key_word=%E7%94%9F%E5%91%BD%E5%89%A5%E5%A5%AA"
+            <a href="https://www.ka-nabell.com/" data-shop="ka-nabell" data-shop-query="生命剥奪"
                target="_blank" rel="noopener noreferrer"
-               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'dm09-029',card_name:'生命剥奪',shop:'ka-nabell'})"
+               onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'dm09-029',card_name:&quot;生命剥奪&quot;,shop:'ka-nabell'})"
                class="shop-card shop-kanabell">
               カーナベル
             </a>
@@ -857,6 +857,7 @@ function showToast(msg) {
   setTimeout(function () { t.classList.add('opacity-0', 'pointer-events-none'); }, 2000);
 }
 </script>
+  <script src="../../js/shop-links.js"></script>
   <script src="../../js/analytics-config.js"></script>
   <script src="../../js/analytics.js"></script>
 </body>

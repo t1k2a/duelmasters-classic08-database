@@ -343,12 +343,12 @@
           <span class="text-[10px] text-gray-400 font-normal">一括検索</span>
         </div>
         <div class="grid grid-cols-2 gap-1.5">
-          <button onclick="searchDeckShop('mercari')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-xs font-semibold transition-all shadow-2xs">
+          <a href="https://jp.mercari.com/" data-deck-shop data-shop="mercari" target="_blank" rel="noopener noreferrer" onclick="return trackDeckShop('mercari')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-xs font-semibold transition-all shadow-2xs">
             メルカリで探す
-          </button>
-          <button onclick="searchDeckShop('surugaya')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold transition-all shadow-2xs">
+          </a>
+          <a href="https://www.suruga-ya.jp/" data-deck-shop data-shop="surugaya" target="_blank" rel="noopener noreferrer" onclick="return trackDeckShop('surugaya')" class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold transition-all shadow-2xs">
             駿河屋で探す
-          </button>
+          </a>
         </div>
       </div>
     </div>
@@ -402,6 +402,7 @@
   </div>
 </div>
 
+<script src="js/shop-links.js"></script>
 <script src="js/deck-legality.js"></script>
 <script>
 const RENDER_PAGE = 100;
@@ -542,6 +543,7 @@ fetch('data/classic08-restrictions.json')
         if (c && !document.getElementById('mobileDetail').classList.contains('hidden')) {
           document.getElementById('detailName').innerHTML = detailNameHTML(c);
           document.getElementById('detailBody').innerHTML = detailHTML(c);
+          window.ShopLinks?.apply(document.getElementById('detailBody'));
         }
       }
     }
@@ -1040,21 +1042,21 @@ function detailHTML(c) {
           <span class="text-[10px] text-gray-400 font-normal">外部ショップ</span>
         </div>
         <div class="grid grid-cols-3 gap-1.5 text-xs">
-          <a href="https://www.suruga-ya.jp/search?category=&search_word=${encodeURIComponent('デュエルマスターズ ' + c.name)}"
+          <a href="https://www.suruga-ya.jp/" data-shop="surugaya" data-shop-query="${escapeHtml(c.name)}"
              target="_blank" rel="noopener noreferrer"
-             onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${c.id}',card_name:'${escapeHtml(c.name)}',shop:'surugaya'})"
+             onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${c.id}',card_name:${escapeHtml(JSON.stringify(c.name))},shop:'surugaya'})"
              class="flex items-center justify-center py-1.5 px-2 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-medium transition-colors text-center shadow-xs">
             駿河屋
           </a>
-          <a href="https://jp.mercari.com/search?keyword=${encodeURIComponent('デュエルマスターズ ' + c.name)}"
+          <a href="https://jp.mercari.com/" data-shop="mercari" data-shop-query="${escapeHtml(c.name)}"
              target="_blank" rel="noopener noreferrer"
-             onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${c.id}',card_name:'${escapeHtml(c.name)}',shop:'mercari'})"
+             onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${c.id}',card_name:${escapeHtml(JSON.stringify(c.name))},shop:'mercari'})"
              class="flex items-center justify-center py-1.5 px-2 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-medium transition-colors text-center shadow-xs">
             メルカリ
           </a>
-          <a href="https://www.ka-nabell.com/?act=sell_search&genre=7&type=2&key_word=${encodeURIComponent(c.name)}"
+          <a href="https://www.ka-nabell.com/" data-shop="ka-nabell" data-shop-query="${escapeHtml(c.name)}"
              target="_blank" rel="noopener noreferrer"
-             onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${c.id}',card_name:'${escapeHtml(c.name)}',shop:'ka-nabell'})"
+             onclick="if(window.trackEvent)trackEvent('click_buy_card',{card_id:'${c.id}',card_name:${escapeHtml(JSON.stringify(c.name))},shop:'ka-nabell'})"
              class="flex items-center justify-center py-1.5 px-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition-colors text-center shadow-xs">
             カーナベル
           </a>
@@ -1080,6 +1082,7 @@ function selectCard(id, fromDeck = false) {
   document.getElementById('deckPanel').classList.add('hidden');
   document.getElementById('detailName').innerHTML = detailNameHTML(c);
   document.getElementById('detailBody').innerHTML = detailHTML(c);
+  window.ShopLinks?.apply(document.getElementById('detailBody'));
   document.getElementById('backToDeckBtn').classList.toggle('hidden', !fromDeck);
   document.getElementById('mobileDetail').classList.remove('hidden');
   if (window.trackGrowthEvent) {
@@ -1413,6 +1416,7 @@ function manaCurveData() {
 }
 
 function renderDeckPanel() {
+  updateDeckShopLinks();
   const total = deckTotalCount();
   document.getElementById('deckTotal').textContent = `${total} / ${DECK_MAX}`;
 
@@ -1721,31 +1725,32 @@ function buildDeckURL() {
 // X投稿intentの hashtags パラメータ（カンマ区切り、#なし）
 const SHARE_HASHTAGS_PARAM = 'デュエマ,デュエマクラシック08';
 
-function searchDeckShop(shop) {
+function updateDeckShopLinks() {
+  const query = deck.slice(0, 3).map(c => c.name).join(' ');
+  const panel = document.getElementById('deckPanel');
+  panel.querySelectorAll('a[data-deck-shop]').forEach(link => {
+    link.dataset.shopQuery = query;
+    link.setAttribute('aria-disabled', String(deck.length === 0));
+  });
+  window.ShopLinks?.apply(panel);
+  if (deck.length === 0) {
+    panel.querySelectorAll('a[data-deck-shop]').forEach(link => link.removeAttribute('href'));
+  }
+}
+
+function trackDeckShop(shop) {
   if (deck.length === 0) {
     showToast('デッキにカードがありません');
-    return;
+    return false;
   }
-  // デッキ内の代表カード上位3枚を取得して検索キーワード化
-  const topCards = deck.slice(0, 3).map(c => c.name);
-  const query = 'デュエルマスターズ ' + topCards.join(' ');
-  const cardCount = deck.reduce((s, c) => s + c.count, 0);
-
   if (window.trackEvent) {
     window.trackEvent('click_buy_deck', {
-      shop: shop,
-      card_count: cardCount,
-      top_cards: topCards.join(','),
+      shop,
+      card_count: deck.reduce((s, c) => s + c.count, 0),
+      top_cards: deck.slice(0, 3).map(c => c.name).join(','),
     });
   }
-
-  let url = '';
-  if (shop === 'mercari') {
-    url = `https://jp.mercari.com/search?keyword=${encodeURIComponent(query)}`;
-  } else if (shop === 'surugaya') {
-    url = `https://www.suruga-ya.jp/search?category=&search_word=${encodeURIComponent(query)}`;
-  }
-  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  return true;
 }
 
 function shareDeckX() {

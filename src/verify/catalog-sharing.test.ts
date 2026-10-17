@@ -80,17 +80,22 @@ test('不正共有入力で既存デッキを部分的に上書きしない', ()
   assert.deepEqual(calls, []);
 });
 
-test('購入ボタンは実在するショップ検索関数に接続する', () => {
-  assert.doesNotMatch(html, /onclick="buyDeck\(/);
-  for (const shop of ['mercari', 'surugaya']) {
-    assert.ok(html.includes(`onclick="searchDeckShop('${shop}')"`));
-  }
-  const shopCode = html.slice(html.indexOf('function searchDeckShop('), html.indexOf('function shareDeckX('));
-  const opened: string[] = [];
-  const context = vm.createContext({ deck: [{ name: 'test card', count: 1 }], window: { open: (url: string) => opened.push(url) } });
+test('デッキ購入は通常リンクを更新し、クリック時の計測だけを行う', () => {
+  const shopCode = html.slice(html.indexOf('function updateDeckShopLinks('), html.indexOf('function shareDeckX('));
+  const links = ['mercari', 'surugaya'].map(shop => ({ dataset: { shop, shopQuery: '' }, href: '', setAttribute() {}, removeAttribute() { this.href = ''; } }));
+  const events: unknown[] = [];
+  const panel = { querySelectorAll: () => links };
+  const context = vm.createContext({ deck: [{ name: 'カード & #', count: 2 }], document: { querySelectorAll: () => [], getElementById: () => panel }, window: { trackEvent: (...args: unknown[]) => events.push(args) }, showToast() {} });
+  vm.runInContext(fs.readFileSync(new URL('../../public/js/shop-links.js', import.meta.url), 'utf8'), context);
   vm.runInContext(shopCode, context);
-  context.searchDeckShop('mercari');
-  context.searchDeckShop('surugaya');
-  assert.equal(new URL(opened[0]).hostname, 'jp.mercari.com');
-  assert.equal(new URL(opened[1]).hostname, 'www.suruga-ya.jp');
+  context.updateDeckShopLinks();
+  assert.equal(links[0].dataset.shopQuery, 'カード & #');
+  assert.equal(events.length, 0);
+  assert.equal(context.trackDeckShop('mercari'), true);
+  assert.deepEqual(plain(events), [['click_buy_deck', { shop: 'mercari', card_count: 2, top_cards: 'カード & #' }]]);
+  context.deck = [];
+  context.updateDeckShopLinks();
+  assert.ok(links.every(link => link.href === ''));
+  assert.equal(context.trackDeckShop('surugaya'), false);
+  assert.equal(events.length, 1);
 });

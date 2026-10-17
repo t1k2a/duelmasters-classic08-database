@@ -53,15 +53,15 @@
         <span class="text-[10px] text-gray-400 font-normal">一括検索</span>
       </p>
       <div class="grid grid-cols-2 gap-2">
-        <a href="https://jp.mercari.com/search?keyword=%E3%83%87%E3%83%A5%E3%82%A8%E3%83%AB%E3%83%9E%E3%82%B9%E3%82%BF%E3%83%BC%E3%82%BA%20%E6%AE%8B%E3%82%8A%E3%81%AE%E5%AF%BF%E5%91%BD%E3%81%AE%E5%8D%8A%E5%88%86%E3%81%A8%E5%BC%95%E3%81%8D%E6%8F%9B%E3%81%88%E3%81%AB%E3%81%93%E3%81%AE%E7%9B%AE%E3%82%92%E3%82%84%E3%82%8D%E3%81%86%E3%81%8B%EF%BC%9F"
+        <a href="https://jp.mercari.com/" data-shop="mercari" data-shop-query="残りの寿命の半分と引き換えにこの目をやろうか？"
            target="_blank" rel="noopener noreferrer"
-           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'残りの寿命の半分と引き換えにこの目をやろうか？',shop:'mercari'})"
+           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:&quot;残りの寿命の半分と引き換えにこの目をやろうか？&quot;,shop:'mercari'})"
            class="text-center py-2 px-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium transition-colors">
           メルカリで探す
         </a>
-        <a href="https://www.suruga-ya.jp/search?category=&search_word=%E3%83%87%E3%83%A5%E3%82%A8%E3%83%AB%E3%83%9E%E3%82%B9%E3%82%BF%E3%83%BC%E3%82%BA%20%E6%AE%8B%E3%82%8A%E3%81%AE%E5%AF%BF%E5%91%BD%E3%81%AE%E5%8D%8A%E5%88%86%E3%81%A8%E5%BC%95%E3%81%8D%E6%8F%9B%E3%81%88%E3%81%AB%E3%81%93%E3%81%AE%E7%9B%AE%E3%82%92%E3%82%84%E3%82%8D%E3%81%86%E3%81%8B%EF%BC%9F"
+        <a href="https://www.suruga-ya.jp/" data-shop="surugaya" data-shop-query="残りの寿命の半分と引き換えにこの目をやろうか？"
            target="_blank" rel="noopener noreferrer"
-           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:'残りの寿命の半分と引き換えにこの目をやろうか？',shop:'surugaya'})"
+           onclick="if(window.trackEvent)trackEvent('click_buy_deck',{deck_name:&quot;残りの寿命の半分と引き換えにこの目をやろうか？&quot;,shop:'surugaya'})"
            class="text-center py-2 px-3 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium transition-colors">
           駿河屋で探す
         </a>
@@ -148,6 +148,7 @@ function showToast(msg) {
   setTimeout(function () { t.classList.add('opacity-0', 'pointer-events-none'); }, 2000);
 }
 </script>
+  <script src="../../js/shop-links.js"></script>
   <script src="../../js/analytics-config.js"></script>
   <script src="../../js/analytics.js"></script>
 </body>
