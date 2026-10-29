@@ -1760,8 +1760,10 @@ function shareDeckX() {
   const url = buildDeckURL();
   const summary = deckSummaryText(deck);
   const intentURL = `https://twitter.com/intent/tweet?text=${encodeURIComponent(summary)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent(SHARE_HASHTAGS_PARAM)}`;
-  const intentWindow = window.open(intentURL, '_blank', 'noopener');
-  if (intentWindow && window.trackGrowthEvent) {
+  window.open(intentURL, '_blank', 'noopener');
+  // noopener returns null even when opened. Count the intent attempt, not a completed post.
+  // Popup blocking also returns null, so this event cannot confirm that X opened.
+  if (window.trackGrowthEvent) {
     window.trackGrowthEvent('share_deck', { method: 'x', card_count: cardCount });
   }
 }
