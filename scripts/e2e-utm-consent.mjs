@@ -18,10 +18,11 @@ const server = http.createServer(async (req, res) => {
   } catch { res.writeHead(404).end(); }
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-const base = `http://127.0.0.1:${server.address().port}`;
+const localBase = `http://127.0.0.1:${server.address().port}`;
+const base = 'http://analytics.test';
 let browser;
 try {
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
   for (const [name, width, theme] of [['pc-light', 1440, 'light'], ['mobile-dark', 390, 'dark']]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, serviceWorkers: 'block' });
     const tagLoads = [];
@@ -32,7 +33,8 @@ try {
         tagLoads.push(route.request().frame().url());
         return route.fulfill({ contentType: 'text/javascript', body: '/* isolated QA tag */' });
       }
-      return url.origin === base ? route.continue() : route.abort();
+      if (url.origin === base) return route.fulfill({ response: await route.fetch({ url: localBase + url.pathname + url.search, maxRedirects: 0 }) });
+      return route.abort();
     });
     await context.addInitScript(theme => document.addEventListener('DOMContentLoaded', () => document.documentElement.classList.toggle('dark', theme === 'dark')), theme);
     const page = await context.newPage();

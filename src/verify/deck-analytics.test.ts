@@ -13,7 +13,8 @@ function harness(consent = 'granted', count = 1, openResult: unknown = null) {
   const opened: unknown[][] = [];
   const loads: unknown[] = [];
   const context = vm.createContext({
-    CARDS: cards, DECK_MAX: 40, CARD_MAX: 4,
+    CARDS: cards, DECK_MAX: 40, CARD_MAX: 4, URLSearchParams, location: { hostname: 'analytics.test', search: '' },
+    sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     deck: count ? [{ ...cards[0], count }] : [],
     SHARE_HASHTAGS_PARAM: 'test',
     buildDeckURL: () => 'https://example.test/?d=1-1',
