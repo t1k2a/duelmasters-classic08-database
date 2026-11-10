@@ -892,9 +892,9 @@ function recipeCardHTML(r, highlightId) {
       </div>
       <div class="text-xs text-gray-500">${total}枚${r.author ? ` ・ ${escapeHtml(r.author)}` : ''}</div>
       ${hofLine}
-      <div class="flex items-center gap-3 pt-1">
+      <div class="flex flex-wrap items-center gap-3 pt-1">
         <button onclick="loadRecipe('${escapeHtml(r.id)}')"
-          class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 py-1 font-medium">読込</button>
+          class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 py-1 font-medium">このデッキをコピーして編集</button>
         <button onclick="copyRecipeURL('${escapeHtml(r.id)}')"
           class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-3 py-1 font-medium">URLをコピー</button>
         ${srcLink}
@@ -1485,7 +1485,7 @@ function renderDeckPanel() {
 
   const relatedGuideEl = document.getElementById('deckRelatedGuide');
   const relatedGuide = GROWTH_PAGES.find(page => page && page.kind === 'deck-guide' && page.featuredRecipeId === restoredRecipeId);
-  if (relatedGuideEl && relatedGuide && typeof relatedGuide.path === 'string' && typeof relatedGuide.title === 'string') {
+  if (deck.length && relatedGuideEl && relatedGuide && typeof relatedGuide.path === 'string' && typeof relatedGuide.title === 'string') {
     relatedGuideEl.replaceChildren();
     const label = document.createElement('div');
     label.className = 'mb-1 text-xs font-semibold text-indigo-800';
@@ -1507,6 +1507,10 @@ function renderDeckPanel() {
       <div class="py-6 px-4 text-center text-gray-400 text-sm space-y-3">
         <div class="text-3xl">🃏</div>
         <div class="font-medium text-gray-500">デッキは空です</div>
+        <p class="text-gray-600 dark:text-slate-300">まずは初心者向けの40枚レシピを試してみませんか？</p>
+        <a href="deck-guide/beginner-low-rarity-deck/"
+          class="inline-block rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-3 font-semibold text-white">サンプルデッキを見て試す</a>
+        <p class="text-xs text-gray-500">解説ページで内容を確認して、そのままコピー・編集できます。</p>
         <div class="text-left bg-gray-50 rounded-xl p-4 space-y-2 text-xs text-gray-500">
           <div class="font-semibold text-gray-600 mb-1">デッキの作り方</div>
           <div>① カードをタップして詳細を開く</div>
@@ -1855,10 +1859,12 @@ function restoreRecipeFromURL(recipeId) {
     renderDeckBadge();
     updateDeckTitle(deck, deckName);
     openDeckPanel();
+    document.getElementById('deckHeading').focus();
     if (window.trackEventOnce) {
       window.trackEventOnce(`copy-deck:${recipeId}`, 'copy_deck', {
         content_id: String(recipeId),
         card_count: deckTotalCount(),
+        entry_point: 'recipe_url',
       });
     }
     return true;
@@ -1882,22 +1888,34 @@ function copyRecipeURL(recipeId) {
 }
 
 function loadRecipe(recipeId) {
-  if (!isRestrictionsReady()) { showToast('読込中... 少し待ってからお試しください'); return; }
+  if (!isRestrictionsReady()) { showToast('カードの制限データを読み込み中です。少し待ってからお試しください'); return; }
   const recipe = RECIPES.find(r => r.id === recipeId);
   if (!recipe) { showToast('レシピが見つかりません'); return; }
-  if (deck.length && !confirm('現在のデッキを上書きしますか？')) return;
-  deck = (recipe.cards || [])
-    .map(rc => {
-      const card = cardById(rc.id);
-      if (!card) return null;
-      return { id: rc.id, name: card.name, count: Math.min(CARD_MAX, Math.max(1, rc.count | 0)) };
-    })
-    .filter(Boolean);
-  saveDeck();
+  try {
+    // URL経由と同じ検証を行い、欠落カードや不正な枚数を黙って補正しない。
+    const restored = validateSharedDeck(recipe.cards);
+    if (!restored) { showToast('レシピが不正です。カードと枚数を確認してください'); return; }
+    if (deck.length && !confirm('このレシピをコピーして編集します。現在のデッキは上書きされます。よろしいですか？')) return;
+    saveDeck(restored);
+    deck = restored;
+    restoredRecipeId = String(recipeId);
+  } catch {
+    showToast('レシピを読み込めませんでした。現在のデッキは変更していません');
+    return;
+  }
   renderDeckBadge();
+  updateDeckTitle(deck);
   document.getElementById('mobileDetail').classList.add('hidden');
   openDeckPanel();
-  showToast(`「${recipe.name || 'デッキ'}」を読み込みました！🎴`);
+  document.getElementById('deckHeading').focus();
+  showToast('デッキをコピーしました。カードを追加・削除して編集できます');
+  if (window.trackGrowthEvent) {
+    window.trackGrowthEvent('copy_deck', {
+      content_id: String(recipeId),
+      card_count: deckTotalCount(),
+      entry_point: 'recipe_list',
+    });
+  }
 }
 
 let toastTimer = null;

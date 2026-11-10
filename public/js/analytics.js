@@ -26,6 +26,25 @@
   var PLACEHOLDER = 'G-XXXXXXXXXX'
   var CONSENT_KEY = 'ga-consent' // 'granted' | 'denied'
 
+  // 検証用の計測停止は、アプリ・カード・レシピの画面を移動しても同じタブ内で維持する。
+  // ?analytics=on は停止指定だけを解除し、同意やローカルアクセスの除外条件は変えない。
+  // 保存先やURLを読み書きできない場合は、安全のため計測を停止する。
+  const TEST_TRAFFIC_KEY = 'ga-test-traffic'
+  function isTestTraffic() {
+    try {
+      const hostname = window.location.hostname.toLowerCase().replace(/\.$/, '')
+      const mode = new URLSearchParams(window.location.search).get('analytics')
+      if (mode === 'off') sessionStorage.setItem(TEST_TRAFFIC_KEY, 'off')
+      if (mode === 'on') sessionStorage.removeItem(TEST_TRAFFIC_KEY)
+      return hostname === 'localhost' || /\.localhost$/.test(hostname) ||
+        /^127\./.test(hostname) || hostname === '[::1]' || hostname === '::1' ||
+        sessionStorage.getItem(TEST_TRAFFIC_KEY) === 'off'
+    } catch (e) {
+      return true
+    }
+  }
+  const testTraffic = isTestTraffic()
+
   function getConsent() {
     try { return localStorage.getItem(CONSENT_KEY) } catch (e) { return null }
   }
@@ -36,7 +55,7 @@
   // カスタムイベント送信用のグローバル関数
   window.trackEvent = function (eventName, params) {
     try {
-      if (getConsent() !== 'granted' || !MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER) return
+      if (testTraffic || getConsent() !== 'granted' || !MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER) return
       if (typeof window.gtag === 'function') {
         window.gtag('event', eventName, params || {})
       }
@@ -50,7 +69,7 @@
   var GROWTH_EVENT_PARAMS = {
     view_card_detail: ['card_id'],
     add_to_deck: ['card_id', 'card_count'],
-    copy_deck: ['content_id', 'card_count'],
+    copy_deck: ['content_id', 'card_count', 'entry_point'],
     content_cta_click: ['content_id', 'destination_type'],
     deck_complete: ['card_count'],
     share_deck: ['method', 'card_count'],
@@ -78,6 +97,8 @@
       var key = allowed[i]
       var value = source[key]
       if ((key === 'card_id' || key === 'content_id') && typeof value === 'string' && /^[a-z0-9-]{1,80}$/i.test(value)) {
+        clean[key] = value
+      } else if (key === 'entry_point' && (value === 'recipe_list' || value === 'recipe_url')) {
         clean[key] = value
       } else if (key === 'method' && GROWTH_SHARE_METHODS.indexOf(value) !== -1) {
         clean[key] = value
@@ -112,7 +133,7 @@
   }
 
   // 未設定（空 or プレースホルダ）なら安全側で何もしない。バナーもタグも出さない。
-  if (!MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER) return
+  if (testTraffic || !MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER) return
 
   // このスクリプト自身の src からサイトのベースパスを導出する。
   // GitHub Pages のサブパス配信でも、各ページの階層差に依存せずリンクできる。
@@ -122,7 +143,7 @@
 
   // 同意後にのみ gtag.js を読み込んで初期化する。
   function loadGtag() {
-    if (window.__gaLoaded) return
+    if (testTraffic || getConsent() !== 'granted' || window.__gaLoaded) return
     window.__gaLoaded = true
 
     var s = document.createElement('script')
