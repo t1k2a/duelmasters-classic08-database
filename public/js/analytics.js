@@ -26,14 +26,14 @@
   var PLACEHOLDER = 'G-XXXXXXXXXX'
   var CONSENT_KEY = 'ga-consent' // 'granted' | 'denied'
 
-  // QA opt-out persists for this tab across SPA/card/recipe navigation.
-  // ?analytics=on clears only this opt-out, never consent or loopback protection.
-  // Storage or URL failures fail closed so a broken opt-out cannot send traffic.
-  var TEST_TRAFFIC_KEY = 'ga-test-traffic'
+  // 検証用の計測停止は、アプリ・カード・レシピの画面を移動しても同じタブ内で維持する。
+  // ?analytics=on は停止指定だけを解除し、同意やローカルアクセスの除外条件は変えない。
+  // 保存先やURLを読み書きできない場合は、安全のため計測を停止する。
+  const TEST_TRAFFIC_KEY = 'ga-test-traffic'
   function isTestTraffic() {
     try {
-      var hostname = window.location.hostname.toLowerCase().replace(/\.$/, '')
-      var mode = new URLSearchParams(window.location.search).get('analytics')
+      const hostname = window.location.hostname.toLowerCase().replace(/\.$/, '')
+      const mode = new URLSearchParams(window.location.search).get('analytics')
       if (mode === 'off') sessionStorage.setItem(TEST_TRAFFIC_KEY, 'off')
       if (mode === 'on') sessionStorage.removeItem(TEST_TRAFFIC_KEY)
       return hostname === 'localhost' || /\.localhost$/.test(hostname) ||
@@ -43,7 +43,7 @@
       return true
     }
   }
-  var testTraffic = isTestTraffic()
+  const testTraffic = isTestTraffic()
 
   function getConsent() {
     try { return localStorage.getItem(CONSENT_KEY) } catch (e) { return null }

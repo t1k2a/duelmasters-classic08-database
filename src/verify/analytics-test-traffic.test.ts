@@ -10,7 +10,7 @@ type Options = {
   consentReadError?: boolean; measurementId?: string;
 };
 
-// No network primitives or real DOM script loader exist in this isolated fixture.
+// この隔離テスト環境には、ネットワーク通信や実際にスクリプトを読み込む機能を渡さない。
 function harness(options: Options = {}) {
   let consent = options.consent === undefined ? 'granted' : options.consent;
   const session = options.session || new Map<string, string>();
@@ -22,25 +22,25 @@ function harness(options: Options = {}) {
     location: { hostname: options.hostname || 'analytics.test', search: options.search || '' },
     sessionStorage: {
       getItem(key: string) {
-        if (options.storageError === 'getItem') throw new Error('Storage blocked');
+        if (options.storageError === 'getItem') throw new Error('保存領域へのアクセスを拒否');
         return session.get(key) ?? null;
       },
       setItem(key: string, value: string) {
-        if (options.storageError === 'setItem') throw new Error('Storage blocked');
+        if (options.storageError === 'setItem') throw new Error('保存領域へのアクセスを拒否');
         session.set(key, value);
       },
       removeItem(key: string) {
-        if (options.storageError === 'removeItem') throw new Error('Storage blocked');
+        if (options.storageError === 'removeItem') throw new Error('保存領域へのアクセスを拒否');
         session.delete(key);
       },
     },
     localStorage: {
       getItem() {
-        if (options.consentReadError) throw new Error('Storage blocked');
+        if (options.consentReadError) throw new Error('保存領域へのアクセスを拒否');
         return consent;
       },
       setItem(_key: string, value: string) {
-        if (options.consentWriteError) throw new Error('Storage blocked');
+        if (options.consentWriteError) throw new Error('保存領域へのアクセスを拒否');
         consent = value;
       },
     },
@@ -71,7 +71,7 @@ function harness(options: Options = {}) {
   return { context, session, tags, elements, handlers, events, emit };
 }
 
-test('production-like origin preserves unknown, denied and granted consent behavior', () => {
+test('通常のホストでは未選択・拒否・同意の各状態に応じた動作を維持する', () => {
   for (const consent of [null, 'denied', 'granted']) {
     const h = harness({ consent });
     h.emit();
@@ -91,11 +91,11 @@ test('production-like origin preserves unknown, denied and granted consent behav
   assert.deepEqual(reject.events(), []);
 });
 
-test('loopback hosts always suppress tags, banner and all event helpers, including analytics=on', () => {
+test('ループバックではanalytics=onでもタグ・バナー・すべてのイベント送信を停止する', () => {
   for (const hostname of ['localhost', 'LOCALHOST', 'localhost.', 'qa.localhost', '127.0.0.1', '127.0.0.2', '[::1]', '::1']) {
     for (const consent of [null, 'denied', 'granted']) {
       const h = harness({ hostname, consent, search: '?analytics=on' });
-      h.context.gtag = () => assert.fail('Must not call a pre-existing gtag');
+      h.context.gtag = () => assert.fail('既存のgtag関数も呼び出してはいけない');
       h.emit();
       assert.deepEqual(h.tags, []);
       assert.deepEqual(h.events(), []);
@@ -104,7 +104,7 @@ test('loopback hosts always suppress tags, banner and all event helpers, includi
   }
 });
 
-test('QA opt-out survives page navigation and analytics=on clears only the session opt-out', () => {
+test('検証用の計測停止は画面遷移後も維持され、analytics=onはセッションの停止指定だけを解除する', () => {
   const session = new Map<string, string>();
   for (const search of ['?analytics=off', '', '?recipe=recipe-1']) {
     const h = harness({ search, session });
@@ -124,7 +124,7 @@ test('QA opt-out survives page navigation and analytics=on clears only the sessi
   assert.equal(granted.events().length, 3);
 });
 
-test('QA suppression applies to every consent state and does not change consent', () => {
+test('検証用の計測停止はすべての同意状態に適用し、同意の選択を変更しない', () => {
   for (const consent of [null, 'denied', 'granted']) {
     const session = new Map<string, string>();
     const off = harness({ consent, session, search: '?analytics=off' });
@@ -138,7 +138,7 @@ test('QA suppression applies to every consent state and does not change consent'
   }
 });
 
-test('session storage failures fail closed for read, opt-out write and opt-in removal', () => {
+test('セッション保存の読込・停止指定の保存・停止解除に失敗した場合は計測しない', () => {
   for (const [storageError, search] of [
     ['getItem', ''], ['setItem', '?analytics=off'], ['removeItem', '?analytics=on'],
   ] as const) {
@@ -149,7 +149,7 @@ test('session storage failures fail closed for read, opt-out write and opt-in re
   }
 });
 
-test('consent storage errors and missing measurement IDs never load the tag', () => {
+test('同意の保存エラーや測定IDの未設定時はタグを読み込まない', () => {
   for (const options of [
     { consent: null, consentWriteError: true }, { consentReadError: true },
   ]) {
@@ -167,7 +167,7 @@ test('consent storage errors and missing measurement IDs never load the tag', ()
   }
 });
 
-test('copy_deck entry_point is optional and allowlisted without forwarding free-form metadata', () => {
+test('copy_deckのentry_pointは任意の許可値だけを送り、自由入力の情報は送らない', () => {
   const h = harness();
   for (const entry_point of ['recipe_list', 'recipe_url', 'private name', undefined]) {
     h.context.trackGrowthEvent('copy_deck', {

@@ -34,7 +34,7 @@ function harness() {
   return { context, events, calls, saved: () => saved };
 }
 
-test('recipe-list copies only a fully validated deck and emits the same success event as URL import', () => {
+test('一覧では検証済みのデッキだけをコピーし、URL読込と同じ成功イベントを送る', () => {
   for (const source of ['recipe_list', 'recipe_url']) {
     const h = harness();
     if (source === 'recipe_list') h.context.loadRecipe(recipe.id);
@@ -48,7 +48,7 @@ test('recipe-list copies only a fully validated deck and emits the same success 
   }
 });
 
-test('cancelled, missing, invalid, unavailable, and failed-save imports preserve the deck and send no copy event', () => {
+test('キャンセル・レシピ不在・不正データ・未準備・保存失敗ではデッキを保持してイベントを送らない', () => {
   const cases: Array<(context: any) => void> = [
     c => { c.confirm = () => false; },
     c => { c.RECIPES = []; },
@@ -71,7 +71,7 @@ test('cancelled, missing, invalid, unavailable, and failed-save imports preserve
   }
 });
 
-test('a second confirmed manual copy is a new successful operation; cancelled retry is not counted', () => {
+test('再度承認した手動コピーは別の成功操作として数え、キャンセルした再試行は数えない', () => {
   const h = harness();
   h.context.loadRecipe(recipe.id);
   h.context.confirm = () => false;
@@ -82,7 +82,7 @@ test('a second confirmed manual copy is a new successful operation; cancelled re
   assert.equal(h.events.length, 2);
 });
 
-test('empty-deck sample link resolves to a built guide with a valid 40-card sample; controls use descriptive text', () => {
+test('空デッキのリンク先には40枚のサンプルがあり、操作ボタンは内容が分かる文言にする', () => {
   assert.match(html, /href="deck-guide\/beginner-low-rarity-deck\/"[\s\S]*?>サンプルデッキを見て試す<\/a>/);
   const guide = fs.readFileSync(new URL('../../public/deck-guide/beginner-low-rarity-deck/index.html', import.meta.url), 'utf8');
   assert.match(guide, /recipe=rcp-0114/);

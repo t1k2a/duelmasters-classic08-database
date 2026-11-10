@@ -1,4 +1,4 @@
-/** Isolated onboarding regression: no real third-party requests or personal profiles. */
+/** デッキ作成の導線を隔離環境で検証する。外部通信や個人のブラウザ設定は使用しない。 */
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -19,7 +19,7 @@ async function setup(width = 390, theme = 'light', consent = null) {
     if (!['analytics.test', 'localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
       if (url.hostname === 'www.googletagmanager.com' && url.pathname === '/gtag/js') {
         tags.push(url.href);
-        return route.fulfill({ contentType: 'text/javascript', body: '/* isolated gtag fixture */' });
+        return route.fulfill({ contentType: 'text/javascript', body: '/* 実通信しない計測タグの代替応答 */' });
       }
       blocked.push(url.href);
       return route.abort();
@@ -50,7 +50,7 @@ try {
     await page.screenshot({ path: path.join(artifacts, 'empty-' + width + '-' + theme + '.png') });
     await page.getByRole('link', { name: 'サンプルデッキを見て試す', exact: true }).click();
     await page.waitForURL('**/deck-guide/beginner-low-rarity-deck/');
-    // Leaving the builder must not create or overwrite a deck.
+    // デッキ編集画面から移動しただけでは、デッキを作成・上書きしない。
     assert.equal(await page.evaluate(() => localStorage.getItem('dm_deck')), null);
     await page.goBack();
     await page.waitForFunction(() => typeof CARDS !== 'undefined' && CARDS.length && REG);
@@ -66,12 +66,12 @@ try {
     assert.deepEqual(await countCopies(page), [{ content_id: 'rcp-0114', card_count: 40, entry_point: 'recipe_url' }]);
     page.on('dialog', dialog => dialog.accept());
     await page.evaluate(() => { renderDeckPanel(); renderDeckBadge(); restoreRecipeFromURL('rcp-0114'); });
-    assert.equal((await countCopies(page)).length, 1, 'URL import deduplicates repeat calls');
+    assert.equal((await countCopies(page)).length, 1, 'URL読込は繰り返し呼び出しても重複計測しない');
     await page.screenshot({ path: path.join(artifacts, 'copied-' + width + '-' + theme + '.png') });
     await page.evaluate(() => { closeDeckPanel(); showRecipes(RECIPES.find(r => r.id === 'rcp-0114').cards[0].id); });
     await page.getByRole('button', { name: 'このデッキをコピーして編集', exact: true }).first().waitFor();
     await page.screenshot({ path: path.join(artifacts, 'recipe-list-' + width + '-' + theme + '.png') });
-    // Explicit list copy remains one event per successful user operation.
+    // 一覧のコピーボタンは、利用者による操作の成功ごとに1件だけ計測する。
     await page.getByRole('button', { name: 'このデッキをコピーして編集', exact: true }).first().click();
     assert.equal(await page.evaluate(() => document.activeElement.id), 'deckHeading');
     assert.equal((await countCopies(page)).length, 2);
@@ -87,11 +87,11 @@ try {
     page.on('dialog', dialog => dialog.accept());
     await page.evaluate(() => {
       const original = Storage.prototype.setItem;
-      Storage.prototype.setItem = function(key, value) { if (key === 'dm_deck') throw new Error('QA quota failure'); return original.call(this, key, value); };
+      Storage.prototype.setItem = function(key, value) { if (key === 'dm_deck') throw new Error('検証用の保存容量エラー'); return original.call(this, key, value); };
       try { loadRecipe('rcp-0001'); } finally { Storage.prototype.setItem = original; }
     });
     assert.deepEqual(await page.evaluate(() => ({ deck: JSON.stringify(deck), stored: localStorage.getItem('dm_deck'), title: document.title, recipe: restoredRecipeId })), state);
-    assert.equal((await countCopies(page)).length, 2, 'cancel/invalid/storage failure emit nothing');
+    assert.equal((await countCopies(page)).length, 2, 'キャンセル・不正データ・保存失敗ではイベントを送らない');
     assert.deepEqual(errors, []);
     results.push({ width, theme, passed: true, urlFocus, copies: 2, tagFixtureRequests: tags.length });
     await context.close();
