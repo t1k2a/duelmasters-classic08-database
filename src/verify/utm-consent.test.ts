@@ -17,7 +17,7 @@ function harness(query: string, consent?: string) {
   const node = () => ({ value: '', checked: false, id: '', dataset: {} as any, className: '', innerHTML: '', handlers: {} as Record<string, () => void>, classList: { add() {}, remove() {} }, setAttribute() {}, addEventListener(name: string, fn: () => void) { this.handlers[name] = fn; }, remove() { elements.delete(this.id); } });
   for (const id of [...fields, 'ga-consent-accept', 'ga-consent-reject']) elements.set(id, node());
   const buttons = ['光', '水', '闇', '火', '自然'].map(civ => Object.assign(node(), { dataset: { civ } }));
-  const context = vm.createContext({ URLSearchParams, location: new URL(`https://example.test/app/${query}`),
+  const context = vm.createContext({ Event, dispatchEvent() {}, URLSearchParams, location: new URL(`https://example.test/app/${query}`),
     document: { readyState: 'complete', currentScript: { src: 'https://example.test/app/js/analytics.js' },
       getElementById: (id: string) => elements.get(id) || null,
       querySelectorAll: () => buttons, createElement: node,

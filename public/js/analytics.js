@@ -102,6 +102,20 @@
     window.trackEvent(eventName, clean)
   }
 
+  // 画面名は固定値のみ。URL・参照元・タイトルに自由入力が混ざるのを防ぐ。
+  const PANEL_NAMES = new Set(['search', 'deck', 'recipe', 'card_detail'])
+  window.trackPanelView = function (panelName) {
+    if (!PANEL_NAMES.has(panelName) || getConsent() !== 'granted' ||
+        !MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER || typeof window.gtag !== 'function') return false
+    window.trackEvent('panel_view', {
+      panel_name: panelName,
+      page_location: 'https://t1k2a.github.io/duelmasters-classic08-database/',
+      page_referrer: '',
+      page_title: 'デュエマ クラシック08 データベース',
+    })
+    return true
+  }
+
   var sentOnce = new Set()
   window.trackEventOnce = function (key, eventName, params) {
     if (typeof key !== 'string' || !key || sentOnce.has(key)) return
@@ -167,6 +181,7 @@
       setConsent('granted')
       removeBanner()
       loadGtag()
+      window.dispatchEvent(new Event('analytics-consent-granted'))
     })
     document.getElementById('ga-consent-reject').addEventListener('click', function () {
       setConsent('denied')
