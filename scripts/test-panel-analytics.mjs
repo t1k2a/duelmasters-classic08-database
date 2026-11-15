@@ -10,9 +10,9 @@ function harness(consent = 'granted', measurement = 'G-TEST') {
     hidden: true, dataset: {}, classList: { contains: () => nodes[id].hidden },
   }]));
   let callback;
-  const window = { __GA_ID__: measurement, gtag: (...args) => calls.push(args),
+  const window = { location: new URL('https://t1k2a.github.io/duelmasters-classic08-database/?q=SECRET#DECK'), __GA_ID__: measurement, gtag: (...args) => calls.push(args),
     addEventListener: (name, fn) => { listeners[name] = fn; } };
-  const context = vm.createContext({ window, console, Event,
+  const context = vm.createContext({ window, console, Event, URL,
     location: { href: 'https://example.com/?q=SECRET#DECK' },
     localStorage: { getItem: () => consent },
     document: { readyState: 'loading', currentScript: null, title: 'SECRET', referrer: 'SECRET',
@@ -68,4 +68,14 @@ test('deck overlay takes priority over detail and closing restores detail', () =
   h.nodes.deckPanel.hidden = false; h.report();
   h.nodes.deckPanel.hidden = true; h.report();
   assert.deepEqual(h.calls.map(c => c[2].panel_name), ['card_detail', 'deck', 'card_detail']);
+});
+
+test('all manual events strip free text and override caller-supplied URL context', () => {
+  const h = harness();
+  h.window.trackEvent('click_buy_deck', { shop: 'mercari', card_count: 2, deck_name: 'SECRET', top_cards: 'SECRET', page_location: 'SECRET' });
+  h.window.trackEvent('add_to_deck', { card_id: 'dm01-100', card_count: 2, q: 'SECRET' });
+  for (const name of ['unknown', 'toString', 'constructor', '__proto__']) h.window.trackEvent(name, { q: 'SECRET' });
+  assert.equal(h.calls.length, 2);
+  assert.ok(!JSON.stringify(h.calls).includes('SECRET'));
+  assert.equal(h.calls[0][2].page_location, 'https://t1k2a.github.io/duelmasters-classic08-database/');
 });
