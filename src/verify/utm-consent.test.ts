@@ -17,7 +17,7 @@ function harness(query: string, consent?: string) {
   const node = () => ({ value: '', checked: false, id: '', dataset: {} as any, className: '', innerHTML: '', handlers: {} as Record<string, () => void>, classList: { add() {}, remove() {} }, setAttribute() {}, addEventListener(name: string, fn: () => void) { this.handlers[name] = fn; }, remove() { elements.delete(this.id); } });
   for (const id of [...fields, 'ga-consent-accept', 'ga-consent-reject']) elements.set(id, node());
   const buttons = ['光', '水', '闇', '火', '自然'].map(civ => Object.assign(node(), { dataset: { civ } }));
-  const context = vm.createContext({ URLSearchParams, location: new URL(`https://example.test/app/${query}`),
+  const context = vm.createContext({ URL, Event, dispatchEvent() {}, URLSearchParams, location: new URL(`https://example.test/app/${query}`),
     document: { readyState: 'complete', currentScript: { src: 'https://example.test/app/js/analytics.js' },
       getElementById: (id: string) => elements.get(id) || null,
       querySelectorAll: () => buttons, createElement: node,
@@ -116,7 +116,7 @@ test('追加イベントは同意と許可されたID・枚数だけを使用す
     const events = h.context.dataLayer?.filter((a: any) => a[0] === 'event') || [];
     assert.equal(events.length, consent === 'granted' ? 1 : 0);
     if (consent === 'granted') {
-      assert.deepEqual(JSON.parse(JSON.stringify(events[0][2])), { card_id: 'dm01-100', card_count: 1 });
+      assert.deepEqual(JSON.parse(JSON.stringify(events[0][2])), { card_id: 'dm01-100', card_count: 1, page_location: 'https://t1k2a.github.io/duelmasters-classic08-database/', page_referrer: '', page_title: 'デュエマ クラシック08 データベース' });
       for (const params of [{ card_id: 'bad id', card_count: 1 }, { card_id: 'dm01-100', card_count: 0 }, { card_id: 'dm01-100', card_count: 41 }, { card_id: 'dm01-100', card_count: 1.5 }]) h.context.trackGrowthEvent('add_to_deck', params);
       assert.equal(h.context.dataLayer.filter((a: any) => a[0] === 'event').length, 1);
     }
@@ -130,4 +130,15 @@ test('同意済み初期化は一度だけで明示page_viewを追加しない',
   assert.equal(h.loads.length, 1);
   assert.equal(h.context.dataLayer.filter((a: any) => a[0] === 'config').length, 1);
   assert.equal(h.context.dataLayer.filter((a: any) => a[0] === 'event' && a[1] === 'page_view').length, 0);
+});
+
+test('初期configは検索語URL・参照元クエリ・動的タイトルを渡さない', () => {
+  const h = harness('?q=SECRET&deck=SECRET#SECRET', 'granted');
+  h.context.document.referrer = 'https://example.org/?q=SECRET';
+  h.context.document.title = 'SECRET';
+  h.startAnalytics();
+  const config = Array.from(h.context.dataLayer as any[]).find((args: any) => args[0] === 'config') as any;
+  assert.ok(!JSON.stringify(config[2]).includes('SECRET'));
+  assert.equal(config[2].page_referrer, 'https://example.org/');
+  assert.equal(config[2].page_location, 'https://t1k2a.github.io/duelmasters-classic08-database/');
 });
