@@ -52,12 +52,50 @@
     try { localStorage.setItem(CONSENT_KEY, v) } catch (e) {}
   }
 
+  // クエリ・ハッシュ・動的タイトルは手動イベントと初期configに渡さない。
+  // 拡張計測の自動イベントはGA管理画面側の確認も必要（docs参照）。
+  function safePageContext() {
+    let pageLocation = 'https://t1k2a.github.io/duelmasters-classic08-database/'
+    let pageReferrer = ''
+    try {
+      const url = new URL(window.location.href)
+      if (url.origin === 'https://t1k2a.github.io' &&
+          url.pathname.startsWith('/duelmasters-classic08-database/')) {
+        pageLocation = url.origin + url.pathname
+      }
+      if (document.referrer) pageReferrer = new URL(document.referrer).origin + '/'
+    } catch (e) { /* URL不明時は固定値を使用する。 */ }
+    return { page_location: pageLocation, page_referrer: pageReferrer,
+      page_title: 'デュエマ クラシック08 データベース' }
+  }
+
+  // 直接呼び出す購買リンク等にも許可リストを適用。名称・自由入力は捨てる。
+  function analyticsEventParams(eventName, params) {
+    const source = params && typeof params === 'object' ? params : {}
+    if (eventName === 'panel_view') {
+      return PANEL_NAMES.has(source.panel_name) ? { panel_name: source.panel_name } : null
+    }
+    if (eventName === 'click_buy_card' || eventName === 'click_buy_deck') {
+      if (!['surugaya', 'mercari', 'ka-nabell'].includes(source.shop)) return null
+      const clean = { shop: source.shop }
+      if (typeof source.card_id === 'string' && /^[a-z0-9-]{1,80}$/i.test(source.card_id)) clean.card_id = source.card_id
+      if (Number.isInteger(source.card_count) && source.card_count >= 1 && source.card_count <= 40) clean.card_count = source.card_count
+      return clean
+    }
+    return growthEventParams(eventName, source)
+  }
+
   // カスタムイベント送信用のグローバル関数
   window.trackEvent = function (eventName, params) {
     try {
       if (testTraffic || getConsent() !== 'granted' || !MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER) return
       if (typeof window.gtag === 'function') {
-        window.gtag('event', eventName, params || {})
+        const clean = analyticsEventParams(eventName, params)
+        if (clean === null) return
+        const context = eventName === 'panel_view'
+          ? { page_location: 'https://t1k2a.github.io/duelmasters-classic08-database/', page_referrer: '', page_title: 'デュエマ クラシック08 データベース' }
+          : safePageContext()
+        window.gtag('event', eventName, { ...clean, ...context })
       }
     } catch (e) {
       console.warn('[Analytics] Failed to track event:', e)
@@ -89,6 +127,7 @@
    * @returns {object|null} Sanitized parameters, or null when the event must be dropped.
    */
   function growthEventParams(eventName, params) {
+    if (!Object.prototype.hasOwnProperty.call(GROWTH_EVENT_PARAMS, eventName)) return null
     var allowed = GROWTH_EVENT_PARAMS[eventName]
     if (!allowed) return null
     var source = params && typeof params === 'object' ? params : {}
@@ -123,6 +162,20 @@
     window.trackEvent(eventName, clean)
   }
 
+  // 画面名は固定値のみ。URL・参照元・タイトルに自由入力が混ざるのを防ぐ。
+  const PANEL_NAMES = new Set(['search', 'deck', 'recipe', 'card_detail'])
+  window.trackPanelView = function (panelName) {
+    if (!PANEL_NAMES.has(panelName) || getConsent() !== 'granted' ||
+        !MEASUREMENT_ID || MEASUREMENT_ID === PLACEHOLDER || typeof window.gtag !== 'function') return false
+    window.trackEvent('panel_view', {
+      panel_name: panelName,
+      page_location: 'https://t1k2a.github.io/duelmasters-classic08-database/',
+      page_referrer: '',
+      page_title: 'デュエマ クラシック08 データベース',
+    })
+    return true
+  }
+
   var sentOnce = new Set()
   window.trackEventOnce = function (key, eventName, params) {
     if (typeof key !== 'string' || !key || sentOnce.has(key)) return
@@ -155,6 +208,7 @@
     window.gtag = function () { window.dataLayer.push(arguments) }
     window.gtag('js', new Date())
     window.gtag('config', MEASUREMENT_ID, {
+      ...safePageContext(),
       anonymize_ip: true,
       allow_google_signals: false,
       allow_ad_personalization_signals: false,
@@ -188,6 +242,7 @@
       setConsent('granted')
       removeBanner()
       loadGtag()
+      window.dispatchEvent(new Event('analytics-consent-granted'))
     })
     document.getElementById('ga-consent-reject').addEventListener('click', function () {
       setConsent('denied')

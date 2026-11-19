@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v7-deck-onboarding';
+const CACHE_VERSION = 'v8-deck-onboarding-panel-views';
 const CACHE_PREFIX = 'dmc08-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 

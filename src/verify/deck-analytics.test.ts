@@ -6,6 +6,7 @@ import test from 'node:test';
 const html = fs.readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
 const analytics = fs.readFileSync(new URL('../../public/js/analytics.js', import.meta.url), 'utf8');
 const section = (from: string, to: string) => html.slice(html.indexOf(from), html.indexOf(to));
+const safeContext = { page_location: 'https://t1k2a.github.io/duelmasters-classic08-database/', page_referrer: '', page_title: 'デュエマ クラシック08 データベース' };
 const cards = Array.from({ length: 11 }, (_, i) => ({ id: `dm01-${i + 1}`, name: `Card ${i}` }));
 
 // No browser, network API, or script loader is exposed to the production code.
@@ -43,7 +44,7 @@ test('X intent attempt is counted once even when noopener returns null', () => {
   for (const result of [null, {}]) {
     const h = harness('granted', 2, result);
     h.context.shareDeckX();
-    assert.deepEqual(h.events(), [['share_deck', { method: 'x', card_count: 2 }]]);
+    assert.deepEqual(h.events(), [['share_deck', { method: 'x', card_count: 2, ...safeContext }]]);
     assert.equal(h.opened.length, 1);
     assert.deepEqual(h.opened[0].slice(1), ['_blank', 'noopener']);
     assert.equal(new URL(h.opened[0][0] as string).pathname, '/intent/tweet');
@@ -73,8 +74,8 @@ test('deck events occur only on successful additions and the transition to 40 ca
   assert.deepEqual(h.events(), []);
   h.context.addToDeck(cards[9].id);
   assert.deepEqual(h.events(), [
-    ['add_to_deck', { card_id: cards[9].id, card_count: 40 }],
-    ['deck_complete', { card_count: 40 }],
+    ['add_to_deck', { card_id: cards[9].id, card_count: 40, ...safeContext }],
+    ['deck_complete', { card_count: 40, ...safeContext }],
   ]);
   h.context.addToDeck(cards[10].id);
   assert.equal(h.events().length, 2);

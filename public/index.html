@@ -934,6 +934,7 @@ function showRecipes(cardId) {
       <div class="text-xs text-gray-400 uppercase tracking-wide">このカードを使うデッキ（${hits.length}件）</div>
       <div class="space-y-2">${hits.map(r => recipeCardHTML(r, cardId)).join('')}</div>`;
   }
+  document.getElementById('mobileDetail').dataset.analyticsPanel = 'recipe';
   document.getElementById('detailName').textContent = '📋 デッキレシピ';
   document.getElementById('detailBody').innerHTML = `
     <div class="space-y-3">
@@ -1078,6 +1079,7 @@ function selectCard(id, fromDeck = false) {
   const c = CARDS.find(x => x.id === id);
   if (!c) return;
   selectedCard = id;
+  document.getElementById('mobileDetail').dataset.analyticsPanel = 'card_detail';
   renderList();
   document.getElementById('deckPanel').classList.add('hidden');
   document.getElementById('detailName').innerHTML = detailNameHTML(c);
@@ -2053,6 +2055,7 @@ if ('serviceWorker' in navigator) {
 <!-- Google Analytics 4 + 同意バナー（測定IDは env→build:analytics-config で js/analytics-config.js に注入） -->
 <script src="js/analytics-config.js"></script>
 <script src="js/analytics.js"></script>
+<script src="js/panel-analytics.js"></script>
 <script src="js/vendor/qrcode.js"></script>
 <script>
 // ============================================================

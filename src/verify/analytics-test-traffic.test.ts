@@ -18,7 +18,7 @@ function harness(options: Options = {}) {
   const elements = new Map<string, any>();
   const handlers = new Map<string, () => void>();
   const context = vm.createContext({
-    URLSearchParams,
+    URLSearchParams, Event, dispatchEvent: () => true,
     location: { hostname: options.hostname || 'analytics.test', search: options.search || '' },
     sessionStorage: {
       getItem(key: string) {
@@ -64,7 +64,7 @@ function harness(options: Options = {}) {
     (context.dataLayer || []).filter((a: any) => a[0] === 'event').map((a: any) => [a[1], a[2]])
   ));
   const emit = () => {
-    context.trackEvent('ordinary_event', {});
+    context.trackEvent('add_to_deck', { card_id: 'card-1', card_count: 1 });
     context.trackGrowthEvent('copy_deck', { content_id: 'recipe-1' });
     context.trackEventOnce('copy', 'copy_deck', { content_id: 'recipe-1' });
   };
@@ -175,10 +175,11 @@ test('copy_deckのentry_pointは任意の許可値だけを送り、自由入力
       name: 'private name', url: 'https://private.test/', email: 'private@example.test',
     });
   }
+  const safePage = { page_location: 'https://t1k2a.github.io/duelmasters-classic08-database/', page_referrer: '', page_title: 'デュエマ クラシック08 データベース' };
   assert.deepEqual(h.events(), [
-    ['copy_deck', { content_id: 'recipe-1', card_count: 40, entry_point: 'recipe_list' }],
-    ['copy_deck', { content_id: 'recipe-1', card_count: 40, entry_point: 'recipe_url' }],
-    ['copy_deck', { content_id: 'recipe-1', card_count: 40 }],
-    ['copy_deck', { content_id: 'recipe-1', card_count: 40 }],
+    ['copy_deck', { ...safePage, content_id: 'recipe-1', card_count: 40, entry_point: 'recipe_list' }],
+    ['copy_deck', { ...safePage, content_id: 'recipe-1', card_count: 40, entry_point: 'recipe_url' }],
+    ['copy_deck', { ...safePage, content_id: 'recipe-1', card_count: 40 }],
+    ['copy_deck', { ...safePage, content_id: 'recipe-1', card_count: 40 }],
   ]);
 });
