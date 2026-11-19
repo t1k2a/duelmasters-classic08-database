@@ -149,6 +149,18 @@ test('セッション保存の読込・停止指定の保存・停止解除に�
   }
 });
 
+test('停止指定を書き込めないタブではクエリなしの遷移先でも計測しない', () => {
+  const session = new Map<string, string>();
+  for (const search of ['?analytics=off', '', '?recipe=recipe-1', '?analytics=on']) {
+    const h = harness({ search, session, storageError: 'setItem' });
+    h.emit();
+    assert.deepEqual(h.tags, []);
+    assert.deepEqual(h.events(), []);
+    assert.equal(h.elements.has('ga-consent-banner'), false);
+    assert.equal(session.size, 0);
+  }
+});
+
 test('同意の保存エラーや測定IDの未設定時はタグを読み込まない', () => {
   for (const options of [
     { consent: null, consentWriteError: true }, { consentReadError: true },

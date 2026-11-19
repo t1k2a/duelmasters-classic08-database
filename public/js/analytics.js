@@ -30,15 +30,21 @@
   // ?analytics=on は停止指定だけを解除し、同意やローカルアクセスの除外条件は変えない。
   // 保存先やURLを読み書きできない場合は、安全のため計測を停止する。
   const TEST_TRAFFIC_KEY = 'ga-test-traffic'
+  const TEST_TRAFFIC_PROBE_KEY = 'ga-test-traffic-probe'
   function isTestTraffic() {
     try {
       const hostname = window.location.hostname.toLowerCase().replace(/\.$/, '')
       const mode = new URLSearchParams(window.location.search).get('analytics')
       if (mode === 'off') sessionStorage.setItem(TEST_TRAFFIC_KEY, 'off')
       if (mode === 'on') sessionStorage.removeItem(TEST_TRAFFIC_KEY)
-      return hostname === 'localhost' || /\.localhost$/.test(hostname) ||
+      if (hostname === 'localhost' || /\.localhost$/.test(hostname) ||
         /^127\./.test(hostname) || hostname === '[::1]' || hostname === '::1' ||
-        sessionStorage.getItem(TEST_TRAFFIC_KEY) === 'off'
+        sessionStorage.getItem(TEST_TRAFFIC_KEY) === 'off') return true
+
+      // 停止指定を前のページで保存できなかった場合に備え、遷移先でも書き込みを確認する。
+      sessionStorage.setItem(TEST_TRAFFIC_PROBE_KEY, '1')
+      sessionStorage.removeItem(TEST_TRAFFIC_PROBE_KEY)
+      return false
     } catch (e) {
       return true
     }
