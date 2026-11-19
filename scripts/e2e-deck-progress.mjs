@@ -20,7 +20,8 @@ const server = http.createServer(async (req, res) => {
   } catch { res.writeHead(404).end(); }
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-const base = `http://127.0.0.1:${server.address().port}`;
+const localBase = `http://127.0.0.1:${server.address().port}`;
+const base = 'http://analytics.test';
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
 const results = [];
 try {
@@ -30,9 +31,9 @@ try {
     const tagRequests = [], externalRequests = [];
     let resolveTagRequest;
     const tagRequestRecorded = new Promise(resolve => { resolveTagRequest = resolve; });
-    await context.route('**/*', route => {
+    await context.route('**/*', async route => {
       const url = new URL(route.request().url());
-      if (url.origin === base) return route.continue();
+      if (url.origin === base) return route.fulfill({ response: await route.fetch({ url: localBase + url.pathname + url.search, maxRedirects: 0 }) });
       externalRequests.push(url.hostname);
       if (url.hostname === 'www.googletagmanager.com' && url.pathname === '/gtag/js') {
         tagRequests.push(url.pathname);

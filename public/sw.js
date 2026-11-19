@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v7-panel-views';
+const CACHE_VERSION = 'v9-analytics-storage-guard';
 const CACHE_PREFIX = 'dmc08-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 

@@ -12,7 +12,8 @@ function harness(consent = 'granted', measurement = 'G-TEST') {
   let callback;
   const window = { location: new URL('https://t1k2a.github.io/duelmasters-classic08-database/?q=SECRET#DECK'), __GA_ID__: measurement, gtag: (...args) => calls.push(args),
     addEventListener: (name, fn) => { listeners[name] = fn; } };
-  const context = vm.createContext({ window, console, Event, URL,
+  const context = vm.createContext({ window, console, Event, URL, URLSearchParams,
+    sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     location: { href: 'https://example.com/?q=SECRET#DECK' },
     localStorage: { getItem: () => consent },
     document: { readyState: 'loading', currentScript: null, title: 'SECRET', referrer: 'SECRET',

@@ -28,6 +28,7 @@ function harness(query: string, consent?: string) {
     debounceTimer: null, urlTimer: null, renderList() {}, selectCard() {},
     setTimeout: (fn: () => void) => { const id = timers.size + 1; timers.set(id, fn); return id; },
     clearTimeout: (id: number) => timers.delete(id),
+    sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     localStorage: { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) },
     __GA_ID__: 'G-QATEST123', console,
   });
